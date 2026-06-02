@@ -1,7 +1,7 @@
 import type { App } from "obsidian";
 
 const metadataDumpPath =
-  ".obsidian/plugins/obsidian-day-planner-enhanced/fixtures/metadata-dump";
+  ".obsidian/plugins/day-planner-enhanced/fixtures/metadata-dump";
 
 export function createDumpMetadataCommand(app: App) {
   return async () => {

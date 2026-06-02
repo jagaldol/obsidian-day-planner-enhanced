@@ -8,7 +8,7 @@ Guidance for AI agents working in the `Day Planner Enhanced` repository.
 - `origin` is the enhanced fork: `https://github.com/jagaldol/obsidian-day-planner-enhanced.git`.
 - `upstream` is the original project: `https://github.com/ivan-lednev/obsidian-day-planner.git`.
 - The plugin identity is:
-  - plugin id: `obsidian-day-planner-enhanced`
+  - plugin id: `day-planner-enhanced`
   - plugin name: `Day Planner Enhanced`
   - package name: `obsidian-day-planner-enhanced`
 - Keep changes small, reviewable, and compatible with future upstream merges when possible.
@@ -92,7 +92,7 @@ Day Planner Enhanced prioritizes a readable timeline UI for nested schedules.
 - Treat vault installation as a separate explicit integration step.
 - Do not hardcode local vault paths in source, docs, tests, or committed instructions.
 - Build the plugin before installing generated artifacts into any vault.
-- Install this plugin under `.obsidian/plugins/obsidian-day-planner-enhanced/` so it remains separate from the original Day Planner plugin.
+- Install this plugin under `.obsidian/plugins/day-planner-enhanced/` so it remains separate from the original Day Planner plugin.
 - Restart or reload Obsidian before visual verification after plugin identity or generated artifacts change.
 - Inspect the actual Obsidian timeline UI after integration; do not rely only on code review for visual behavior.
 

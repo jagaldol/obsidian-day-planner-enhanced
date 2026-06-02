@@ -16,6 +16,10 @@ Day Planner Enhanced is integrated with
 ## Table of contents
 
 - [Table of contents](#table-of-contents)
+- [Installation](#installation)
+  - [Install with BRAT](#install-with-brat)
+  - [Manual installation](#manual-installation)
+  - [Updating](#updating)
 - [How to use it](#how-to-use-it)
   - [1. Showing events from your daily notes](#1-showing-events-from-your-daily-notes)
   - [2. tasks community plugin integration, showing events from other files in your vault](#2-tasks-community-plugin-integration-showing-events-from-other-files-in-your-vault)
@@ -31,6 +35,50 @@ Day Planner Enhanced is integrated with
     - [Limitations](#limitations)
 - [Upstream](#upstream)
 - [Acknowledgements](#acknowledgements)
+
+## Installation
+
+Day Planner Enhanced is distributed from GitHub Releases. It is not currently listed in Obsidian's community plugin directory, so it will not appear in Obsidian's built-in plugin search yet.
+
+Before installing, disable the original Day Planner plugin if it is already enabled in the same vault. This fork has its own plugin identity, but it still shares some Day Planner concepts, commands, and view behavior from the upstream codebase.
+
+### Install with BRAT
+
+This is the recommended way to install and update the plugin while it is distributed as a GitHub release.
+
+1. Install and enable [BRAT](https://github.com/TfTHacker/obsidian42-brat) from Obsidian's community plugins.
+2. Open BRAT settings.
+3. Add this repository as a beta plugin:
+
+   ```text
+   https://github.com/jagaldol/obsidian-day-planner-enhanced
+   ```
+
+4. Enable `Day Planner Enhanced` in Obsidian's community plugin settings.
+5. Reload Obsidian if the plugin does not appear immediately.
+
+### Manual installation
+
+1. Open the [latest release](https://github.com/jagaldol/obsidian-day-planner-enhanced/releases/latest).
+2. Download the plugin zip file, or download these release assets individually:
+   - `main.js`
+   - `manifest.json`
+   - `styles.css`
+3. Create the plugin folder in your vault:
+
+   ```text
+   <vault>/.obsidian/plugins/day-planner-enhanced/
+   ```
+
+4. Put `main.js`, `manifest.json`, and `styles.css` directly inside that folder.
+5. Restart or reload Obsidian.
+6. Enable `Day Planner Enhanced` in Obsidian's community plugin settings.
+
+### Updating
+
+- If you installed with BRAT, update through BRAT.
+- If you installed manually, download the latest release assets and replace the existing files in the plugin folder.
+- Restart or reload Obsidian after replacing plugin files.
 
 ## How to use it
 

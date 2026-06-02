@@ -1,6 +1,6 @@
 {
   "name": "obsidian-day-planner-enhanced",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A day planner with an enhanced timeline UI and readable nested schedules",
   "main": "main.js",
   "scripts": {
