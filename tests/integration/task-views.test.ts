@@ -29,8 +29,7 @@ describe("Task views", () => {
     expect(listItem).toBe("- [ ] Parent");
     expect(nestedListItems).toBe(`- [ ] Child task
   Child text
-\t- Child list item without time
-`);
+\t- Child list item without time`);
   });
 
   test("Removes list tokens for plain list items", async () => {
@@ -48,6 +47,42 @@ describe("Task views", () => {
     const { listItem } = toRenderableMarkdown(taskWithNestedListItems);
 
     expect(listItem).toBe("List item under planner heading");
+  });
+
+  test("Wraps nested leading time ranges in code spans for rendering", () => {
+    const { nestedListItems } = toRenderableMarkdown({
+      text: "10:10 - 16:00 Conference block",
+      symbol: "-",
+      children: [
+        {
+          text: "10:20 - 11:00 Expo booth",
+          symbol: "-",
+          children: [
+            {
+              text: "Workshop demo",
+              symbol: "-",
+            },
+          ],
+        },
+        {
+          text: "Session notes",
+          symbol: "-",
+        },
+        {
+          text: "Workshop notes",
+          symbol: "-",
+          task: "x",
+        },
+      ],
+    });
+
+    expect(nestedListItems).toBe(`- \`10:20 - 11:00\` Expo booth
+\t- Workshop demo
+
+---
+
+- Session notes
+- [x] Workshop notes`);
   });
 
   test.todo("Does not show code blocks in rendered markdown");

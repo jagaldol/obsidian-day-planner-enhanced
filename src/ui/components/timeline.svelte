@@ -7,15 +7,20 @@
   import { currentTimeSignal, isToday } from "../../global-store/current-time";
   import { getVisibleHours, snap } from "../../global-store/derived-settings";
   import { selectLogEntriesForDay } from "../../redux";
+  import type { Task, WithPlacing, WithTime } from "../../task-types";
   import {
     getPointerOffsetY,
     isTouchEvent,
     offsetYToMinutes,
   } from "../../util/dom";
-  import { minutesToMomentOfDay } from "../../util/moment";
+  import {
+    getMinutesSinceMidnight,
+    minutesToMomentOfDay,
+  } from "../../util/moment";
   import {
     getBlockProps,
     getDayKey,
+    getEndMinutes,
     getRenderKey,
   } from "../../util/task-utils";
   import { createGestures } from "../actions/gestures";
@@ -49,6 +54,86 @@
 
   const logEntriesForDay = useSelector((state) =>
     selectLogEntriesForDay(state, dayKey, currentTimeSignal.current),
+  );
+
+  interface SeparatorVisibility {
+    showBottomSeparator: boolean;
+    showTopSeparator: boolean;
+  }
+
+  function createSeparatorVisibilityLookup(
+    tasks: Array<WithPlacing<WithTime<Task>>>,
+  ) {
+    const separatorVisibilityByRenderKey = new Map<
+      string,
+      SeparatorVisibility
+    >();
+    const tasksByStartMinute = new Map<
+      number,
+      Array<WithPlacing<WithTime<Task>>>
+    >();
+
+    tasks.forEach((task) => {
+      const startMinute = getMinutesSinceMidnight(task.startTime);
+      const tasksStartingAtMinute = tasksByStartMinute.get(startMinute) ?? [];
+
+      tasksStartingAtMinute.push(task);
+      tasksByStartMinute.set(startMinute, tasksStartingAtMinute);
+
+      separatorVisibilityByRenderKey.set(getRenderKey(task), {
+        showBottomSeparator: true,
+        showTopSeparator: !startsOnTimelineGridLine(task),
+      });
+    });
+
+    tasks.forEach((task) => {
+      const nextTasks = tasksByStartMinute.get(getEndMinutes(task)) ?? [];
+      const nextTaskCoveringTaskHorizontally = nextTasks.find((nextTask) =>
+        coversHorizontalRange(nextTask, task),
+      );
+
+      if (
+        nextTaskCoveringTaskHorizontally &&
+        !startsOnTimelineGridLine(nextTaskCoveringTaskHorizontally)
+      ) {
+        const currentVisibility = separatorVisibilityByRenderKey.get(
+          getRenderKey(task),
+        );
+
+        separatorVisibilityByRenderKey.set(getRenderKey(task), {
+          showBottomSeparator: false,
+          showTopSeparator: currentVisibility?.showTopSeparator ?? true,
+        });
+      }
+    });
+
+    return separatorVisibilityByRenderKey;
+  }
+
+  function coversHorizontalRange(
+    candidate: WithPlacing<WithTime<Task>>,
+    task: WithPlacing<WithTime<Task>>,
+  ) {
+    const epsilon = 0.0001;
+    const candidateStart = candidate.placing.offsetPercent;
+    const candidateEnd = candidateStart + candidate.placing.spanPercent;
+    const taskStart = task.placing.offsetPercent;
+    const taskEnd = taskStart + task.placing.spanPercent;
+
+    return (
+      candidateStart <= taskStart + epsilon && candidateEnd >= taskEnd - epsilon
+    );
+  }
+
+  function startsOnTimelineGridLine(task: WithTime<Task>) {
+    return getMinutesSinceMidnight(task.startTime) % 30 === 0;
+  }
+
+  const plannerSeparatorVisibility = $derived(
+    createSeparatorVisibilityLookup($displayedTasksForTimeline.withTime),
+  );
+  const logEntrySeparatorVisibility = $derived(
+    createSeparatorVisibilityLookup(logEntriesForDay.current),
   );
 
   let el: HTMLElement | undefined = $state();
@@ -99,7 +184,10 @@
 </script>
 
 {#if $settings.timelineColumns.planner}
-  <Column visibleHours={getVisibleHours($settings)}>
+  <Column
+    --timeline-column-z-index={$isToday(day) ? "6" : "auto"}
+    visibleHours={getVisibleHours($settings)}
+  >
     {#if $isToday(day)}
       <Needle autoScrollBlocked={isUnderCursor} />
     {/if}
@@ -119,7 +207,14 @@
       use:timelineGestures
     >
       {#each $displayedTasksForTimeline.withTime as task (getRenderKey(task))}
-        <PositionedTimeBlock {task}>
+        {@const separatorVisibility = plannerSeparatorVisibility.get(
+          getRenderKey(task),
+        )}
+        <PositionedTimeBlock
+          showBottomSeparator={separatorVisibility?.showBottomSeparator}
+          showTopSeparator={separatorVisibility?.showTopSeparator}
+          {task}
+        >
           <UnscheduledTimeBlock {task}>
             {#snippet bottomDecoration()}
               {getBlockProps(task, settingsSignal.current)}
@@ -132,14 +227,24 @@
 {/if}
 
 {#if $settings.timelineColumns.timeTracker}
-  <Column visibleHours={getVisibleHours($settings)}>
+  <Column
+    --timeline-column-z-index={$isToday(day) ? "6" : "auto"}
+    visibleHours={getVisibleHours($settings)}
+  >
     {#if $isToday(day)}
       <Needle autoScrollBlocked={isUnderCursor} />
     {/if}
 
     <div class="tasks absolute-stretch-x">
       {#each logEntriesForDay.current as task (task.id)}
-        <PositionedTimeBlock {task}>
+        {@const separatorVisibility = logEntrySeparatorVisibility.get(
+          getRenderKey(task),
+        )}
+        <PositionedTimeBlock
+          showBottomSeparator={separatorVisibility?.showBottomSeparator}
+          showTopSeparator={separatorVisibility?.showTopSeparator}
+          {task}
+        >
           <LocalTimeBlock {task}>
             {#snippet bottomDecoration()}
               {getBlockProps(task, settingsSignal.current)}
@@ -153,13 +258,14 @@
 
 <style>
   .tasks {
+    z-index: 2;
     top: 0;
     bottom: 0;
 
     display: flex;
     flex-direction: column;
 
-    margin-inline: var(--size-4-2);
+    margin-inline: 0;
   }
 
   .tasks :global(.planner-sticky-block-content) {

@@ -26,10 +26,14 @@
 </script>
 
 <TimeBlockBase
-  --time-block-border-color-override={isActive ? "var(--color-accent)" : ""}
-  --time-block-box-shadow={isActive
-    ? "var(--shadow-stationary), var(--shadow-border-accent)"
+  --time-block-bg-color={isActive
+    ? "color-mix(in srgb, var(--color-accent) 8%, var(--background-primary))"
     : ""}
+  --time-block-box-shadow={isActive ? "none" : ""}
+  --time-block-outline-color={isActive ? "var(--color-accent)" : ""}
+  --time-block-outline-width={isActive ? "2px" : ""}
+  --time-block-strip-color={isActive ? "var(--color-accent)" : ""}
+  --time-block-z-index={isActive ? "2" : ""}
   {blockEndDecoration}
   {onpointerup}
   {task}

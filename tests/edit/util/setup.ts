@@ -10,16 +10,18 @@ import {
   type DayPlannerSettings,
   defaultSettingsForTests,
 } from "../../../src/settings";
-import type { LocalTask } from "../../../src/task-types";
+import type { LocalTask, RemoteTask } from "../../../src/task-types";
 import type { PointerDateTime } from "../../../src/types";
 import { useEditContext } from "../../../src/ui/hooks/use-edit/use-edit-context";
 
 import { baseTasks } from "./fixtures";
 
 function createProps({
+  remoteTasks,
   tasks,
   settings,
 }: {
+  remoteTasks: RemoteTask[];
   tasks: LocalTask[];
   settings: DayPlannerSettings;
 }) {
@@ -34,7 +36,7 @@ function createProps({
     workspaceFacade,
     abortEditTrigger: writable(),
     localTasks: writable(tasks),
-    remoteTasks: writable([]),
+    remoteTasks: writable(remoteTasks),
     pointerDateTime: writable<PointerDateTime>({
       dateTime: moment("2023-01-01 00:00"),
       type: "dateTime",
@@ -50,13 +52,19 @@ function createProps({
 }
 
 export function setUp({
+  remoteTasks = [],
   tasks = baseTasks,
   settings = defaultSettingsForTests,
+}: {
+  remoteTasks?: RemoteTask[];
+  tasks?: LocalTask[];
+  settings?: DayPlannerSettings;
 } = {}) {
-  const props = createProps({ tasks, settings });
+  const props = createProps({ remoteTasks, tasks, settings });
   const {
     handlers,
     dayToDisplayedTasks,
+    getDisplayedTasksForTimeline,
     getDisplayedAllDayTasksForMultiDayRow,
     confirmEdit,
   } = useEditContext(props);
@@ -79,6 +87,7 @@ export function setUp({
     handlers,
     moveCursorTo,
     dayToDisplayedTasks,
+    getDisplayedTasksForTimeline,
     getDisplayedAllDayTasksForMultiDayRow,
     confirmEdit,
     props,

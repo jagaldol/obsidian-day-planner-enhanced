@@ -52,6 +52,7 @@
 <style>
   .padding {
     position: var(--time-block-position, static);
+    z-index: var(--time-block-z-index, auto);
     top: var(--time-block-top, 0);
     left: var(--time-block-left, 0);
 
@@ -60,7 +61,7 @@
 
     width: var(--time-block-width, 100%);
     height: var(--time-block-height, auto);
-    padding: var(--time-block-padding, 0 1px 2px);
+    padding: var(--time-block-padding, 1px 3px 3px);
   }
 
   .content {
@@ -79,13 +80,64 @@
     white-space: normal;
 
     background-color: var(--time-block-bg-color, var(--background-primary));
-    border: 1px solid
-      var(
-        --time-block-border-color-override,
-        var(--time-block-border-color, var(--text-faint))
+    background-image: linear-gradient(
+        var(--time-block-separator-color, transparent),
+        var(--time-block-separator-color, transparent)
+      ),
+      linear-gradient(
+        var(--time-block-separator-color, transparent),
+        var(--time-block-separator-color, transparent)
       );
-    border-radius: var(--radius-s);
+    background-repeat: no-repeat;
+    background-position:
+      top left,
+      bottom left;
+    background-size:
+      100% var(--time-block-separator-top-width, 0),
+      100% var(--time-block-separator-bottom-width, 0);
+    border-color: var(
+      --time-block-border-color-override,
+      var(--time-block-border-color, var(--background-modifier-border))
+    );
+    border-style: solid;
+    border-width: var(
+        --time-block-border-top-width,
+        var(--time-block-border-width, 1px)
+      )
+      var(--time-block-border-right-width, var(--time-block-border-width, 1px))
+      var(--time-block-border-bottom-width, var(--time-block-border-width, 1px))
+      var(--time-block-border-left-width, var(--time-block-border-width, 1px));
+    border-radius: var(--time-block-border-radius, 6px);
     box-shadow: var(--time-block-box-shadow);
+  }
+
+  .content::before {
+    pointer-events: none;
+    content: "";
+
+    position: absolute;
+    z-index: 1;
+    top: 0;
+    bottom: 0;
+    left: 0;
+
+    width: var(--time-block-strip-width, 0);
+
+    background-color: var(--time-block-strip-color, transparent);
+  }
+
+  .content::after {
+    pointer-events: none;
+    content: "";
+
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+
+    box-sizing: border-box;
+
+    border: var(--time-block-outline-width, 0) solid
+      var(--time-block-outline-color, transparent);
   }
 
   :global(.is-mobile) .content {
