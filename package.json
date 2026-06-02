@@ -1,7 +1,7 @@
 {
-  "name": "obsidian-day-planner",
-  "version": "0.30.0",
-  "description": "A plugin to help you plan your day and setup pomodoro timers",
+  "name": "obsidian-day-planner-enhanced",
+  "version": "0.1.0",
+  "description": "A day planner with an enhanced timeline UI and readable nested schedules",
   "main": "main.js",
   "scripts": {
     "build": "vite build --mode=production",
@@ -15,7 +15,15 @@
     "commitlint": "commitlint --edit"
   },
   "keywords": [],
-  "author": "",
+  "author": "jagaldol",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jagaldol/obsidian-day-planner-enhanced.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jagaldol/obsidian-day-planner-enhanced/issues"
+  },
+  "homepage": "https://github.com/jagaldol/obsidian-day-planner-enhanced",
   "license": "MIT",
   "devDependencies": {
     "@commitlint/cli": "^19.4.1",

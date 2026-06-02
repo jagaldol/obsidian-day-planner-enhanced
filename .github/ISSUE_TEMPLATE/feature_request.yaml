@@ -8,7 +8,7 @@ body:
       label: "⚠️ Please check that this feature request hasn't been suggested before."
       description: "There are two locations for previous feature requests. Please search in both. Thank you. The **Label filters** may help make your search more focused."
       options:
-        - label: "I searched previous [Issues](https://github.com/ivan-lednev/obsidian-day-planner/issues?q=is%3Aissue+is%3Aopen) didn't find any similar feature requests."
+        - label: "I searched previous [Issues](https://github.com/jagaldol/obsidian-day-planner-enhanced/issues?q=is%3Aissue+is%3Aopen) and didn't find any similar feature requests."
           required: true
         - label: "I am only requesting a single feature. Multiple changes should be split into individual requests, with links between them."
           required: true

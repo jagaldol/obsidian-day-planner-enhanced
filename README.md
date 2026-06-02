@@ -1,12 +1,13 @@
-- 🗳️ [Add '👍' reactions under the issues important to you.](https://github.com/ivan-lednev/obsidian-day-planner/issues?q=is%3Aissue+is%3Aopen+sort%3Areactions-%2B1-desc) This helps me prioritize my work
-- 🪲 [Report bugs and suggest features](https://github.com/ivan-lednev/obsidian-day-planner/issues)
-- ❓ [Ask questions](https://github.com/ivan-lednev/obsidian-day-planner/discussions/new?category=q-a)
-- 🛠️ [Submit pull-requests](./CONTRIBUTING.md)
-- ❤️ If this project adds value to your life, consider supporting it finantially:
-  - <a href="https://www.buymeacoffee.com/machineelf" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+# Day Planner Enhanced
 
+Day Planner Enhanced is a community plugin for [Obsidian](https://obsidian.md/). It adds editable calendar views, basic time-tracking, and an enhanced timeline UI for readable nested schedules.
 
-Day Planner is a community plugin for [Obsidian](https://obsidian.md/). It adds editable calendar views and basic time-tracking. Day Planner is integrated with
+This plugin is an independent MIT-licensed fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner).
+
+- 🪲 [Report bugs and suggest features](https://github.com/jagaldol/obsidian-day-planner-enhanced/issues)
+- 🛠️ [Submit pull requests](./CONTRIBUTING.md)
+
+Day Planner Enhanced is integrated with
 
 - The core Daily Notes plugin.
 - [the Tasks plugin](https://obsidian.md/plugins?id=obsidian-tasks-plugin)
@@ -28,7 +29,7 @@ Day Planner is a community plugin for [Obsidian](https://obsidian.md/). It adds 
     - [Clocks in timelines](#clocks-in-timelines)
     - [Active clocks](#active-clocks)
     - [Limitations](#limitations)
-- [Note on the old plugin version](#note-on-the-old-plugin-version)
+- [Upstream](#upstream)
 - [Acknowledgements](#acknowledgements)
 
 ## How to use it
@@ -120,7 +121,7 @@ Here's how the settings look on the web version:
 
 ##### Alternative
 
-If your organization doesn't let you share your calendar this way, you might try [a different way described in this issue](https://github.com/ivan-lednev/obsidian-day-planner/issues/395).
+If your organization doesn't let you share your calendar this way, you might try [a different way described in the upstream project](https://github.com/ivan-lednev/obsidian-day-planner/issues/395).
 
 ### 4. Time tracking
 
@@ -163,14 +164,13 @@ A right click on an active clock will bring the control menu:
 
 - For now clock time blocks are read-only. This is going to be addressed in the future.
 
-## Note on the old plugin version
+## Upstream
 
-0.7.0 significantly changes what the plugin looks like and what it does. If you like to have some of the old behaviors back, [consider creating an issue](https://github.com/ivan-lednev/obsidian-day-planner/issues).
-
-If for some reason you still want to use the old version, there are community forks, which you can use via [BRAT](https://github.com/TfTHacker/obsidian42-brat). [Here is one such fork](https://github.com/ebullient/obsidian-day-planner-og).
+Day Planner Enhanced is maintained as an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner). Upstream changes can still be merged from the original project when useful, but this plugin has its own package identity, release versioning, and issue tracker.
 
 ## Acknowledgements
 
+- Day Planner Enhanced is based on [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner).
 - Thanks to [Michael Brenan](https://github.com/blacksmithgu) for Dataview
 - Thanks to [James Lynch](https://github.com/lynchjames) for the original plugin
 - Thanks to [Joshua Tazman Reinier](https://github.com/joshuatazrein) for his plugin that served as an inspiration

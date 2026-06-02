@@ -8,7 +8,7 @@ export class DayPlannerReleaseNotesView extends ItemView {
   }
 
   getDisplayText() {
-    return `Day Planner Release ${currentPluginVersion}`;
+    return `Day Planner Enhanced Release ${currentPluginVersion}`;
   }
 
   async onOpen() {
