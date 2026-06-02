@@ -15,5 +15,5 @@ Other relevant details:
 
   const encoded = encodeURI(asMarkdown);
 
-  return `https://github.com/ivan-lednev/obsidian-day-planner/issues/new?assignees=&labels=bug&projects=&template=bug_report.md&body=${encoded}`;
+  return `https://github.com/jagaldol/obsidian-day-planner-enhanced/issues/new?assignees=&labels=bug&projects=&template=bug_report.yaml&body=${encoded}`;
 }

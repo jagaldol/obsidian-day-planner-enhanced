@@ -8,7 +8,7 @@ body:
       label: "Please check that this issue hasn't been reported before."
       description: "The **Label filters** may help make your search more focussed."
       options:
-        - label: "I searched previous [Bug Reports](https://github.com/ivan-lednev/obsidian-day-planner/issues?q=is%3Aissue+is%3Aopen) didn't find any similar reports."
+        - label: "I searched previous [Bug Reports](https://github.com/jagaldol/obsidian-day-planner-enhanced/issues?q=is%3Aissue+is%3Aopen) and didn't find any similar reports."
           required: true
 
   - type: textarea

@@ -16,6 +16,7 @@ import {
 import type { DayPlannerSettings } from "../settings";
 import {
   type BaseTask,
+  isLocal,
   isRemote,
   type LocalTask,
   type RemoteTask,
@@ -355,6 +356,64 @@ export function getBlockProps(task: Task, settings: DayPlannerSettings) {
   return result.join(` ${bullet} `);
 }
 
+function isTimedLocalTimelineTask(task: Task): task is WithTime<LocalTask> {
+  return isLocal(task) && isWithTime(task) && !task.isAllDayEvent;
+}
+
+function getSourceLine(task: LocalTask) {
+  return task.location?.position.start.line;
+}
+
+type LocalTaskChild = NonNullable<LocalTask["children"]>[number];
+
+function isSameChildSourceLine(child: LocalTaskChild, task: LocalTask) {
+  return (
+    child.path === task.location?.path &&
+    child.position.start.line === getSourceLine(task)
+  );
+}
+
+function containsTaskSourceLine(
+  children: LocalTaskChild[] | undefined,
+  task: LocalTask,
+): boolean {
+  return (
+    children?.some(
+      (child) =>
+        isSameChildSourceLine(child, task) ||
+        containsTaskSourceLine(child.children, task),
+    ) ?? false
+  );
+}
+
+function isNestedTimedLocalTask(
+  task: Task,
+  possibleParents: Task[],
+): task is WithTime<LocalTask> {
+  if (!isTimedLocalTimelineTask(task) || !task.location) {
+    return false;
+  }
+
+  return possibleParents.some((possibleParent) => {
+    if (
+      possibleParent === task ||
+      !isLocal(possibleParent) ||
+      !possibleParent.location
+    ) {
+      return false;
+    }
+
+    return (
+      getSourceLine(possibleParent)! < getSourceLine(task)! &&
+      containsTaskSourceLine(possibleParent.children, task)
+    );
+  });
+}
+
+export function hideNestedTimedLocalTasks(tasks: Task[]) {
+  return tasks.filter((task) => !isNestedTimedLocalTask(task, tasks));
+}
+
 export function toRenderableMarkdown(timeBlock: Node) {
   const formattedFirstLine = flow(
     getFirstLineAsMarkdown,
@@ -365,9 +424,7 @@ export function toRenderableMarkdown(timeBlock: Node) {
 
   const [, ...linesAfterFirst] = timeBlock.text.split("\n");
 
-  const nestedListItems = timeBlock.children
-    ?.map((child) => getIndentedText(child))
-    .join("\n");
+  const nestedListItems = getNestedListItems(timeBlock.children);
 
   return {
     listItem: formattedFirstLine,
@@ -376,13 +433,68 @@ export function toRenderableMarkdown(timeBlock: Node) {
   };
 }
 
-function getIndentedText(root: Node, parentIndentation: string = ""): string {
-  const firstLine = getFirstLineAsMarkdown(root);
+function getNestedListItems(children: Node[] | undefined) {
+  let hasSeenTimedItem = false;
+  let hasInsertedDivider = false;
+
+  return children
+    ?.flatMap((child) => {
+      const childHasTimeRange = hasLeadingTimeRange(child);
+      const shouldInsertDivider =
+        !childHasTimeRange && hasSeenTimedItem && !hasInsertedDivider;
+      const result: string[] = [];
+
+      if (shouldInsertDivider) {
+        result.push("", "---", "");
+        hasInsertedDivider = true;
+      }
+
+      if (childHasTimeRange) {
+        hasSeenTimedItem = true;
+      }
+
+      result.push(getIndentedText(child, "", { formatTimeRanges: true }));
+
+      return result;
+    })
+    .join("\n");
+}
+
+function hasLeadingTimeRange(node: Node) {
+  return timeRangeAtStartOfLineRegExp.test(getFirstLine(node.text));
+}
+
+function wrapLeadingTimeRangeInCodeSpan(line: string) {
+  const match = line.match(/^(\s*(?:\d+[.)]|[-*+])\s+(?:\[[^\]]\]\s+)?)(.*)$/u);
+  const prefix = match?.[1];
+  const text = match?.[2];
+
+  if (!prefix || !text || !timeRangeAtStartOfLineRegExp.test(text)) {
+    return line;
+  }
+
+  return (
+    prefix +
+    text.replace(
+      timeRangeAtStartOfLineRegExp,
+      (timeRange) => `\`${timeRange}\``,
+    )
+  );
+}
+
+function getIndentedText(
+  root: Node,
+  parentIndentation: string = "",
+  options: { formatTimeRanges?: boolean } = {},
+): string {
+  const firstLine = options.formatTimeRanges
+    ? wrapLeadingTimeRangeInCodeSpan(getFirstLineAsMarkdown(root))
+    : getFirstLineAsMarkdown(root);
   const [, ...linesAfterFirst] = root.text.split("\n");
 
   let listItemLineWithParagraphs = parentIndentation + firstLine;
 
-  if (linesAfterFirst) {
+  if (linesAfterFirst.length > 0) {
     const indentedParagraphs = indentLines(
       linesAfterFirst,
       parentIndentation + getIndentationForListParagraph(),
@@ -395,6 +507,6 @@ function getIndentedText(root: Node, parentIndentation: string = ""): string {
   return (root.children ?? []).reduce<string>((result, current) => {
     const indentation = "\t" + parentIndentation;
 
-    return result + "\n" + getIndentedText(current, indentation);
+    return result + "\n" + getIndentedText(current, indentation, options);
   }, listItemLineWithParagraphs);
 }

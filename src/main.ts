@@ -308,7 +308,7 @@ export default class DayPlanner extends Plugin {
 
     this.addCommand({
       id: "show-day-planner-today-note",
-      name: "Open today's Day Planner",
+      name: "Open today's Day Planner Enhanced",
       callback: async () => {
         const dailyNote = await this.periodicNotes.createDailyNoteIfNeeded(
           window.moment(),

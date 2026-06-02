@@ -12,6 +12,8 @@ interface UseColorProps {
   task: Task;
 }
 
+const currentTimeColor = "var(--planner-current-time-color, #10b981)";
+
 export function useStylesForRelationToNow(task: Task) {
   const relationToNow = $derived.by(() => {
     if (task.isAllDayEvent) {
@@ -34,14 +36,37 @@ export function useStylesForRelationToNow(task: Task) {
   });
 
   const borderColor = $derived(
-    relationToNow === "present" && !task.isAllDayEvent
-      ? "var(--color-accent)"
-      : "",
+    relationToNow === "present" && !task.isAllDayEvent ? currentTimeColor : "",
   );
+  const borderWidth = $derived(
+    relationToNow === "present" && !task.isAllDayEvent ? "1px" : "",
+  );
+  const zIndex = $derived(
+    relationToNow === "present" && !task.isAllDayEvent ? "1" : "",
+  );
+  const stripColor = $derived.by(() => {
+    if (relationToNow === "present" && !task.isAllDayEvent) {
+      return currentTimeColor;
+    }
 
-  const backgroundColor = $derived(
-    relationToNow === "past" ? "var(--background-secondary)" : "",
-  );
+    if (relationToNow === "past") {
+      return "var(--text-faint)";
+    }
+
+    return currentTimeColor;
+  });
+
+  const backgroundColor = $derived.by(() => {
+    if (relationToNow === "present" && !task.isAllDayEvent) {
+      return "";
+    }
+
+    if (relationToNow === "past") {
+      return "color-mix(in srgb, var(--background-secondary) 42%, var(--background-primary))";
+    }
+
+    return "";
+  });
 
   return {
     get backgroundColor() {
@@ -49,6 +74,15 @@ export function useStylesForRelationToNow(task: Task) {
     },
     get borderColor() {
       return borderColor;
+    },
+    get borderWidth() {
+      return borderWidth;
+    },
+    get stripColor() {
+      return stripColor;
+    },
+    get zIndex() {
+      return zIndex;
     },
   };
 }

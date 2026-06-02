@@ -20,6 +20,7 @@
 <style>
   .column {
     position: relative;
+    z-index: var(--timeline-column-z-index, auto);
 
     flex: 1 0 var(--timeline-flex-basis);
 

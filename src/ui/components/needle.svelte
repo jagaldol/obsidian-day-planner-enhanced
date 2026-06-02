@@ -34,12 +34,33 @@
 <div
   bind:this={el}
   style:top="{coords}px"
-  class="needle absolute-stretch-x"
+  class="needle-line absolute-stretch-x"
 ></div>
 
 <style>
-  .needle {
+  .needle-line {
+    pointer-events: none;
+
+    z-index: 1;
+    left: calc(-1 * var(--planner-ruler-width, 36px));
+
     height: 2px;
-    background-color: var(--color-accent);
+
+    background-color: var(--planner-current-time-color, #10b981);
+  }
+
+  .needle-line::before {
+    content: "";
+
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+
+    width: 10px;
+    height: 6px;
+
+    background-color: var(--planner-current-time-color, #10b981);
+    border-radius: 2px;
   }
 </style>

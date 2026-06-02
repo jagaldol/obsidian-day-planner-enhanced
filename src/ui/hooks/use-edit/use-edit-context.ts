@@ -128,7 +128,7 @@ export function useEditContext(props: {
   const combinedTasks = derived(
     [remoteTasks, tasksWithPendingUpdate],
     ([$remoteTasks, $tasksWithPendingUpdate]) =>
-      $remoteTasks.concat($tasksWithPendingUpdate),
+      t.hideNestedTimedLocalTasks($remoteTasks.concat($tasksWithPendingUpdate)),
   );
 
   const dayToDisplayedTasks = derived(combinedTasks, ($combinedTasks) => {

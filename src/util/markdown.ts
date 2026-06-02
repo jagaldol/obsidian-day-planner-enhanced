@@ -191,6 +191,7 @@ export interface Node {
   symbol: string;
   children?: Node[];
   status?: string;
+  task?: string;
 }
 
 export function getIndentationForListParagraph() {

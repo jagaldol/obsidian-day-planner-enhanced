@@ -13,8 +13,12 @@
   const {
     children,
     task,
+    showBottomSeparator = true,
+    showTopSeparator = true,
   }: {
     children: Snippet;
+    showBottomSeparator?: boolean;
+    showTopSeparator?: boolean;
     task: WithPlacing<WithTime<Task>>;
     use?: ActionArray;
   } = $props();
@@ -41,10 +45,21 @@
   style:--time-block-position="absolute"
   style:--time-block-top={$offset}
   style:--time-block-width={width}
-  style:--time-block-box-shadow="var(--planner-time-block-shadow-on-timeline)"
-  style:--time-block-border-color={relationToNow.borderColor}
+  style:--time-block-z-index={relationToNow.zIndex}
+  style:--time-block-padding="0"
+  style:--time-block-box-shadow="none"
+  style:--time-block-border-color="var(--background-modifier-border)"
+  style:--time-block-border-radius="0"
+  style:--time-block-border-width="0"
   style:--time-block-bg-color={coloredTimeline.backgroundColor ||
     relationToNow.backgroundColor}
+  style:--time-block-outline-color={relationToNow.borderColor}
+  style:--time-block-outline-width={relationToNow.borderWidth}
+  style:--time-block-separator-bottom-width={showBottomSeparator ? "1px" : "0"}
+  style:--time-block-separator-color="var(--background-modifier-border)"
+  style:--time-block-separator-top-width={showTopSeparator ? "1px" : "0"}
+  style:--time-block-strip-color={relationToNow.stripColor}
+  style:--time-block-strip-width="4px"
 >
   {@render children()}
 </svelte-css-wrapper>
