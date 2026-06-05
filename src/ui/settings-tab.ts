@@ -114,7 +114,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
           .addSlider((slider) =>
             slider
               .setLimits(1, 5, 1)
-              .setValue(Number(this.plugin.settings().zoomLevel) ?? 4)
+              .setValue(Number(this.plugin.settings().zoomLevel ?? 4))
               .setDynamicTooltip()
               .onChange((value: number) => {
                 this.update({ zoomLevel: value });
