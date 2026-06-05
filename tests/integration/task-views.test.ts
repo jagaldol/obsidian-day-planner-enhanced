@@ -85,6 +85,58 @@ describe("Task views", () => {
 - [x] Workshop notes`);
   });
 
+  test("Adds dividers at every timed and untimed child boundary without reordering", () => {
+    const { nestedListItems } = toRenderableMarkdown({
+      text: "10:00 - 13:00 Deep work",
+      symbol: "-",
+      children: [
+        {
+          text: "First untimed task",
+          symbol: "-",
+        },
+        {
+          text: "10:30 - 11:30 First timed task",
+          symbol: "-",
+        },
+        {
+          text: "Second untimed task",
+          symbol: "-",
+        },
+        {
+          text: "12:00 - 12:30 Second timed task",
+          symbol: "-",
+        },
+        {
+          text: "12:30 - 13:00 Third timed task",
+          symbol: "-",
+        },
+        {
+          text: "Final untimed task",
+          symbol: "-",
+        },
+      ],
+    });
+
+    expect(nestedListItems).toBe(`- First untimed task
+
+---
+
+- \`10:30 - 11:30\` First timed task
+
+---
+
+- Second untimed task
+
+---
+
+- \`12:00 - 12:30\` Second timed task
+- \`12:30 - 13:00\` Third timed task
+
+---
+
+- Final untimed task`);
+  });
+
   test.todo("Does not show code blocks in rendered markdown");
 
   test("With empty plannerHeading, indexes tasks outside the planner section", async () => {

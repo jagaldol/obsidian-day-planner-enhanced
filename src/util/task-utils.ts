@@ -434,24 +434,21 @@ export function toRenderableMarkdown(timeBlock: Node) {
 }
 
 function getNestedListItems(children: Node[] | undefined) {
-  let hasSeenTimedItem = false;
-  let hasInsertedDivider = false;
+  let previousChildHasTimeRange: boolean | undefined;
 
   return children
     ?.flatMap((child) => {
       const childHasTimeRange = hasLeadingTimeRange(child);
-      const shouldInsertDivider =
-        !childHasTimeRange && hasSeenTimedItem && !hasInsertedDivider;
       const result: string[] = [];
 
-      if (shouldInsertDivider) {
+      if (
+        previousChildHasTimeRange !== undefined &&
+        previousChildHasTimeRange !== childHasTimeRange
+      ) {
         result.push("", "---", "");
-        hasInsertedDivider = true;
       }
 
-      if (childHasTimeRange) {
-        hasSeenTimedItem = true;
-      }
+      previousChildHasTimeRange = childHasTimeRange;
 
       result.push(getIndentedText(child, "", { formatTimeRanges: true }));
 
