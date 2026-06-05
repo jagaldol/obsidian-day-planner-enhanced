@@ -6,6 +6,24 @@ import { isNotVoid } from "typed-assert";
 import replace from "vite-plugin-filter-replace";
 import fs from "node:fs";
 
+function replaceReduxRandomActionSeparator() {
+  return {
+    name: "replace-redux-random-action-separator",
+    renderChunk(code: string) {
+      const replaced = code.replace(
+        /\.split\(""\)\.join\("\."\)/g,
+        '.split("").join("_")',
+      );
+
+      if (replaced === code) {
+        return null;
+      }
+
+      return { code: replaced, map: null };
+    },
+  };
+}
+
 export default defineConfig((env) => ({
   define: {
     "process.env.NODE_ENV": JSON.stringify(
@@ -39,6 +57,7 @@ export default defineConfig((env) => ({
         ],
       },
     ]),
+    replaceReduxRandomActionSeparator(),
     svelte({
       compilerOptions: {
         dev: env.mode === "development",
