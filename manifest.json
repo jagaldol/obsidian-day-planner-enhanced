@@ -1,9 +1,9 @@
 {
   "id": "day-planner-enhanced",
   "name": "Day Planner Enhanced",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "minAppVersion": "0.16.0",
-  "description": "A day planner with an enhanced timeline UI and readable nested schedules",
+  "description": "A day planner with an enhanced timeline UI and readable nested schedules. Based on Day Planner 0.30.0.",
   "author": "jagaldol",
   "authorUrl": "https://github.com/jagaldol",
   "isDesktopOnly": false
