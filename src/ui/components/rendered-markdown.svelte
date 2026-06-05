@@ -273,7 +273,8 @@
     --nested-list-gap: 4px;
     --timed-dot-size: 5px;
     --timed-dot-top: 0.6em;
-    --timed-dot-center: calc(var(--timed-dot-top) + 2.5px);
+    --timed-dot-center: calc(var(--timed-dot-top) + var(--timed-dot-size) / 2);
+    --timeline-axis-x: 0.5px;
 
     position: relative;
 
@@ -300,7 +301,8 @@
 
     position: absolute;
     top: 0.64em;
-    left: -2px;
+    left: var(--timeline-axis-x);
+    transform: translateX(-50%);
 
     width: 4px;
     height: 4px;
@@ -313,7 +315,8 @@
   .lines-after-first-wrapper :global(ul > li:has(> p > code)::before) {
     z-index: 1;
     top: var(--timed-dot-top);
-    left: -2px;
+    left: var(--timeline-axis-x);
+    transform: translateX(-50%);
 
     width: var(--timed-dot-size);
     height: var(--timed-dot-size);
@@ -336,7 +339,8 @@
     z-index: 0;
     top: var(--timed-dot-center);
     bottom: calc(-1 * (var(--nested-list-gap) + var(--timed-dot-center)));
-    left: 0;
+    left: var(--timeline-axis-x);
+    transform: translateX(-50%);
 
     width: 1px;
 
