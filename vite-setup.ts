@@ -6,6 +6,7 @@ import yaml from "js-yaml";
 window.moment = moment;
 
 vi.mock("obsidian", () => ({
+  moment,
   TFile: vi.fn(),
   normalizePath: (p: string) => path.normalize(p),
   parseYaml: (source: string) => {

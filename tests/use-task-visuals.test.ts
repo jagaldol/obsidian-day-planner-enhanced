@@ -8,8 +8,8 @@ import { useTaskVisuals } from "../src/ui/hooks/use-task-visuals";
 
 import { baseTask } from "./edit/util/fixtures";
 
-vi.mock("obsidian", () => {
-  return {};
+vi.mock("obsidian", async () => {
+  return { moment: (await import("moment")).default };
 });
 
 function getBaseUseTaskProps() {

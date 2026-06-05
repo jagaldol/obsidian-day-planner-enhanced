@@ -1,4 +1,3 @@
-import type { Moment } from "moment";
 import { mount, unmount } from "svelte";
 import { derived, type Readable } from "svelte/store";
 
@@ -8,6 +7,7 @@ import type DayPlanner from "../../main";
 import type { Task, WithTime } from "../../task-types";
 import { ellipsis } from "../../util/ellipsis";
 import { getDiffInMinutes } from "../../util/moment";
+import type { Moment } from "../../util/obsidian-moment";
 import { getEndTime, getOneLineSummary } from "../../util/task-utils";
 import StatusBarWidget from "../components/status-bar-widget.svelte";
 

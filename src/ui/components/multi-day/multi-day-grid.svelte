@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { type Moment } from "moment";
   import { get } from "svelte/store";
   import { slide } from "svelte/transition";
 
@@ -8,6 +7,7 @@
   import { isToday } from "../../../global-store/current-time";
   import { getVisibleHours } from "../../../global-store/derived-settings";
   import { isOnWeekend } from "../../../util/moment";
+  import { type Moment } from "../../../util/obsidian-moment";
   import {
     getNextAdjacentRange,
     getNextWorkWeek,

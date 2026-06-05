@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Moment } from "moment";
   import { get } from "svelte/store";
   import { isNotVoid } from "typed-assert";
 
@@ -17,6 +16,7 @@
     getMinutesSinceMidnight,
     minutesToMomentOfDay,
   } from "../../util/moment";
+  import type { Moment } from "../../util/obsidian-moment";
   import {
     getBlockProps,
     getDayKey,

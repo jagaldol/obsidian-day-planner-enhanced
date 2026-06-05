@@ -32,7 +32,7 @@ export function createGestures(props: {
 
     gesture.on("panend", (event) => {
       if (pressed) {
-        setTimeout(() => {
+        window.setTimeout(() => {
           pressed = false;
         });
       }

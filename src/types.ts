@@ -1,5 +1,4 @@
 import type Fraction from "fraction.js";
-import type { Moment } from "moment";
 import type { MetadataCache, Vault } from "obsidian";
 import type { Readable, Writable } from "svelte/store";
 
@@ -18,6 +17,7 @@ import { EditMode } from "./ui/hooks/use-edit/types";
 import { useEditContext } from "./ui/hooks/use-edit/use-edit-context";
 import type { createRenderMarkdown } from "./util/create-render-markdown";
 import { type ShowPreview } from "./util/create-show-preview";
+import type { Moment } from "./util/obsidian-moment";
 import type { Scheduler } from "./util/scheduler";
 
 export type OnUpdateFn = (

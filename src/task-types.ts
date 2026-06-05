@@ -1,10 +1,10 @@
-import type { Moment } from "moment";
 import type { AttendeePartStat } from "node-ical";
 import type { Pos } from "obsidian";
 
 import type { HorizontalPlacing } from "./overlap/horizontal-placing";
 import type { ListItemEntryWithChildren } from "./redux/index/index-slice";
 import type { IcalConfig } from "./settings";
+import type { Moment } from "./util/obsidian-moment";
 
 export interface TaskLocation {
   path: string;

@@ -1,9 +1,12 @@
 import fs from "fs";
+import { loadEnvFile } from "node:process";
 import path from "path";
-import "dotenv/config";
-import fetch from "node-fetch";
 import { Command } from "commander";
 import { getErrorMessage } from "../src/util/error";
+
+if (fs.existsSync(".env")) {
+  loadEnvFile(".env");
+}
 
 const program = new Command();
 

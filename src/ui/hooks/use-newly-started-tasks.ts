@@ -1,9 +1,9 @@
 import { differenceBy } from "lodash/fp";
-import type { Moment } from "moment";
 import { derived, get, type Readable } from "svelte/store";
 
 import type { DayPlannerSettings } from "../../settings";
 import type { Task, WithTime } from "../../task-types";
+import type { Moment } from "../../util/obsidian-moment";
 import { getEndTime, getNotificationKey } from "../../util/task-utils";
 
 interface UseNewlyStartedTasksProps {

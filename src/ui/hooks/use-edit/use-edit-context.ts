@@ -1,5 +1,4 @@
 import { flow, uniqBy } from "lodash/fp";
-import type { Moment } from "moment";
 import { derived, type Readable, writable } from "svelte/store";
 
 import { addHorizontalPlacing } from "../../../overlap/overlap";
@@ -18,6 +17,7 @@ import type {
   PointerDateTime,
 } from "../../../types";
 import * as m from "../../../util/moment";
+import type { Moment } from "../../../util/obsidian-moment";
 import * as t from "../../../util/task-utils";
 
 import { createEditHandlers } from "./create-edit-handlers";

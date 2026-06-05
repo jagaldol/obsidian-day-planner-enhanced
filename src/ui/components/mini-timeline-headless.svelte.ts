@@ -1,11 +1,11 @@
 import { pipe } from "effect";
 import { filter, map } from "lodash/fp";
-import type { Moment } from "moment";
 
 import { addHorizontalPlacing } from "../../overlap/overlap";
 import type { Task, WithTime } from "../../task-types";
 import type { Signal } from "../../types";
 import { doesOverlapWithRange } from "../../util/moment";
+import type { Moment } from "../../util/obsidian-moment";
 import * as t from "../../util/task-utils";
 
 export class MiniTimeline {

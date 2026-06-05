@@ -1,7 +1,7 @@
 import { isEqual, uniqBy } from "lodash/fp";
-import type { Moment } from "moment";
 import { derived, type Readable } from "svelte/store";
 
+import type { Moment } from "../../util/obsidian-moment";
 import { getDayKey } from "../../util/task-utils";
 
 export function useVisibleDays(

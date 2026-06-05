@@ -3,7 +3,7 @@
   import type { LocalTask } from "../../task-types";
   import { getMinutesSinceMidnight } from "../../util/moment";
   import { createTimestamp, toRenderableMarkdown } from "../../util/task-utils";
-  import { addLineDataToCheckboxes } from "../../util/dom";
+  import { addLineDataToCheckboxes, isHTMLElement } from "../../util/dom";
   import { on } from "svelte/events";
   import type { Snippet } from "svelte";
 
@@ -15,13 +15,13 @@
   type NestedListItem = NonNullable<LocalTask["children"]>[number];
 
   function stopPropagationForElWithLineData(event: Event) {
-    if (event.target instanceof HTMLElement && event.target.dataset.line) {
+    if (isHTMLElement(event.target) && event.target.dataset.line) {
       event.stopPropagation();
     }
   }
 
   function getLineNumberFromEvent(event: PointerEvent) {
-    if (!(event.target instanceof HTMLElement)) {
+    if (!isHTMLElement(event.target)) {
       return;
     }
 

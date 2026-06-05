@@ -62,7 +62,7 @@ This is the recommended way to install and update the plugin while it is distrib
 ### Manual installation
 
 1. Open the [latest release](https://github.com/jagaldol/obsidian-day-planner-enhanced/releases/latest).
-2. Download the plugin zip file, or download these release assets individually:
+2. Download these release assets:
    - `main.js`
    - `manifest.json`
    - `styles.css`

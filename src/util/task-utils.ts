@@ -1,6 +1,5 @@
 import { produce } from "immer";
 import { flow } from "lodash/fp";
-import type { Moment } from "moment";
 import { get } from "svelte/store";
 import { isNotVoid } from "typed-assert";
 
@@ -42,6 +41,7 @@ import {
   minutesToMoment,
   minutesToMomentOfDay,
 } from "./moment";
+import type { Moment } from "./obsidian-moment";
 import { deleteProps, updateScheduledPropInText } from "./props";
 
 export function getEndMinutes(task: {

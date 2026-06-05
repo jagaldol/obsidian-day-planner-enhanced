@@ -1,15 +1,17 @@
-import type { Moment } from "moment";
 import { derived, fromStore, readable } from "svelte/store";
+
+import type { Moment } from "../util/obsidian-moment";
+import { moment } from "../util/obsidian-moment";
 
 const currentTimeRefreshIntervalMillis = 5 * 1000;
 
-export const currentTime = readable<Moment>(window.moment(), (set) => {
-  const interval = setInterval(() => {
-    set(window.moment());
+export const currentTime = readable<Moment>(moment(), (set) => {
+  const interval = window.setInterval(() => {
+    set(moment());
   }, currentTimeRefreshIntervalMillis);
 
   return () => {
-    clearInterval(interval);
+    window.clearInterval(interval);
   };
 });
 

@@ -1,4 +1,3 @@
-import type { Moment } from "moment";
 import { normalizePath, type TFile } from "obsidian";
 import {
   getAllDailyNotes,
@@ -9,6 +8,8 @@ import {
   DEFAULT_DAILY_NOTE_FORMAT,
   getDailyNoteSettings,
 } from "obsidian-daily-notes-interface";
+
+import type { Moment } from "../util/obsidian-moment";
 
 export class PeriodicNotes {
   readonly DEFAULT_DAILY_NOTE_FORMAT = DEFAULT_DAILY_NOTE_FORMAT;

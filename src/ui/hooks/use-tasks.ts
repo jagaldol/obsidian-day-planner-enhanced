@@ -1,4 +1,3 @@
-import type { Moment } from "moment";
 import { derived, type Readable, type Writable } from "svelte/store";
 
 import type { PeriodicNotes } from "../../service/periodic-notes";
@@ -6,6 +5,7 @@ import { WorkspaceFacade } from "../../service/workspace-facade";
 import type { DayPlannerSettings } from "../../settings";
 import type { LocalTask, RemoteTask, Task, WithTime } from "../../task-types";
 import type { OnEditAbortedFn, OnUpdateFn, PointerDateTime } from "../../types";
+import type { Moment } from "../../util/obsidian-moment";
 import { getUpdateTrigger } from "../../util/store";
 
 import { useEditContext } from "./use-edit/use-edit-context";

@@ -1,5 +1,4 @@
 import { omit } from "lodash/fp";
-import type { Moment } from "moment";
 import {
   type Subscriber,
   type Updater,
@@ -8,6 +7,7 @@ import {
 } from "svelte/store";
 
 import { getId } from "../../util/id";
+import type { Moment } from "../../util/obsidian-moment";
 
 export function useDateRanges() {
   const ranges: Writable<Record<string, Moment[]>> = writable({});

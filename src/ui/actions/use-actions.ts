@@ -11,7 +11,7 @@ export type SvelteHTMLActionType<P> = (
   params?: P,
 ) => SvelteActionReturnType<P>;
 
-export type HTMLActionEntry<P extends any = any> =
+export type HTMLActionEntry<P = unknown> =
   | SvelteHTMLActionType<P>
   | [SvelteHTMLActionType<P>, P];
 
@@ -22,7 +22,7 @@ export type SvelteSVGActionType<P> = (
   params?: P,
 ) => SvelteActionReturnType<P>;
 
-export type SVGActionEntry<P extends any = any> =
+export type SVGActionEntry<P = unknown> =
   | SvelteSVGActionType<P>
   | [SvelteSVGActionType<P>, P];
 
@@ -34,7 +34,7 @@ export function useActions(
   node: HTMLElement | SVGElement,
   actions: ActionArray,
 ) {
-  const actionReturns: SvelteActionReturnType<any>[] = [];
+  const actionReturns: SvelteActionReturnType<unknown>[] = [];
 
   if (actions) {
     for (let i = 0; i < actions.length; i++) {

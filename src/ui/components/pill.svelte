@@ -1,12 +1,12 @@
 <script lang="ts">
+  import type { Component } from "svelte";
+
   const {
     key,
     value,
     onclick,
   }: {
-    // todo: once lucide-svelte supports Svelte 5, remove this
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    key?: any;
+    key?: unknown;
     value: string;
     onclick?: () => void;
   } = $props();
@@ -17,7 +17,7 @@
     {#if !key}{:else if typeof key === "string"}
       {key}:
     {:else}
-      {@const Component = key}
+      {@const Component = key as Component<Record<string, unknown>>}
 
       <Component class="planner-pill-icon" />
     {/if}

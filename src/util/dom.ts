@@ -5,6 +5,22 @@ import {
   scrollSpeedPixelsPerAnimationFrame,
 } from "../constants";
 
+export function isHTMLElement(value: unknown): value is HTMLElement {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const node = value as Node;
+
+  if (typeof node.instanceOf === "function") {
+    return node.instanceOf(HTMLElement);
+  }
+
+  return (
+    value instanceof (node.ownerDocument?.defaultView ?? window).HTMLElement
+  );
+}
+
 export function isTouchEvent(event: PointerEvent) {
   return ["pen", "touch"].includes(event.pointerType);
 }
@@ -115,7 +131,7 @@ export function createAutoScroll() {
   function scroll(props: ScrollProps) {
     const { el, direction } = props;
 
-    requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
       if (!scrolling) {
         return;
       }
@@ -158,7 +174,7 @@ export function addLineDataToCheckboxes(
     (checkbox, i) => {
       const taskLine = taskLines[i];
 
-      if (!(checkbox instanceof HTMLElement) || !taskLine) {
+      if (!isHTMLElement(checkbox) || !taskLine) {
         return;
       }
 
@@ -171,7 +187,7 @@ export async function readCheckboxLineData(
   event: PointerEvent,
   checkFn: (line: number) => Promise<void>,
 ) {
-  if (!(event.target instanceof HTMLElement)) {
+  if (!isHTMLElement(event.target)) {
     return;
   }
 

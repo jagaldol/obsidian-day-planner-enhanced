@@ -58,9 +58,9 @@
 
   .start-end-wrapper {
     display: flex;
-    justify-content: space-between;
-    row-gap: var(--size-4-2);
     flex-wrap: wrap;
+    row-gap: var(--size-4-2);
+    justify-content: space-between;
   }
 
   .buttons-wrapper {

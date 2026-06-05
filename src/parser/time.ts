@@ -1,6 +1,5 @@
-import type { Moment } from "moment/moment";
-
 import { timeRegExp } from "../regexp";
+import type { Moment } from "../util/obsidian-moment";
 
 export function parseTime(asText: string, day: Moment) {
   const match = asText.match(timeRegExp);

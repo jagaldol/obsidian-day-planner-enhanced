@@ -1,10 +1,10 @@
 import { groupBy } from "lodash/fp";
-import type { Moment } from "moment";
 import { isNotVoid } from "typed-assert";
 
 import { addHorizontalPlacing } from "../../overlap/overlap";
 import type { LocalTask } from "../../task-types";
 import { strictParse } from "../../util/moment";
+import type { Moment } from "../../util/obsidian-moment";
 import { clamp, getDayKey } from "../../util/task-utils";
 import { createAppSelector } from "../create-app-selector";
 import { selectVisibleDays } from "../global-slice";

@@ -1,10 +1,11 @@
-import type { App } from "obsidian";
-
-const metadataDumpPath =
-  ".obsidian/plugins/day-planner-enhanced/fixtures/metadata-dump";
+import { normalizePath, type App } from "obsidian";
 
 export function createDumpMetadataCommand(app: App) {
   return async () => {
+    const metadataDumpPath = normalizePath(
+      `${app.vault.configDir}/plugins/day-planner-enhanced/fixtures/metadata-dump`,
+    );
+
     const exists = await app.vault.adapter.exists(metadataDumpPath);
 
     if (exists) {

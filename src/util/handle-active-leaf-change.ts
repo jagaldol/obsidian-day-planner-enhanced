@@ -1,8 +1,8 @@
-import type { Moment } from "moment";
 import { FileView, WorkspaceLeaf } from "obsidian";
 import { get, type Writable } from "svelte/store";
 
 import type { PeriodicNotes } from "../service/periodic-notes";
+import type { Moment } from "../util/obsidian-moment";
 
 export function handleActiveLeafChange(
   leaf: WorkspaceLeaf | null,

@@ -1,6 +1,5 @@
-import type { Moment } from "moment";
-
 import { clockFormat } from "../constants";
+import type { Moment } from "../util/obsidian-moment";
 
 export type ClockMoments = [Moment, Moment];
 

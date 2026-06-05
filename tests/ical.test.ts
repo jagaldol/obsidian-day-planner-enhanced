@@ -23,7 +23,8 @@ import {
   InMemoryVault,
 } from "./util/fakes";
 
-vi.mock("obsidian", () => ({
+vi.mock("obsidian", async () => ({
+  moment: (await import("moment")).default,
   request: vi.fn(),
 }));
 

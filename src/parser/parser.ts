@@ -1,8 +1,8 @@
-import type { Moment } from "moment";
 import { isNotVoid } from "typed-assert";
 
 import { timeRangeRegExp } from "../regexp";
 import { getDiffInMinutes } from "../util/moment";
+import type { Moment } from "../util/obsidian-moment";
 
 import { parseTime } from "./time";
 

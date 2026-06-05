@@ -1,4 +1,3 @@
-import type { Moment } from "moment/moment";
 import {
   FileView,
   MarkdownView,
@@ -7,6 +6,8 @@ import {
   WorkspaceLeaf,
 } from "obsidian";
 import { isInstanceOf, isNotVoid } from "typed-assert";
+
+import type { Moment } from "../util/obsidian-moment";
 
 import type { PeriodicNotes } from "./periodic-notes";
 import type { VaultFacade } from "./vault-facade";

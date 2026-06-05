@@ -26,7 +26,7 @@ const enqueueJob =
 const cancelJob =
   window.cancelIdleCallback ||
   ((id) => {
-    clearTimeout(id);
+    window.clearTimeout(id);
   });
 
 export type Scheduler<T> = ReturnType<typeof createBackgroundBatchScheduler<T>>;

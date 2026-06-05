@@ -1,12 +1,10 @@
-import type { Moment } from "moment/moment";
 import { isExactly } from "typed-assert";
 
 import type { DayPlannerSettings } from "../settings";
 import type { RelationToNow } from "../types";
 
+import { moment, type Moment } from "./obsidian-moment";
 import { getDayKey } from "./task-utils";
-
-const moment = window.moment;
 
 const defaultTimestampFormat = "hh:mm";
 

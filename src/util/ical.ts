@@ -1,4 +1,3 @@
-import moment, { type Moment } from "moment";
 import { tz } from "moment-timezone";
 import ical, { type AttendeePartStat } from "node-ical";
 
@@ -9,6 +8,7 @@ import type { WithIcalConfig } from "../types";
 import { getId } from "./id";
 import { liftToArray } from "./lift";
 import * as m from "./moment";
+import { moment, type Moment } from "./obsidian-moment";
 
 export function canHappenAfter(icalEvent: ical.VEvent, date: Date) {
   if (!icalEvent.rrule) {

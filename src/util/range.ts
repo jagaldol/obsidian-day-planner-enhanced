@@ -1,9 +1,9 @@
 import { range } from "lodash/fp";
-import type { Moment } from "moment";
 import { match } from "ts-pattern";
 
 import { defaultRangeDayFormat } from "../constants";
 import type { DayPlannerSettings } from "../settings";
+import type { Moment } from "../util/obsidian-moment";
 
 import { getMomentFromDayOfWeek } from "./moment";
 
