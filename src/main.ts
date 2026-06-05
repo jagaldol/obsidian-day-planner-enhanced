@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware unsafe rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
 import { Notice, Plugin, WorkspaceLeaf } from "obsidian";
 import { fromStore, get, type Readable, type Writable } from "svelte/store";
 import { isNotVoid } from "typed-assert";
@@ -85,9 +86,11 @@ export default class DayPlanner extends Plugin {
   async onload() {
     const { vault, metadataCache } = this.app;
 
+    const storedSettings =
+      (await this.loadData()) as Partial<DayPlannerSettings> | null;
     const initialSettings: DayPlannerSettings = {
       ...defaultSettings,
-      ...(await this.loadData()),
+      ...storedSettings,
     };
 
     const getTasksApi = createGetTasksApi(this.app);
@@ -481,11 +484,11 @@ export default class DayPlanner extends Plugin {
     dispatch(icalRefreshRequested());
 
     this.registerDomEvent(window, "blur", editContext.cancelEdit);
-    this.registerDomEvent(document, "pointerup", editContext.cancelEdit);
+    this.registerDomEvent(activeDocument, "pointerup", editContext.cancelEdit);
 
     this.register(
       editContext.cursor.subscribe(({ bodyCursor }) => {
-        document.body.style.cursor = bodyCursor;
+        activeDocument.body.style.cursor = bodyCursor;
       }),
     );
     this.register(

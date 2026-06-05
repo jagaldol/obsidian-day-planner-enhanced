@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware unsafe rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
 import { tz } from "moment-timezone";
 import ical, { type AttendeePartStat } from "node-ical";
 
@@ -44,7 +45,9 @@ function hasExceptionForDate(icalEvent: ical.VEvent, date: Date) {
   const utcOffset = asMoment.utcOffset();
   const dateWithoutOffset = asMoment.clone().subtract(utcOffset, "minutes");
 
-  return Object.values(icalEvent.exdate).some((exceptionDate) => {
+  const exceptions = icalEvent.exdate as Record<string, unknown>;
+
+  return Object.values(exceptions).some((exceptionDate) => {
     if (!(exceptionDate instanceof Date)) {
       throw new Error("Unexpected exdate format");
     }

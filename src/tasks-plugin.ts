@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware unsafe rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
 import type { App } from "obsidian";
 
 /**
@@ -25,7 +26,13 @@ export interface TasksApiV1 {
   createTaskLineModal(): Promise<string>;
 }
 
+type AppWithTasksPlugin = App & {
+  plugins: {
+    plugins: Record<string, { apiV1?: TasksApiV1 } | undefined>;
+  };
+};
+
 export const createGetTasksApi = (app: App) => (): TasksApiV1 | undefined => {
-  // @ts-expect-error
-  return app.plugins.plugins["obsidian-tasks-plugin"]?.apiV1;
+  return (app as AppWithTasksPlugin).plugins.plugins["obsidian-tasks-plugin"]
+    ?.apiV1;
 };

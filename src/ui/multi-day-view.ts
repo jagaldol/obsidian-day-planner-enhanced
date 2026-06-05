@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware unsafe rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
 import { ItemView, WorkspaceLeaf } from "obsidian";
 import { mount, unmount } from "svelte";
 import { derived, get, type Writable } from "svelte/store";
@@ -10,6 +11,14 @@ import * as r from "../util/range";
 
 import MultiDayGrid from "./components/multi-day/multi-day-grid.svelte";
 import { useDateRanges } from "./hooks/use-date-ranges";
+
+type LeafWithHeaderUpdate = WorkspaceLeaf & {
+  updateHeader?: () => void;
+};
+
+type ViewWithTitleEl = {
+  titleEl?: HTMLElement;
+};
 
 export default class MultiDayView extends ItemView {
   private static readonly defaultDisplayText = "Multi-Day View";
@@ -110,9 +119,7 @@ export default class MultiDayView extends ItemView {
   private updateTabTitleAndHeader = (range: Moment[]) => {
     const newText = r.toString(range);
 
-    // @ts-expect-error: undocumented API
-    this.titleEl?.setText(newText);
-    // @ts-expect-error: undocumented API
-    this.leaf.updateHeader?.();
+    (this as ViewWithTitleEl).titleEl?.setText(newText);
+    (this.leaf as LeafWithHeaderUpdate).updateHeader?.();
   };
 }

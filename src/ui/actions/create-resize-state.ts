@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware unsafe rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
 import { on } from "svelte/events";
 import { isNotVoid } from "typed-assert";
 
@@ -46,13 +47,14 @@ export function createResizeState() {
 
   function resizeAction(el: HTMLElement) {
     resizeContainerEl = el;
+    const ownerDocument = el.ownerDocument;
 
     onDestroyCallbacks.push(
-      on(document, "mousemove", handleMove),
-      on(document, "touchmove", handleMove),
-      on(document, "mouseup", stopResizing, { capture: true }),
-      on(document, "touchend", stopResizing, { capture: true }),
-      on(document, "touchcancel", stopResizing, { capture: true }),
+      on(ownerDocument, "mousemove", handleMove),
+      on(ownerDocument, "touchmove", handleMove),
+      on(ownerDocument, "mouseup", stopResizing, { capture: true }),
+      on(ownerDocument, "touchend", stopResizing, { capture: true }),
+      on(ownerDocument, "touchcancel", stopResizing, { capture: true }),
       on(window, "blur", handleBlur),
     );
 

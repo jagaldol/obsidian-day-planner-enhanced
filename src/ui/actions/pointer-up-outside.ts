@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware unsafe rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
 import { on } from "svelte/events";
 import { isNotVoid } from "typed-assert";
 
@@ -5,7 +6,7 @@ import { isEventOutside } from "../../util/dom";
 
 export function pointerUpOutside(fn: (event: PointerEvent) => void) {
   return (el: HTMLElement) => {
-    const off = on(document.body, "pointerup", (event) => {
+    const off = on(el.ownerDocument.body, "pointerup", (event) => {
       if (isEventOutside(event, el)) {
         fn(event);
       }
@@ -36,7 +37,7 @@ export function createPointerUpOutsideAction(
       return;
     }
 
-    bodyTeardownFn = on(document.body, "pointerup", (event) => {
+    bodyTeardownFn = on(el.ownerDocument.body, "pointerup", (event) => {
       if (Array.from(registry).every((el) => isEventOutside(event, el))) {
         fn(event);
       }

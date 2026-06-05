@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.svelte",
+    "tests/**/*.ts",
+    "scripts/**/*.ts",
+    "vite-setup.ts",
+    "vite.config.mts"
+  ],
+  "exclude": [
+    "node_modules",
+    "vendor",
+    "main.js",
+    "styles.css"
+  ]
+}
