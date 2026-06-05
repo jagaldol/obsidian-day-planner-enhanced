@@ -44,18 +44,25 @@ jobs:
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
-          cat > release-notes.md <<'EOF'
-          Day Planner Enhanced ${{ steps.version.outputs.tag }} GitHub release.
+          # Extract the section for this version from CHANGELOG.md (## <tag> ...)
+          awk -v ver="$TAG" '
+            $0 ~ "^## "ver"([ \t]|$)" { flag=1; next }
+            /^## / && flag { exit }
+            flag { print }
+          ' CHANGELOG.md > release-notes.md
 
-          Install with BRAT or download the release assets manually.
-          EOF
+          # Fall back to a generic note if the version is not in the changelog
+          if [ ! -s release-notes.md ] || ! grep -q '[^[:space:]]' release-notes.md; then
+            printf 'Day Planner Enhanced %s.\n\nInstall with BRAT or download the release assets manually.\n' "$TAG" > release-notes.md
+          fi
 
-          gh release create "${{ steps.version.outputs.tag }}" \
+          gh release create "$TAG" \
             main.js \
             manifest.json \
             styles.css \
-            "day-planner-enhanced-${{ steps.version.outputs.tag }}.zip" \
-            --title "Day Planner Enhanced ${{ steps.version.outputs.tag }}" \
+            "day-planner-enhanced-$TAG.zip" \
+            --title "Day Planner Enhanced $TAG" \
             --notes-file release-notes.md \
             --latest
