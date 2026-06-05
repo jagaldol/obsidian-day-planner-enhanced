@@ -15,7 +15,7 @@ This document describes how to make a code contribution to the repo.
 
 **IF YOU SUBMIT A PR WIHOUT DISCUSSING YOUR IMPLEMENTATION PLAN WITH THE MAINTAINER, YOUR PR MIGHT BE CLOSED!**
 
-1. First describe the change via an [issue](https://github.com/ivan-lednev/obsidian-day-planner/issues).
+1. First describe the change via an [issue](https://github.com/jagaldol/obsidian-day-planner-enhanced/issues).
    1. Describe a problem you're trying to solve.
    1. Describe a proposed solution.
 1. Get an approval from the maintainer **BEFORE YOU SUBMIT A PR**.
@@ -23,10 +23,10 @@ This document describes how to make a code contribution to the repo.
 
 ## How to set up a development environment
 
-1. Fork the repo: https://github.com/ivan-lednev/obsidian-day-planner
+1. Fork the repo: https://github.com/jagaldol/obsidian-day-planner-enhanced
 1. Create a test vault and go to the plugins directory: `cd <your-vault>/.obsidian/plugins`
-1. Clone your fork: `git clone https://github.com/ivan-lednev/obsidian-day-planner`
-1. Move to the folder: `cd obsidian-day-planner`
+1. Clone your fork: `git clone https://github.com/jagaldol/obsidian-day-planner-enhanced`
+1. Move to the folder: `cd obsidian-day-planner-enhanced`
 1. Install dependencies: `npm install`
 1. Watch the changes: `npm run dev`
 1. Now when you change anything, reload Obsidian to see the updates

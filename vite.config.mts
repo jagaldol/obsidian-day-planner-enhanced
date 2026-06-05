@@ -33,10 +33,6 @@ export default defineConfig((env) => ({
             ),
           },
           {
-            from: "supportBanner",
-            to: JSON.stringify(fs.readFileSync("./support-banner.md", "utf-8")),
-          },
-          {
             from: "envMode",
             to: JSON.stringify(env.mode),
           },

@@ -21,7 +21,7 @@ export class DayPlannerReleaseNotesView extends ItemView {
 
     await MarkdownPreviewView.render(
       this.app,
-      supportBanner + changelogMd,
+      changelogMd,
       container,
       "/",
       this,
