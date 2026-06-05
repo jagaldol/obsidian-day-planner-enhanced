@@ -1,8 +1,10 @@
 /**
  * This is needed for iOS Safari. Obsidian might add its own shims. We don't want to mess with those.
  */
+const idleWindow: Partial<Window> = window;
+
 const enqueueJob =
-  window.requestIdleCallback ||
+  idleWindow.requestIdleCallback?.bind(window) ||
   ((callback, options) => {
     const optionsWithDefaults = options || {};
     const relaxation = 1;
@@ -24,7 +26,7 @@ const enqueueJob =
   });
 
 const cancelJob =
-  window.cancelIdleCallback ||
+  idleWindow.cancelIdleCallback?.bind(window) ||
   ((id) => {
     window.clearTimeout(id);
   });

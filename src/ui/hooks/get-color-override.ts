@@ -12,7 +12,7 @@ export function getColorOverride(
   );
 
   if (colorOverride) {
-    return isDarkMode ? colorOverride?.darkModeColor : colorOverride?.color;
+    return isDarkMode ? colorOverride.darkModeColor : colorOverride.color;
   }
 
   return "var(--time-block-bg-color, var(--background-primary))";

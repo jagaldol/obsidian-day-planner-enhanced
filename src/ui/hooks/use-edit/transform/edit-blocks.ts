@@ -107,11 +107,7 @@ function editBlock(
     return mirror(updated, newCoords);
   }
 
-  if (changeType === "move") {
-    return move(block, newCoords);
-  }
-
-  throw new Error("Invalid change type");
+  return move(block, newCoords);
 }
 
 export function editBlocks(
