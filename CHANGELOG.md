@@ -4,6 +4,14 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.30.0**, and follows its own versioning.
 
+## 0.1.10
+
+### ✨ Other improvements
+
+- Removed direct dependencies flagged by the automated Obsidian community review by replacing `lodash`, `js-yaml`, and `eslint-plugin-import`.
+- Replaced lodash/fp usage with small internal utilities.
+- Switched coverage from Istanbul instrumentation to V8 coverage so Svelte rune source files can be covered without compile errors.
+
 ## 0.1.5
 
 ### 🐞 Fixed issues
