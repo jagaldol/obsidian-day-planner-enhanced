@@ -4,6 +4,12 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.30.0**, and follows its own versioning.
 
+## 0.1.5
+
+### 🐞 Fixed issues
+
+- Fixed the GitHub release workflow attestation step so release assets can be published with build provenance.
+
 ## 0.1.4
 
 ### 🐞 Fixed issues
