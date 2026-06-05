@@ -19,8 +19,8 @@ Day Planner Enhanced is integrated with
 
 - [Table of contents](#table-of-contents)
 - [Installation](#installation)
-  - [Install with BRAT](#install-with-brat)
-  - [Manual installation](#manual-installation)
+  - [Install from Obsidian](#install-from-obsidian)
+  - [Manual installation fallback](#manual-installation-fallback)
   - [Updating](#updating)
 - [How to use it](#how-to-use-it)
   - [1. Showing events from your daily notes](#1-showing-events-from-your-daily-notes)
@@ -40,26 +40,20 @@ Day Planner Enhanced is integrated with
 
 ## Installation
 
-Day Planner Enhanced is distributed from GitHub Releases. It is not currently listed in Obsidian's community plugin directory, so it will not appear in Obsidian's built-in plugin search yet.
+Day Planner Enhanced is listed in Obsidian's community plugin directory and can be installed from Obsidian's built-in community plugin browser.
 
 Before installing, disable the original Day Planner plugin if it is already enabled in the same vault. This fork has its own plugin identity, but it still shares some Day Planner concepts, commands, and view behavior from the upstream codebase.
 
-### Install with BRAT
+### Install from Obsidian
 
-This is the recommended way to install and update the plugin while it is distributed as a GitHub release.
+This is the recommended way to install and update the plugin.
 
-1. Install and enable [BRAT](https://github.com/TfTHacker/obsidian42-brat) from Obsidian's community plugins.
-2. Open BRAT settings.
-3. Add this repository as a beta plugin:
+1. Open **Settings → Community plugins** in Obsidian.
+2. Select **Browse**.
+3. Search for `Day Planner Enhanced`.
+4. Install and enable the plugin.
 
-   ```text
-   https://github.com/jagaldol/obsidian-day-planner-enhanced
-   ```
-
-4. Enable `Day Planner Enhanced` in Obsidian's community plugin settings.
-5. Reload Obsidian if the plugin does not appear immediately.
-
-### Manual installation
+### Manual installation fallback
 
 1. Open the [latest release](https://github.com/jagaldol/obsidian-day-planner-enhanced/releases/latest).
 2. Download these release assets:
@@ -78,7 +72,7 @@ This is the recommended way to install and update the plugin while it is distrib
 
 ### Updating
 
-- If you installed with BRAT, update through BRAT.
+- If you installed from Obsidian's community plugin browser, update through Obsidian's community plugin settings.
 - If you installed manually, download the latest release assets and replace the existing files in the plugin folder.
 - Restart or reload Obsidian after replacing plugin files.
 

@@ -61,7 +61,7 @@ jobs:
 
           # Fall back to a generic note if the version is not in the changelog
           if [ ! -s release-notes.md ] || ! grep -q '[^[:space:]]' release-notes.md; then
-            printf 'Day Planner Enhanced %s.\n\nInstall with BRAT or download the release assets manually.\n' "$TAG" > release-notes.md
+            printf 'Day Planner Enhanced %s.\n\nInstall from Obsidian community plugins or download the release assets manually.\n' "$TAG" > release-notes.md
           fi
 
           gh release create "$TAG" \
