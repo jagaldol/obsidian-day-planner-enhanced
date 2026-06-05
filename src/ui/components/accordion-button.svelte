@@ -19,6 +19,8 @@
   </div>
 </ControlButton>
 
+<!-- eslint-enable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -->
+
 <style>
   :global(.planner-clickable-icon) {
     padding: var(--size-4-1) 0 var(--size-2-1) var(--size-4-4);

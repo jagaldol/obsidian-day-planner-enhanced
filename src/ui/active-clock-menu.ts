@@ -84,3 +84,4 @@ export function createActiveClockMenu(props: {
   // The method is asking for a MouseEvent, but it works just fine on mobile
   menu.showAtMouseEvent(event as MouseEvent);
 }
+/* eslint-enable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return */

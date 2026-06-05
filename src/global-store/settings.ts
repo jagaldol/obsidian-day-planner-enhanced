@@ -6,3 +6,4 @@ import { defaultSettings } from "../settings";
 
 export const settings = writable<DayPlannerSettings>(defaultSettings);
 export const settingsSignal = fromStore(settings);
+/* eslint-enable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return */

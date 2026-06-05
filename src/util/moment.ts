@@ -156,3 +156,4 @@ export function getDayKeysInRange(start: Moment, end: Moment) {
 export function strictParse(value: string) {
   return window.moment(value, window.moment.ISO_8601, true);
 }
+/* eslint-enable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return */

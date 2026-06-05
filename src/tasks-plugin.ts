@@ -36,3 +36,4 @@ export const createGetTasksApi = (app: App) => (): TasksApiV1 | undefined => {
   return (app as AppWithTasksPlugin).plugins.plugins["obsidian-tasks-plugin"]
     ?.apiV1;
 };
+/* eslint-enable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return */
