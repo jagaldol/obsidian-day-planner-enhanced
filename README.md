@@ -4,6 +4,8 @@ Day Planner Enhanced is a community plugin for [Obsidian](https://obsidian.md/).
 
 This plugin is an independent MIT-licensed fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner).
 
+<img src="./assets/day-planner-enhanced-ui-changes.png" alt="Day Planner Enhanced UI changes showing nested schedule timeline improvements" width="100%">
+
 - 🪲 [Report bugs and suggest features](https://github.com/jagaldol/obsidian-day-planner-enhanced/issues)
 - 🛠️ [Submit pull requests](./CONTRIBUTING.md)
 
