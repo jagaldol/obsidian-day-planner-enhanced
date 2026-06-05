@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
 import Fraction from "fraction.js";
-import { partition } from "lodash/fp";
 import { isNotVoid } from "typed-assert";
 
 import type { BaseTask, WithPlacing, WithTime } from "../task-types";
 import type { Overlap } from "../types";
+import { partition } from "../util/collection";
 import { getMinutesSinceMidnight } from "../util/moment";
 import { getEndMinutes } from "../util/task-utils";
 

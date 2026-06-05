@@ -1,4 +1,3 @@
-import { noop } from "lodash/fp";
 import type { Moment } from "moment/moment";
 import moment from "moment/moment";
 import { writable } from "svelte/store";
@@ -15,6 +14,8 @@ import type { PointerDateTime } from "../../../src/types";
 import { useEditContext } from "../../../src/ui/hooks/use-edit/use-edit-context";
 
 import { baseTasks } from "./fixtures";
+
+const noop = () => undefined;
 
 function createProps({
   remoteTasks,

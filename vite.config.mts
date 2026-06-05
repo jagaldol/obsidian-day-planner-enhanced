@@ -84,7 +84,7 @@ export default defineConfig((env) => ({
     setupFiles: ["vite-setup.ts"],
     coverage: {
       reporter: ["html"],
-      provider: "istanbul",
+      provider: "v8",
       include: ["src/**/*.ts"],
     },
     alias: {

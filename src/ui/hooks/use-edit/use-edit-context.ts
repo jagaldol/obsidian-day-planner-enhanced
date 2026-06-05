@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
-import { flow, uniqBy } from "lodash/fp";
 import { derived, type Readable, writable } from "svelte/store";
 
 import { addHorizontalPlacing } from "../../../overlap/overlap";
@@ -17,6 +16,7 @@ import type {
   OnUpdateFn,
   PointerDateTime,
 } from "../../../types";
+import { uniqBy } from "../../../util/collection";
 import * as m from "../../../util/moment";
 import type { Moment } from "../../../util/obsidian-moment";
 import * as t from "../../../util/task-utils";
@@ -28,24 +28,23 @@ import type { EditOperation } from "./types";
 import { useEditActions } from "./use-edit-actions";
 
 function groupByDay(tasks: Task[]) {
-  return tasks.reduce<Record<string, { withTime: Task[]; noTime: Task[] }>>(
-    (result, task) => {
-      const key = t.getDayKey(task.startTime);
+  return tasks.reduce<
+    Record<string, { withTime: Array<WithTime<Task>>; noTime: Task[] }>
+  >((result, task) => {
+    const key = t.getDayKey(task.startTime);
 
-      if (!result[key]) {
-        result[key] = { withTime: [], noTime: [] };
-      }
+    if (!result[key]) {
+      result[key] = { withTime: [], noTime: [] };
+    }
 
-      if (task.isAllDayEvent) {
-        result[key].noTime.push(task);
-      } else {
-        result[key].withTime.push(task);
-      }
+    if (task.isAllDayEvent) {
+      result[key].noTime.push(task);
+    } else {
+      result[key].withTime.push(task as WithTime<Task>);
+    }
 
-      return result;
-    },
-    {},
-  );
+    return result;
+  }, {});
 }
 
 export function useEditContext(props: {
@@ -195,10 +194,9 @@ export function useEditContext(props: {
       const tasksForDay =
         $dayToDisplayedTasks[t.getDayKey(day)] || t.getEmptyTasksForDay();
 
-      const withTime: Array<WithPlacing<WithTime<Task>>> = flow(
-        uniqBy(t.getRenderKey),
-        addHorizontalPlacing,
-      )(tasksForDay.withTime);
+      const withTime: Array<WithPlacing<WithTime<Task>>> = addHorizontalPlacing(
+        uniqBy(t.getRenderKey, tasksForDay.withTime),
+      );
 
       return {
         ...tasksForDay,

@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
-import { omit } from "lodash/fp";
 import {
   type Subscriber,
   type Updater,
@@ -7,6 +6,7 @@ import {
   writable,
 } from "svelte/store";
 
+import { omitKeys } from "../../util/collection";
 import { getId } from "../../util/id";
 import type { Moment } from "../../util/obsidian-moment";
 
@@ -19,7 +19,7 @@ export function useDateRanges() {
     ranges.update((previous) => ({ ...previous, [rangeKey]: range }));
 
     function untrack() {
-      ranges.update(omit([rangeKey]));
+      ranges.update((previous) => omitKeys([rangeKey], previous));
     }
 
     function update(fn: Updater<Moment[]>) {

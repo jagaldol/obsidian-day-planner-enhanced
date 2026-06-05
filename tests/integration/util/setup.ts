@@ -1,4 +1,3 @@
-import { noop } from "lodash/fp";
 import type { Moment } from "moment";
 import { type CachedMetadata, MetadataCache, type Vault } from "obsidian";
 import { derived, get, writable } from "svelte/store";
@@ -38,6 +37,8 @@ import {
 } from "../../util/fakes";
 
 import { loadMetadataDump } from "./metadata-dump";
+
+const noop = () => undefined;
 
 function initTestServices(props: {
   inMemoryFiles: InMemoryFile[];
@@ -203,7 +204,7 @@ export async function setUp(props?: {
     editContext.dayToDisplayedTasks,
     ($dayToDisplayedTasks) => {
       return Object.values($dayToDisplayedTasks).flatMap(
-        ({ withTime, noTime }) => withTime.concat(noTime),
+        ({ withTime, noTime }) => [...withTime, ...noTime],
       );
     },
   );

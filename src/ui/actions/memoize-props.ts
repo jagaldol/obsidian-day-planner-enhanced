@@ -1,6 +1,4 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
-import { identity } from "lodash/fp";
-
 type Entries<T> = {
   [K in keyof T]: [K, T[K]];
 }[keyof T][];
@@ -27,8 +25,12 @@ export function createMemo<PropsType>(
       newProps,
     ) as Entries<PropsType>) {
       const previousValue = previousProps[propKey];
-      const identityFn = identityGetters?.[propKey] || identity;
-      const propChanged = identityFn(propValue) !== identityFn(previousValue);
+      const identityFn = identityGetters?.[propKey];
+      const currentIdentity = identityFn ? identityFn(propValue) : propValue;
+      const previousIdentity = identityFn
+        ? identityFn(previousValue)
+        : previousValue;
+      const propChanged = currentIdentity !== previousIdentity;
 
       if (propChanged) {
         previousProps = newProps;

@@ -1,7 +1,4 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
-import { pipe } from "effect";
-import { filter, map } from "lodash/fp";
-
 import { addHorizontalPlacing } from "../../overlap/overlap";
 import type { Task, WithTime } from "../../task-types";
 import type { Signal } from "../../types";
@@ -38,22 +35,21 @@ export class MiniTimeline {
   );
 
   displayedBlocks = $derived(
-    pipe(
-      this.tasksWithTimeForToday.current,
-      filter((it) =>
-        doesOverlapWithRange(
-          { start: it.startTime, end: t.getEndTime(it) },
-          {
-            start: this.rangeStart,
-            end: this.rangeEnd,
-          },
-        ),
-      ),
-      map((it) => ({
-        ...t.clamp(it, this.rangeStart, this.rangeEnd),
-        leftPx: it.startTime.clone().diff(this.rangeStart, `minutes`),
-      })),
-      addHorizontalPlacing,
+    addHorizontalPlacing(
+      this.tasksWithTimeForToday.current
+        .filter((it) =>
+          doesOverlapWithRange(
+            { start: it.startTime, end: t.getEndTime(it) },
+            {
+              start: this.rangeStart,
+              end: this.rangeEnd,
+            },
+          ),
+        )
+        .map((it) => ({
+          ...t.clamp(it, this.rangeStart, this.rangeEnd),
+          leftPx: it.startTime.clone().diff(this.rangeStart, `minutes`),
+        })),
     ),
   );
 }

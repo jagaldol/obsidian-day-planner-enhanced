@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
 import { type PayloadAction } from "@reduxjs/toolkit";
-import { uniqBy } from "lodash/fp";
 import type {
   CachedMetadata,
   ListItemCache,
@@ -17,6 +16,7 @@ import type { ListPropsParser } from "../../service/list-props-parser";
 import type { PeriodicNotes } from "../../service/periodic-notes";
 import type { DayPlannerSettings } from "../../settings";
 import type { LocalTask } from "../../task-types";
+import { uniqBy } from "../../util/collection";
 import { getFirstLine } from "../../util/markdown";
 import {
   createLineToChildrenLookup,

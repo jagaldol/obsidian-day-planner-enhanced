@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
-import { range } from "lodash/fp";
 import { match } from "ts-pattern";
 
 import { defaultRangeDayFormat } from "../constants";
 import type { DayPlannerSettings } from "../settings";
 import type { Moment } from "../util/obsidian-moment";
 
+import { range as numberRange } from "./collection";
 import { getMomentFromDayOfWeek } from "./moment";
 
 export function createRange(
@@ -26,7 +26,7 @@ export function getFullWeek(
 ) {
   const firstDayMoment = getMomentFromDayOfWeek(moment, firstDay);
 
-  return range(1, 7).reduce(
+  return numberRange(1, 7).reduce(
     (result, dayIndex) => {
       const nextDay = firstDayMoment.clone().add(dayIndex, "day");
 
@@ -41,7 +41,7 @@ export function getWorkWeek(day: Moment) {
 }
 
 export function getUpcomingDays(start: Moment, count: number) {
-  return range(1, count).reduce(
+  return numberRange(1, count).reduce(
     (result, dayIndex) => {
       const nextDay = start.clone().add(dayIndex, "day");
 

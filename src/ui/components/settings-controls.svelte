@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { range } from "lodash/fp";
   import { SettingGroup } from "obsidian";
 
   import { getObsidianContext } from "../../context/obsidian-context";
+  import { range } from "../../util/collection";
 
   const { settings } = getObsidianContext();
 

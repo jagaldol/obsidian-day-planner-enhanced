@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
 import { produce } from "immer";
-import { flow } from "lodash/fp";
 import { get } from "svelte/store";
 import { isNotVoid } from "typed-assert";
 
@@ -416,12 +415,13 @@ export function hideNestedTimedLocalTasks(tasks: Task[]) {
 }
 
 export function toRenderableMarkdown(timeBlock: Node) {
-  const formattedFirstLine = flow(
-    getFirstLineAsMarkdown,
-    (node) => (timeBlock.status ? node : removeListTokens(node)),
-    deleteProps,
-    removeTimeRange,
-  )(timeBlock);
+  const firstLineAsMarkdown = getFirstLineAsMarkdown(timeBlock);
+  const withOptionalListTokensRemoved = timeBlock.status
+    ? firstLineAsMarkdown
+    : removeListTokens(firstLineAsMarkdown);
+  const formattedFirstLine = removeTimeRange(
+    deleteProps(withOptionalListTokensRemoved),
+  );
 
   const [, ...linesAfterFirst] = timeBlock.text.split("\n");
 
