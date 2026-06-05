@@ -4,6 +4,12 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.30.0**, and follows its own versioning.
 
+## 0.1.11
+
+### ✨ Other improvements
+
+- Adjusted the bundled Redux random action type separator during production builds to avoid a false positive network endpoint warning in automated review.
+
 ## 0.1.10
 
 ### ✨ Other improvements
