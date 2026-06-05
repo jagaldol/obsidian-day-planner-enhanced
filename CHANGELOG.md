@@ -4,6 +4,13 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.30.0**, and follows its own versioning.
 
+## 0.1.3
+
+### ✨ Other improvements
+
+- Removed the inherited support banner (donation link and upstream issue links) from the in-app release notes, which now show only the changelog.
+- GitHub release notes are now generated from this changelog.
+
 ## 0.1.2
 
 ### 🐞 Fixed issues
