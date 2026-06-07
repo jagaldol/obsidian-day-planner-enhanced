@@ -55,6 +55,7 @@ import { createGetTasksApi } from "./tasks-plugin";
 import type { ObsidianContext, OnUpdateFn, PointerDateTime } from "./types";
 import { askForConfirmation } from "./ui/confirmation-modal";
 import { createEditTimeEntryModalCreator } from "./ui/create-edit-time-entry-modal";
+import { createNestedItemsEditModalCreator } from "./ui/create-nested-items-edit-modal";
 import { createEditorMenuCallback } from "./ui/editor-menu";
 import { useDateRanges } from "./ui/hooks/use-date-ranges";
 import { mountStatusBarWidget } from "./ui/hooks/use-status-bar-widget";
@@ -583,10 +584,15 @@ export default class DayPlanner extends Plugin {
       this.app,
       this.taskEntryEditor,
     );
+    const openNestedItemsEditModal = createNestedItemsEditModalCreator(
+      this.app,
+      this.taskEntryEditor,
+    );
 
     const defaultObsidianContext: ObsidianContext = {
       periodicNotes: this.periodicNotes,
       openEditTimeEntryModal,
+      openNestedItemsEditModal,
       taskEntryEditor: this.taskEntryEditor,
       confirmAction,
       editText,

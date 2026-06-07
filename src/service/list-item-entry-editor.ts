@@ -7,6 +7,10 @@ import { isNotVoid } from "typed-assert";
 
 import { locToEditorPosition } from "../util/editor";
 import { getErrorMessage } from "../util/error";
+import {
+  createMarkdownListTokens,
+  getIndentationForListParagraph,
+} from "../util/markdown";
 import { createLineToChildrenLookup } from "../util/metadata";
 import {
   addOpenClock,
@@ -27,6 +31,14 @@ import { WorkspaceFacade } from "./workspace-facade";
 export interface ListItemLocation {
   path: string;
   line: number;
+}
+
+export interface EditableNestedListItem {
+  text: string;
+  symbol: string;
+  status?: string;
+  task?: string;
+  children?: EditableNestedListItem[];
 }
 
 function getListItemSubtree(root: ListItemCache, listItems: ListItemCache[]) {
@@ -62,6 +74,66 @@ function getTextRemovalEndOffset(contents: string, listItems: ListItemCache[]) {
   }
 
   return contentEndOffset;
+}
+
+function getLineIndentation(line: string) {
+  return line.match(/^\s*/)?.[0] ?? "";
+}
+
+function getFirstLineAndRest(text: string) {
+  const [firstLine = "", ...rest] = text.split("\n");
+
+  return { firstLine, rest };
+}
+
+function serializeNestedListItem(
+  item: EditableNestedListItem,
+  indentation: string,
+  indentationStep: string,
+): string[] {
+  const { firstLine, rest } = getFirstLineAndRest(item.text);
+  const paragraphIndentation = indentation + getIndentationForListParagraph();
+  const lines = [
+    `${indentation}${createMarkdownListTokens(item)} ${firstLine}`,
+    ...rest.map((line) => `${paragraphIndentation}${line}`),
+  ];
+
+  for (const child of item.children ?? []) {
+    lines.push(
+      ...serializeNestedListItem(
+        child,
+        indentation + indentationStep,
+        indentationStep,
+      ),
+    );
+  }
+
+  return lines;
+}
+
+function serializeNestedListItems(
+  items: EditableNestedListItem[],
+  indentation: string,
+  indentationStep: string,
+) {
+  return items.flatMap((item) =>
+    serializeNestedListItem(item, indentation, indentationStep),
+  );
+}
+
+function getIndentationStep(
+  parentIndentation: string,
+  childIndentation: string,
+) {
+  if (childIndentation.startsWith(parentIndentation)) {
+    const indentationStep = childIndentation.slice(parentIndentation.length);
+
+    if (indentationStep.length > 0) {
+      return indentationStep;
+    }
+  }
+
+  return "  ";
 }
 
 export const runWithNoticeOnError = <A, E>(
@@ -236,6 +308,89 @@ export class ListItemEntryEditor {
           }),
         catch: (error) =>
           new Error(`Could not remove list item at ${path}:${line}`, {
+            cause: error,
+          }),
+      });
+    });
+
+  replaceNestedItemsAtLocation = (
+    { path, line }: ListItemLocation,
+    children: EditableNestedListItem[],
+  ) =>
+    Effect.gen(this, function* () {
+      const listItem = yield* this.metadataCacheFacade.getListItemEffect(
+        path,
+        line,
+      );
+      const listItems =
+        yield* this.metadataCacheFacade.getListItemsEffect(path);
+      const childrenByParentLine = createLineToChildrenLookup(listItems);
+      const existingChildren =
+        childrenByParentLine[listItem.position.start.line] ?? [];
+
+      yield* Effect.tryPromise({
+        try: () =>
+          this.vaultFacade.editFile(path, (contents) => {
+            const lines = contents.split("\n");
+            const firstExistingChild = existingChildren[0];
+            const firstExistingChildLine =
+              firstExistingChild === undefined
+                ? undefined
+                : lines[firstExistingChild.position.start.line];
+            const parentLine = lines[listItem.position.start.line];
+
+            isNotVoid(parentLine);
+
+            const parentIndentation = getLineIndentation(parentLine);
+            const childIndentation =
+              firstExistingChildLine === undefined
+                ? `${parentIndentation}  `
+                : getLineIndentation(firstExistingChildLine);
+            const indentationStep = getIndentationStep(
+              parentIndentation,
+              childIndentation,
+            );
+            const replacementLines = serializeNestedListItems(
+              children,
+              childIndentation,
+              indentationStep,
+            );
+
+            if (existingChildren.length === 0) {
+              if (replacementLines.length === 0) {
+                return contents;
+              }
+
+              lines.splice(
+                listItem.position.end.line + 1,
+                0,
+                ...replacementLines,
+              );
+
+              return lines.join("\n");
+            }
+
+            const descendantLines = existingChildren.flatMap((child) =>
+              getListItemSubtree(child, listItems),
+            );
+            const startLine = existingChildren[0]?.position.start.line;
+
+            isNotVoid(startLine);
+
+            const endLine = Math.max(
+              ...descendantLines.map((item) => item.position.end.line),
+            );
+
+            lines.splice(
+              startLine,
+              endLine - startLine + 1,
+              ...replacementLines,
+            );
+
+            return lines.join("\n");
+          }),
+        catch: (error) =>
+          new Error(`Could not replace nested list items at ${path}:${line}`, {
             cause: error,
           }),
       });

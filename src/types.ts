@@ -15,6 +15,7 @@ import type { DayPlannerSettings, IcalConfig } from "./settings";
 import type { LocalTask } from "./task-types";
 import type { ConfirmationModalProps } from "./ui/confirmation-modal";
 import type { OpenEditTimeEntryModal } from "./ui/create-edit-time-entry-modal";
+import type { OpenNestedItemsEditModal } from "./ui/create-nested-items-edit-modal";
 import { EditMode } from "./ui/hooks/use-edit/types";
 import { useEditContext } from "./ui/hooks/use-edit/use-edit-context";
 import type { createRenderMarkdown } from "./util/create-render-markdown";
@@ -66,6 +67,7 @@ export interface ObsidianContext {
   pointerDateTime: Writable<PointerDateTime>;
   taskEntryEditor: ListItemEntryEditor;
   openEditTimeEntryModal: OpenEditTimeEntryModal;
+  openNestedItemsEditModal: OpenNestedItemsEditModal;
   confirmAction: (props: ConfirmationModalProps) => Promise<boolean>;
   // todo: rename to promptUserToEditText
   editText: (props: {

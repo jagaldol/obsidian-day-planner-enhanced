@@ -357,6 +357,11 @@
     color: var(--text-muted);
   }
 
+  .lines-after-first-wrapper :global(li:has(> code)),
+  .lines-after-first-wrapper :global(li:has(> p > code)) {
+    font-weight: var(--font-medium);
+  }
+
   .lines-after-first-wrapper :global(li > p) {
     margin-block: 0;
   }
@@ -370,7 +375,7 @@
 
     font-family: inherit;
     font-size: 0.86em;
-    font-weight: var(--font-medium);
+    font-weight: var(--font-normal);
     font-variant-numeric: tabular-nums;
     line-height: 1.25;
     color: var(--text-muted);

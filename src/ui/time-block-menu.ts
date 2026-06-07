@@ -10,9 +10,11 @@ export function createTimeBlockMenu(props: {
   task: LocalTask;
   workspaceFacade: WorkspaceFacade;
   onEdit: () => void;
+  onEditNestedItems: () => void;
   onRemove: () => Promise<void>;
 }) {
-  const { event, task, workspaceFacade, onEdit, onRemove } = props;
+  const { event, task, workspaceFacade, onEdit, onEditNestedItems, onRemove } =
+    props;
   const { location } = task;
 
   // todo: remove when types are fixed
@@ -38,6 +40,13 @@ export function createTimeBlockMenu(props: {
       .onClick(async () => {
         await workspaceFacade.revealLineInFile(path, line);
       });
+  });
+
+  menu.addItem((item) => {
+    item
+      .setTitle("Edit nested items...")
+      .setIcon("list-tree")
+      .onClick(onEditNestedItems);
   });
 
   menu.addSeparator();

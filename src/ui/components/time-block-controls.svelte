@@ -35,6 +35,7 @@
     editContext: { editOperation },
     workspaceFacade,
     taskEntryEditor,
+    openNestedItemsEditModal,
     confirmAction,
     editText,
     editLine,
@@ -102,6 +103,7 @@
       task,
       workspaceFacade,
       onEdit: editTaskSummary,
+      onEditNestedItems: () => openNestedItemsEditModal(task),
       onRemove: removeTask,
     })}
   selectionBlocked={Boolean($editOperation)}

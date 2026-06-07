@@ -2,11 +2,30 @@ import { Effect } from "effect";
 import { isNotVoid } from "typed-assert";
 import { describe, expect, test } from "vitest";
 
+import type { EditableNestedListItem } from "../../src/service/list-item-entry-editor";
 import { defaultSettingsForTests } from "../../src/settings";
 import { EditMode } from "../../src/ui/hooks/use-edit/types";
 import { getPathToDiff } from "../util/diff";
 
 import { setUp } from "./util/setup";
+
+function cloneNestedItems(
+  items: EditableNestedListItem[] | undefined,
+): EditableNestedListItem[] {
+  return (items ?? []).map((item) => ({
+    text: item.text,
+    symbol: item.symbol,
+    status: item.status,
+    task: item.task,
+    children: cloneNestedItems(item.children),
+  }));
+}
+
+function replaceFirstLine(text: string, firstLine: string) {
+  const [, ...rest] = text.split("\n");
+
+  return [firstLine, ...rest].join("\n");
+}
 
 describe("Editing", () => {
   describe("Daily notes", () => {
@@ -104,6 +123,247 @@ describe("Editing", () => {
 -     - [ ] Child task
 -       Child text
 -         - Child list item without time
+`,
+      });
+    });
+
+    test("Edits nested item text without changing the parent line", async () => {
+      const { taskEntryEditor, vault, findByText } = await setUp({
+        visibleDays: ["2025-07-28"],
+        loadedFixtures: ["2025-07-28.md"],
+      });
+
+      const task = findByText("Parent");
+      const { location } = task;
+
+      isNotVoid(location);
+
+      const children = cloneNestedItems(task.children);
+      const child = children[0];
+
+      isNotVoid(child);
+
+      child.text = replaceFirstLine(child.text, "Edited child task");
+
+      await Effect.runPromise(
+        taskEntryEditor.replaceNestedItemsAtLocation(
+          {
+            path: location.path,
+            line: location.position.start.line,
+          },
+          children,
+        ),
+      );
+
+      expect(getPathToDiff(vault.initialState, vault.state)).toEqual({
+        "fixtures/fixture-vault/2025-07-28.md": `
+-     - [ ] Child task
++     - [ ] Edited child task
+`,
+      });
+    });
+
+    test("Adds a root-level nested item", async () => {
+      const { taskEntryEditor, vault, findByText } = await setUp({
+        visibleDays: ["2025-07-28"],
+        loadedFixtures: ["2025-07-28.md"],
+      });
+
+      const task = findByText("Parent");
+      const { location } = task;
+
+      isNotVoid(location);
+
+      const children = cloneNestedItems(task.children);
+
+      children.push({ text: "Root child", symbol: "-" });
+
+      await Effect.runPromise(
+        taskEntryEditor.replaceNestedItemsAtLocation(
+          {
+            path: location.path,
+            line: location.position.start.line,
+          },
+          children,
+        ),
+      );
+
+      expect(getPathToDiff(vault.initialState, vault.state)).toEqual({
+        "fixtures/fixture-vault/2025-07-28.md": `
++     - Root child
+`,
+      });
+    });
+
+    test("Adds a grandchild under a nested item", async () => {
+      const { taskEntryEditor, vault, findByText } = await setUp({
+        visibleDays: ["2025-07-28"],
+        loadedFixtures: ["2025-07-28.md"],
+      });
+
+      const task = findByText("Parent");
+      const { location } = task;
+
+      isNotVoid(location);
+
+      const children = cloneNestedItems(task.children);
+      const child = children[0];
+
+      isNotVoid(child);
+
+      child.children ??= [];
+      child.children.push({ text: "Grandchild", symbol: "-" });
+
+      await Effect.runPromise(
+        taskEntryEditor.replaceNestedItemsAtLocation(
+          {
+            path: location.path,
+            line: location.position.start.line,
+          },
+          children,
+        ),
+      );
+
+      expect(getPathToDiff(vault.initialState, vault.state)).toEqual({
+        "fixtures/fixture-vault/2025-07-28.md": `
++         - Grandchild
+`,
+      });
+    });
+
+    test("Deletes a nested item with its subtree", async () => {
+      const { taskEntryEditor, vault, findByText } = await setUp({
+        visibleDays: ["2025-07-28"],
+        loadedFixtures: ["2025-07-28.md"],
+      });
+
+      const task = findByText("Parent");
+      const { location } = task;
+
+      isNotVoid(location);
+
+      await Effect.runPromise(
+        taskEntryEditor.replaceNestedItemsAtLocation(
+          {
+            path: location.path,
+            line: location.position.start.line,
+          },
+          [],
+        ),
+      );
+
+      expect(getPathToDiff(vault.initialState, vault.state)).toEqual({
+        "fixtures/fixture-vault/2025-07-28.md": `
+-     - [ ] Child task
+-       Child text
+-         - Child list item without time
+`,
+      });
+    });
+
+    test("Preserves item text and time ranges when sibling order changes", async () => {
+      const { taskEntryEditor, vault, findByText } = await setUp({
+        visibleDays: ["2025-07-28"],
+        loadedFixtures: ["2025-07-28.md"],
+      });
+
+      const task = findByText("Parent");
+      const { location } = task;
+
+      isNotVoid(location);
+
+      const children = cloneNestedItems(task.children);
+      const child = children[0];
+
+      isNotVoid(child);
+
+      const reorderedChildren = [
+        {
+          text: "09:30 - 09:45 Sibling with time",
+          symbol: "-",
+          task: " ",
+        },
+        child,
+      ];
+
+      await Effect.runPromise(
+        taskEntryEditor.replaceNestedItemsAtLocation(
+          {
+            path: location.path,
+            line: location.position.start.line,
+          },
+          reorderedChildren,
+        ),
+      );
+
+      expect(getPathToDiff(vault.initialState, vault.state)).toEqual({
+        "fixtures/fixture-vault/2025-07-28.md": `
++     - [ ] 09:30 - 09:45 Sibling with time
+`,
+      });
+    });
+
+    test("Toggles nested items between plain bullets and checkbox tasks", async () => {
+      const { taskEntryEditor, vault, findByText } = await setUp({
+        visibleDays: ["2025-07-28"],
+        loadedFixtures: ["2025-07-28.md"],
+      });
+
+      const task = findByText("Parent");
+      const { location } = task;
+
+      isNotVoid(location);
+
+      const children = cloneNestedItems(task.children);
+      const child = children[0];
+      const grandchild = child?.children?.[0];
+
+      isNotVoid(grandchild);
+
+      grandchild.task = " ";
+
+      await Effect.runPromise(
+        taskEntryEditor.replaceNestedItemsAtLocation(
+          {
+            path: location.path,
+            line: location.position.start.line,
+          },
+          children,
+        ),
+      );
+
+      expect(getPathToDiff(vault.initialState, vault.state)).toEqual({
+        "fixtures/fixture-vault/2025-07-28.md": `
+-         - Child list item without time
++         - [ ] Child list item without time
+`,
+      });
+    });
+
+    test("Adds the first nested item under a parent without children", async () => {
+      const { taskEntryEditor, vault, findByText } = await setUp({
+        visibleDays: ["2025-07-19"],
+        loadedFixtures: ["2025-07-19.md"],
+      });
+
+      const task = findByText("List item under planner heading");
+      const { location } = task;
+
+      isNotVoid(location);
+
+      await Effect.runPromise(
+        taskEntryEditor.replaceNestedItemsAtLocation(
+          {
+            path: location.path,
+            line: location.position.start.line,
+          },
+          [{ text: "First child", symbol: "-" }],
+        ),
+      );
+
+      expect(getPathToDiff(vault.initialState, vault.state)).toEqual({
+        "fixtures/fixture-vault/2025-07-19.md": `
++   - First child
 `,
       });
     });
