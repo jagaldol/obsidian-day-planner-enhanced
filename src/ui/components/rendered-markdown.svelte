@@ -194,7 +194,7 @@
   .rendered-markdown :global(input[type="checkbox"]) {
     top: 2px;
     margin-inline-end: 4px;
-    border-color: var(--text-muted);
+    border-color: var(--checkbox-border-color);
   }
 
   .rendered-markdown :global(li) {
@@ -428,8 +428,8 @@
 
   .lines-after-first-wrapper
     :global(li.task-list-item input[type="checkbox"]:checked) {
-    background-color: #22c55e;
-    border-color: #22c55e;
+    background-color: var(--checkbox-color);
+    border-color: var(--checkbox-color);
   }
 
   .is-compact {
