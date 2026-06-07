@@ -2,11 +2,12 @@
 // noinspection JSPotentiallyInvalidUsageOfClassThis
 
 import { Effect, Either, pipe } from "effect";
-import { Notice } from "obsidian";
+import { type ListItemCache, Notice } from "obsidian";
 import { isNotVoid } from "typed-assert";
 
 import { locToEditorPosition } from "../util/editor";
 import { getErrorMessage } from "../util/error";
+import { createLineToChildrenLookup } from "../util/metadata";
 import {
   addOpenClock,
   cancelOpenClock,
@@ -26,6 +27,41 @@ import { WorkspaceFacade } from "./workspace-facade";
 export interface ListItemLocation {
   path: string;
   line: number;
+}
+
+function getListItemSubtree(root: ListItemCache, listItems: ListItemCache[]) {
+  const childrenByParentLine = createLineToChildrenLookup(listItems);
+  const subtree = [root];
+  const stack = [root];
+
+  while (stack.length > 0) {
+    const current = stack.pop();
+
+    isNotVoid(current);
+
+    const children = childrenByParentLine[current.position.start.line] || [];
+
+    subtree.push(...children);
+    stack.push(...children);
+  }
+
+  return subtree;
+}
+
+function getTextRemovalEndOffset(contents: string, listItems: ListItemCache[]) {
+  const contentEndOffset = Math.max(
+    ...listItems.map((item) => item.position.end.offset),
+  );
+
+  if (contents.slice(contentEndOffset, contentEndOffset + 2) === "\r\n") {
+    return contentEndOffset + 2;
+  }
+
+  if (contents[contentEndOffset] === "\n") {
+    return contentEndOffset + 1;
+  }
+
+  return contentEndOffset;
 }
 
 export const runWithNoticeOnError = <A, E>(
@@ -178,6 +214,31 @@ export class ListItemEntryEditor {
 
         return editLogEntry(props, { originalStart: last.start, patch });
       },
+    });
+
+  removeAtLocation = ({ path, line }: ListItemLocation) =>
+    Effect.gen(this, function* () {
+      const listItem = yield* this.metadataCacheFacade.getListItemEffect(
+        path,
+        line,
+      );
+      const listItems =
+        yield* this.metadataCacheFacade.getListItemsEffect(path);
+      const subtree = getListItemSubtree(listItem, listItems);
+
+      yield* Effect.tryPromise({
+        try: () =>
+          this.vaultFacade.editFile(path, (contents) => {
+            const startOffset = listItem.position.start.offset;
+            const endOffset = getTextRemovalEndOffset(contents, subtree);
+
+            return contents.slice(0, startOffset) + contents.slice(endOffset);
+          }),
+        catch: (error) =>
+          new Error(`Could not remove list item at ${path}:${line}`, {
+            cause: error,
+          }),
+      });
     });
 
   clockInUnderCursor = () =>

@@ -427,6 +427,12 @@ export default class DayPlanner extends Plugin {
       pointerDateTime,
     } = props;
 
+    const confirmAction: ObsidianContext["confirmAction"] = (input) =>
+      askForConfirmation({
+        ...input,
+        app: this.app,
+      });
+
     const onUpdate: OnUpdateFn = createUpdateHandler({
       settings: this.settings,
       transactionWriter: this.transactionWriter,
@@ -444,11 +450,7 @@ export default class DayPlanner extends Plugin {
               ? "Start typing to create a task"
               : `Create item "${value}"`,
         }),
-      getConfirmationInput: (input) =>
-        askForConfirmation({
-          ...input,
-          app: this.app,
-        }),
+      getConfirmationInput: confirmAction,
     });
 
     const onEditAborted = () => {
@@ -586,6 +588,7 @@ export default class DayPlanner extends Plugin {
       periodicNotes: this.periodicNotes,
       openEditTimeEntryModal,
       taskEntryEditor: this.taskEntryEditor,
+      confirmAction,
       editText,
       editLine,
       workspaceFacade: this.workspaceFacade,

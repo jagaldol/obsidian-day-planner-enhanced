@@ -10,8 +10,9 @@ export function createTimeBlockMenu(props: {
   task: LocalTask;
   workspaceFacade: WorkspaceFacade;
   onEdit: () => void;
+  onRemove: () => Promise<void>;
 }) {
-  const { event, task, workspaceFacade, onEdit } = props;
+  const { event, task, workspaceFacade, onEdit, onRemove } = props;
   const { location } = task;
 
   // todo: remove when types are fixed
@@ -37,6 +38,16 @@ export function createTimeBlockMenu(props: {
       .onClick(async () => {
         await workspaceFacade.revealLineInFile(path, line);
       });
+  });
+
+  menu.addSeparator();
+
+  menu.addItem((item) => {
+    item
+      .setTitle("Remove")
+      .setIcon("trash-2")
+      .setWarning(true)
+      .onClick(onRemove);
   });
 
   // Obsidian works fine with touch events, but its TypeScript definitions don't reflect that.

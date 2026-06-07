@@ -1,3 +1,5 @@
+import { Effect } from "effect";
+import { isNotVoid } from "typed-assert";
 import { describe, expect, test } from "vitest";
 
 import { defaultSettingsForTests } from "../../src/settings";
@@ -76,6 +78,34 @@ describe("Editing", () => {
       await editContext.confirmEdit();
 
       expect(getPathToDiff(vault.initialState, vault.state)).toMatchSnapshot();
+    });
+
+    test("Removes a parent task with its nested subtree", async () => {
+      const { taskEntryEditor, vault, findByText } = await setUp({
+        visibleDays: ["2025-07-28"],
+        loadedFixtures: ["2025-07-28.md"],
+      });
+
+      const { location } = findByText("Parent");
+
+      isNotVoid(location);
+
+      await Effect.runPromise(
+        taskEntryEditor.removeAtLocation({
+          path: location.path,
+          line: location.position.start.line,
+        }),
+      );
+
+      expect(getPathToDiff(vault.initialState, vault.state)).toEqual({
+        "fixtures/fixture-vault/2025-07-28.md": `
+- - [ ] 09:00 - 10:00 Parent
+-   Parent text
+-     - [ ] Child task
+-       Child text
+-         - Child list item without time
+`,
+      });
     });
 
     test(`* Moves a nested task with text between notes

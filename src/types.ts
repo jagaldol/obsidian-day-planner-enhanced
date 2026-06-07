@@ -13,6 +13,7 @@ import type { VaultFacade } from "./service/vault-facade";
 import type { WorkspaceFacade } from "./service/workspace-facade";
 import type { DayPlannerSettings, IcalConfig } from "./settings";
 import type { LocalTask } from "./task-types";
+import type { ConfirmationModalProps } from "./ui/confirmation-modal";
 import type { OpenEditTimeEntryModal } from "./ui/create-edit-time-entry-modal";
 import { EditMode } from "./ui/hooks/use-edit/types";
 import { useEditContext } from "./ui/hooks/use-edit/use-edit-context";
@@ -65,6 +66,7 @@ export interface ObsidianContext {
   pointerDateTime: Writable<PointerDateTime>;
   taskEntryEditor: ListItemEntryEditor;
   openEditTimeEntryModal: OpenEditTimeEntryModal;
+  confirmAction: (props: ConfirmationModalProps) => Promise<boolean>;
   // todo: rename to promptUserToEditText
   editText: (props: {
     initialText?: string;

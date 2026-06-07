@@ -46,9 +46,31 @@
   border-radius: var(--radius-s);
 }
 
+.planner-confirmation-modal {
+  max-width: min(540px, calc(100vw - 32px));
+}
+
+.planner-confirmation-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-3);
+}
+
+.planner-confirmation-modal-title,
+.planner-confirmation-modal-message {
+  margin: 0;
+}
+
+.planner-confirmation-modal-message {
+  color: var(--text-muted);
+  line-height: var(--line-height-normal);
+}
+
 .planner-confirmation-modal-buttons {
   display: flex;
+  justify-content: flex-end;
   gap: var(--size-4-2);
+  margin-top: var(--size-4-2);
 }
 
 .planner-progress-value {

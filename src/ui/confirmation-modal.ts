@@ -5,6 +5,7 @@ export interface ConfirmationModalProps {
   cta: string;
   text: string;
   title: string;
+  variant?: "cta" | "warning";
 }
 
 class ConfirmationModal extends Modal {
@@ -17,29 +18,38 @@ class ConfirmationModal extends Modal {
   ) {
     super(app);
 
-    const { cta, onAccept, text, title, onCancel } = props;
+    const { cta, onAccept, text, title, onCancel, variant = "cta" } = props;
 
-    this.contentEl.createEl("h2", { text: title });
-    this.contentEl.createEl("p", { text });
+    this.modalEl.addClass("planner-confirmation-modal");
+    this.contentEl.addClass("planner-confirmation-modal-content");
+
+    this.contentEl.createEl("h2", {
+      cls: "planner-confirmation-modal-title",
+      text: title,
+    });
+    this.contentEl.createEl("p", {
+      cls: "planner-confirmation-modal-message",
+      text,
+    });
 
     this.contentEl.createDiv(
       "planner-confirmation-modal-buttons",
       (buttonsEl) => {
         buttonsEl
+          .createEl("button", { text: "Cancel" })
+          .addEventListener("click", (e) => {
+            onCancel(e);
+            this.close();
+          });
+
+        buttonsEl
           .createEl("button", {
-            cls: "mod-cta",
+            cls: variant === "warning" ? "mod-warning" : "mod-cta",
             text: cta,
           })
           .addEventListener("click", async (e) => {
             await onAccept(e);
 
-            this.close();
-          });
-
-        buttonsEl
-          .createEl("button", { text: "Cancel" })
-          .addEventListener("click", (e) => {
-            onCancel(e);
             this.close();
           });
       },

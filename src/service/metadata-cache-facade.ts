@@ -25,5 +25,12 @@ export class MetadataCacheFacade {
       Effect.mapError(() => new Error(`No list item at ${path}:${line}`)),
     );
   }
+
+  getListItemsEffect(path: string) {
+    return pipe(
+      Effect.fromNullable(this.metadataCache.getCache(path)?.listItems),
+      Effect.mapError(() => new Error(`No list items in ${path}`)),
+    );
+  }
 }
 /* eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. */
