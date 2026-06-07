@@ -13,6 +13,7 @@ import {
   dashOrNumberWithMultipleSpaces,
   escapedSquareBracket,
   listItemRegExp,
+  timeRangeRegExp,
 } from "../regexp";
 import { takeWhile } from "../util/collection";
 
@@ -69,7 +70,7 @@ export function sortListsRecursivelyInMarkdown(contents: string) {
   const sorted = {
     ...root,
     children: root.children.map((child) =>
-      sortListsRecursively(child, compareByTimestampInText),
+      sortListsRecursivelyByTimestamp(child),
     ),
   };
 
@@ -123,6 +124,60 @@ export function sortListsRecursively<T extends Node>(
         ),
       }))
       .toSorted(sortFn),
+  };
+}
+
+function hasTimestampInText(node: Node) {
+  return timeRangeRegExp.test(getFirstTextNodeValue(node));
+}
+
+function sortTimestampedGroups<T extends Node>(
+  nodes: T[],
+  sortFn: (a: Node, b: Node) => number,
+) {
+  const leadingUntimed: T[] = [];
+  const groups: Array<{ anchor: T; items: T[] }> = [];
+  let currentGroup: { anchor: T; items: T[] } | undefined;
+
+  for (const node of nodes) {
+    if (hasTimestampInText(node)) {
+      currentGroup = { anchor: node, items: [node] };
+      groups.push(currentGroup);
+      continue;
+    }
+
+    if (currentGroup) {
+      currentGroup.items.push(node);
+      continue;
+    }
+
+    leadingUntimed.push(node);
+  }
+
+  return [
+    ...leadingUntimed,
+    ...groups
+      .toSorted((a, b) => sortFn(a.anchor, b.anchor))
+      .flatMap((group) => group.items),
+  ];
+}
+
+export function sortListsRecursivelyByTimestamp<T extends Node>(root: T): T {
+  if (!checkList(root)) {
+    return root;
+  }
+
+  return {
+    ...root,
+    children: sortTimestampedGroups(
+      root.children.map((listItem) => ({
+        ...listItem,
+        children: listItem.children.map((child) =>
+          sortListsRecursivelyByTimestamp(child),
+        ),
+      })),
+      compareByTimestampInText,
+    ),
   };
 }
 

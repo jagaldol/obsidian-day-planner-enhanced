@@ -2,9 +2,41 @@
 
 Day Planner Enhanced is a community plugin for [Obsidian](https://obsidian.md/). It adds editable calendar views, basic time-tracking, and an enhanced timeline UI for readable nested schedules.
 
+<img src="./assets/day-planner-enhanced-ui-changes.png" alt="Day Planner Enhanced UI changes showing nested schedule timeline improvements" width="100%">
+
+<p align="center"><em>Nested timed and untimed child items stay readable inside the parent timeline block.</em></p>
+
 This plugin is an independent MIT-licensed fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner).
 
-<img src="./assets/day-planner-enhanced-ui-changes.png" alt="Day Planner Enhanced UI changes showing nested schedule timeline improvements" width="100%">
+## What Enhanced adds
+
+Day Planner Enhanced keeps the original Day Planner workflow, then adds tools for people who plan with nested daily schedules.
+
+### 1. Nested schedules stay grouped in the timeline
+
+Timed and untimed child items render inside the parent timeline block instead of becoming separate overlapping blocks. A work block can keep its meetings, breaks, and context notes together.
+
+### 2. Timeline actions include nested editing and removal
+
+Right-click a timeline block to edit the parent item, reveal it in the source file, manage nested items, or remove the whole planner item with its nested subtree.
+
+<img src="./assets/nested-items-context-menu-demo.png" alt="Day Planner Enhanced timeline context menu with Edit nested items action" width="100%">
+
+<p align="center"><em>The context menu adds nested-item management and full-subtree removal directly from the timeline.</em></p>
+
+### 3. Nested items can be managed without leaving the planner
+
+The nested item manager can add root items, add child items, edit text, move siblings, delete subtrees, convert bullets into checkbox tasks, and toggle completion. Saving replaces only the child subtree and keeps the parent planner line intact.
+
+<img src="./assets/nested-items-editor-demo.png" alt="Day Planner Enhanced nested items editor" width="100%">
+
+<p align="center"><em>Edit nested schedules as a small tree, then save the result back to the source markdown.</em></p>
+
+### 4. Smaller planning improvements
+
+- **Timed group sorting**: timed groups are ordered by time while untimed notes stay attached to the timed item they follow.
+- **Theme-aware UI polish**: nested dividers, dots, time ranges, mobile controls, and checkbox colors are tuned for scanning and Obsidian themes.
+- **Separate plugin identity**: installs as `day-planner-enhanced`, so it can live separately from the original Day Planner plugin.
 
 - 🪲 [Report bugs and suggest features](https://github.com/jagaldol/obsidian-day-planner-enhanced/issues)
 - 🛠️ [Submit pull requests](./CONTRIBUTING.md)
@@ -18,12 +50,18 @@ Day Planner Enhanced is integrated with
 ## Table of contents
 
 - [Table of contents](#table-of-contents)
+- [What Enhanced adds](#what-enhanced-adds)
+  - [1. Nested schedules stay grouped in the timeline](#1-nested-schedules-stay-grouped-in-the-timeline)
+  - [2. Timeline actions include nested editing and removal](#2-timeline-actions-include-nested-editing-and-removal)
+  - [3. Nested items can be managed without leaving the planner](#3-nested-items-can-be-managed-without-leaving-the-planner)
+  - [4. Smaller planning improvements](#4-smaller-planning-improvements)
 - [Installation](#installation)
   - [Install from Obsidian](#install-from-obsidian)
   - [Manual installation fallback](#manual-installation-fallback)
   - [Updating](#updating)
 - [How to use it](#how-to-use-it)
   - [1. Showing events from your daily notes](#1-showing-events-from-your-daily-notes)
+    - [Editing nested items](#editing-nested-items)
   - [2. tasks community plugin integration, showing events from other files in your vault](#2-tasks-community-plugin-integration-showing-events-from-other-files-in-your-vault)
   - [3. Showing internet calendars](#3-showing-internet-calendars)
     - [Where to get a Google Calendar link](#where-to-get-a-google-calendar-link)
@@ -118,6 +156,10 @@ Write your tasks in a daily note, and they show up on the timeline:
 - [ ] 10:00 - 10:30 Wake up
 - [ ] 11:00 - 12:30 Grab a brush and put a little make-up
 ```
+
+#### Editing nested items
+
+Right-click a timeline block and choose **Edit nested items...** to manage the child list under that planner item. The editor can add items, add child items, update text, move siblings up or down, delete nested subtrees, and switch bullets into checkbox tasks without changing the parent planner line.
 
 ### 2. [tasks community plugin](obsidian://show-plugin?id=obsidian-tasks-plugin) integration, showing events from other files in your vault
 

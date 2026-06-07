@@ -4,6 +4,20 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.30.0**, and follows its own versioning.
 
+## 0.2.0
+
+### ✨ New features
+
+- Added **Edit nested items...** for timeline blocks, with inline text editing, root item and child item creation, sibling move controls, delete, checkbox task conversion, and checkbox completion toggles.
+- Added a nested-subtree save path that keeps the parent planner line intact while replacing only its nested child list in the source file.
+- Added a **Remove** context menu action for deleting a timeline item and its nested subtree from the source file.
+
+### ✨ Other improvements
+
+- Improved the nested item editor layout across desktop and mobile, including icon-only controls, clearer row separators, centered add action, and better marker alignment for timed nested items.
+- Updated task sorting so timed anchor groups are ordered by time while untimed siblings can stay attached to the timed item they follow.
+- Timeline checkbox colors now use Obsidian theme variables instead of a hardcoded checked color.
+
 ## 0.1.11
 
 ### ✨ Other improvements

@@ -649,7 +649,7 @@
   .nested-item-main {
     display: flex;
     gap: var(--size-4-3);
-    align-items: flex-start;
+    align-items: center;
     min-width: 0;
   }
 
@@ -661,6 +661,7 @@
     display: inline-flex;
     flex: 0 0 auto;
     align-items: center;
+    align-self: center;
     justify-content: center;
 
     width: 18px;
@@ -920,6 +921,7 @@
 
     .item-marker {
       grid-column: 1;
+      align-self: center;
       width: 16px;
       height: 1.4em;
     }

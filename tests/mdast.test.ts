@@ -2,11 +2,11 @@ import { isNotVoid } from "typed-assert";
 import { test, expect } from "vitest";
 
 import {
-  compareByTimestampInText,
   findHeadingWithChildren,
   fromMarkdown,
   isList,
   sortListsRecursively,
+  sortListsRecursivelyByTimestamp,
   toMarkdown,
 } from "../src/mdast/mdast";
 
@@ -102,19 +102,25 @@ test("Sort lists recursively", () => {
   expect(actual).toBe(expected);
 });
 
-test("Sort lists by time", () => {
+test("Sorts timed groups while preserving attached untimed items", () => {
   const input = `- 10:00 - 11:00 b
 - No time
 - 09:00 - 10:00 a
-- 11:00 - 12:00 c
 - 13:00 d
+- 11:00 - 12:00 c
+- Another item without time
+- 15:00 f
+- 14:00 e
 `;
 
   const expected = `- 09:00 - 10:00 a
 - 10:00 - 11:00 b
-- 11:00 - 12:00 c
-- 13:00 d
 - No time
+- 11:00 - 12:00 c
+- Another item without time
+- 13:00 d
+- 14:00 e
+- 15:00 f
 `;
 
   const tree = fromMarkdown(input);
@@ -122,9 +128,38 @@ test("Sort lists by time", () => {
 
   isList(list);
 
-  const actual = toMarkdown(
-    sortListsRecursively(list, compareByTimestampInText),
-  );
+  const actual = toMarkdown(sortListsRecursivelyByTimestamp(list));
+
+  expect(actual).toBe(expected);
+});
+
+test("Sorts timed groups recursively at each nested level", () => {
+  const input = `- Parent
+    - 11:00 Child b
+    - Untimed child
+    - 10:00 Child a
+    - 09:00 Child c
+- 12:00 Root b
+- Root without time
+- 11:00 Root a
+`;
+
+  const expected = `- Parent
+    - 09:00 Child c
+    - 10:00 Child a
+    - 11:00 Child b
+    - Untimed child
+- 11:00 Root a
+- 12:00 Root b
+- Root without time
+`;
+
+  const tree = fromMarkdown(input);
+  const list = tree.children[0];
+
+  isList(list);
+
+  const actual = toMarkdown(sortListsRecursivelyByTimestamp(list));
 
   expect(actual).toBe(expected);
 });

@@ -22,10 +22,9 @@ import { VaultIndexAdapter } from "./feature/vault-index-adapter";
 import { currentTime } from "./global-store/current-time";
 import { settings } from "./global-store/settings";
 import {
-  compareByTimestampInText,
   fromMarkdown,
   positionContainsPoint,
-  sortListsRecursively,
+  sortListsRecursivelyByTimestamp,
   toEditorPos,
   toMarkdown,
   toMdastPoint,
@@ -342,7 +341,7 @@ export default class DayPlanner extends Plugin {
           return;
         }
 
-        const sorted = sortListsRecursively(list, compareByTimestampInText);
+        const sorted = sortListsRecursivelyByTimestamp(list);
         const updatedText = toMarkdown(sorted).trim();
 
         isNotVoid(sorted.position);
