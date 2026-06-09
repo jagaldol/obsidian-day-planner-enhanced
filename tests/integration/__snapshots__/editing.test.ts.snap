@@ -12,12 +12,12 @@ exports[`Editing > Daily notes > * Moves a nested task with text between notes
 +     - Child list item without time
 ",
   "fixtures/fixture-vault/2025-07-28.md": "
-- - [ ] 10:00 - 11:00 Before
++ - [ ] 12:00 - 13:00 After
 ...
 -     - [ ] Child task
 -       Child text
 -         - Child list item without time
-+ - [ ] 10:00 - 11:00 Before
+- - [ ] 12:00 - 13:00 After
 ",
 }
 `;

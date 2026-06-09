@@ -164,6 +164,27 @@ test("Sorts timed groups recursively at each nested level", () => {
   expect(actual).toBe(expected);
 });
 
+test("Does not sort embedded clock text as a timed group", () => {
+  const input = `- [ ] SRT 371(15:36 출발)
+- [ ] 12:00 Root b
+- [ ] 11:00 Root a
+`;
+
+  const expected = `- [ ] SRT 371(15:36 출발)
+- [ ] 11:00 Root a
+- [ ] 12:00 Root b
+`;
+
+  const tree = fromMarkdown(input);
+  const list = tree.children[0];
+
+  isList(list);
+
+  const actual = toMarkdown(sortListsRecursivelyByTimestamp(list));
+
+  expect(actual).toBe(expected);
+});
+
 test.todo("Tabs don't get replaced with spaces on roundtripping");
 
 test("Does not throw errors on empty lists", () => {

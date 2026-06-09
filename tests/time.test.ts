@@ -1,9 +1,16 @@
 import moment from "moment";
 import { it, expect } from "vitest";
 
-import { getTimeFromLine } from "../src/parser/parser";
+import {
+  getTimeFromLine,
+  replaceOrPrependTimeRange,
+} from "../src/parser/parser";
 import { parseTime } from "../src/parser/time";
-import { createTimestamp, createTimestampParts } from "../src/util/task-utils";
+import {
+  createTimestamp,
+  createTimestampParts,
+  removeTimeRange,
+} from "../src/util/task-utils";
 
 it.each([
   ["13:00", { hours: 13, minutes: 0 }],
@@ -92,4 +99,65 @@ it("Reads an earlier end time as a next-day end boundary", () => {
     durationMinutes: 40,
     startTime: moment("2023-01-01 23:30"),
   });
+});
+
+it("Does not read embedded clock text as a schedule time", () => {
+  expect(
+    getTimeFromLine({
+      day: moment("2023-01-01"),
+      line: "SRT 371(15:36 출발)",
+    }),
+  ).toBeNull();
+  expect(
+    getTimeFromLine({
+      day: moment("2023-01-01"),
+      line: "- [ ] SRT 371(15:36 출발)",
+    }),
+  ).toBeNull();
+  expect(
+    getTimeFromLine({
+      day: moment("2023-01-01"),
+      line: "[ ] SRT 371(15:36 출발)",
+    }),
+  ).toBeNull();
+  expect(
+    getTimeFromLine({
+      day: moment("2023-01-01"),
+      line: "[ ] 12:00 Root",
+    }),
+  ).toMatchObject({ startTime: moment("2023-01-01 12:00") });
+});
+
+it("Only replaces a leading time range", () => {
+  expect(
+    replaceOrPrependTimeRange("SRT 371(15:36 출발)", "10:00 - 10:30"),
+  ).toBe("10:00 - 10:30 SRT 371(15:36 출발)");
+  expect(replaceOrPrependTimeRange("09:00 Old title", "10:00 - 10:30")).toBe(
+    "10:00 - 10:30 Old title",
+  );
+  expect(
+    replaceOrPrependTimeRange("- [ ] SRT 371(15:36 출발)", "10:00 - 10:30"),
+  ).toBe("- [ ] 10:00 - 10:30 SRT 371(15:36 출발)");
+  expect(
+    replaceOrPrependTimeRange("- [ ] 09:00 Old title", "10:00 - 10:30"),
+  ).toBe("- [ ] 10:00 - 10:30 Old title");
+  expect(
+    replaceOrPrependTimeRange("[ ] SRT 371(15:36 출발)", "10:00 - 10:30"),
+  ).toBe("[ ] 10:00 - 10:30 SRT 371(15:36 출발)");
+});
+
+it("Only removes a leading time range", () => {
+  expect(removeTimeRange("SRT 371(15:36 출발)")).toBe("SRT 371(15:36 출발)");
+  expect(removeTimeRange("09:00 SRT 371(15:36 출발)")).toBe(
+    "SRT 371(15:36 출발)",
+  );
+  expect(removeTimeRange("- [ ] 09:00 - 10:00 SRT 371(15:36 출발)")).toBe(
+    "- [ ] SRT 371(15:36 출발)",
+  );
+  expect(removeTimeRange("- SRT 371(15:36 출발)")).toBe(
+    "- SRT 371(15:36 출발)",
+  );
+  expect(removeTimeRange("[ ] 09:00 - 10:00 SRT 371(15:36 출발)")).toBe(
+    "[ ] SRT 371(15:36 출발)",
+  );
 });

@@ -10,7 +10,6 @@ import {
   obsidianBlockIdRegExp,
   scheduledPropRegExps,
   timeRangeAtStartOfLineRegExp,
-  timeRangeRegExp,
 } from "../regexp";
 import type { DayPlannerSettings } from "../settings";
 import {
@@ -378,8 +377,36 @@ export function removeTimeRangeFromStartOfLine(text: string) {
   return text.replace(timeRangeAtStartOfLineRegExp, "");
 }
 
+function splitMarkdownListPrefix(text: string) {
+  const match = text.match(/^(\s*(?:\d+[.)]|[-*+])\s+(?:\[[^\]]\]\s+)?)(.*)$/u);
+
+  if (match) {
+    return {
+      prefix: match[1],
+      text: match[2],
+    };
+  }
+
+  const checkboxMatch = text.match(/^(\s*\[[^\]]\]\s+)(.*)$/u);
+
+  if (!checkboxMatch) {
+    return undefined;
+  }
+
+  return {
+    prefix: checkboxMatch[1],
+    text: checkboxMatch[2],
+  };
+}
+
 export function removeTimeRange(text: string) {
-  return text.replace(timeRangeRegExp, "").trim().replace(/\s+/g, " ");
+  const listLine = splitMarkdownListPrefix(text);
+  const prefix = listLine?.prefix ?? "";
+  const textWithoutPrefix = listLine?.text ?? text;
+
+  return `${prefix}${removeTimeRangeFromStartOfLine(textWithoutPrefix)
+    .trim()
+    .replace(/\s+/g, " ")}`;
 }
 
 export function isTimeEqual(a: LocalTask, b: LocalTask) {

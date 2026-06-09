@@ -13,7 +13,7 @@ import {
   dashOrNumberWithMultipleSpaces,
   escapedSquareBracket,
   listItemRegExp,
-  timeRangeRegExp,
+  timeRangeAtStartOfLineRegExp,
 } from "../regexp";
 import { takeWhile } from "../util/collection";
 
@@ -128,7 +128,9 @@ export function sortListsRecursively<T extends Node>(
 }
 
 function hasTimestampInText(node: Node) {
-  return timeRangeRegExp.test(getFirstTextNodeValue(node));
+  const text = getFirstTextNodeValue(node).replace(/^\[[^\]]\]\s+/u, "");
+
+  return timeRangeAtStartOfLineRegExp.test(text);
 }
 
 function sortTimestampedGroups<T extends Node>(
