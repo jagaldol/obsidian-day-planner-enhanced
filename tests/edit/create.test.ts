@@ -19,6 +19,40 @@ function createUserInputPromise() {
 }
 
 describe("create", () => {
+  test("when creating without dragging, task starts at the click time", async () => {
+    const { handlers, moveCursorTo, dayToDisplayedTasks, confirmEdit, props } =
+      setUp({
+        tasks: emptyTasks,
+      });
+
+    moveCursorTo(moment("2023-01-01 01:00"));
+    handlers.handleContainerMouseDown();
+
+    expect(get(dayToDisplayedTasks)).toMatchObject({
+      [dayKey]: {
+        withTime: [
+          {
+            startTime: moment("2023-01-01 01:00"),
+            durationMinutes: 30,
+          },
+        ],
+      },
+    });
+
+    await confirmEdit();
+
+    expect(props.onUpdate).toHaveBeenCalledWith(
+      expect.anything(),
+      [
+        expect.objectContaining({
+          startTime: moment("2023-01-01 01:00"),
+          durationMinutes: 30,
+        }),
+      ],
+      expect.anything(),
+    );
+  });
+
   test("when creating and dragging, task duration changes", () => {
     const { handlers, moveCursorTo, dayToDisplayedTasks } = setUp({
       tasks: emptyTasks,

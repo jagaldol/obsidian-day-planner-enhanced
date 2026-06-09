@@ -129,6 +129,19 @@ export function transform(
     isAllDayEvent: false,
   };
 
+  const editType = getEditType(operation.mode);
+  const createPointerHasNotMoved =
+    operation.mode === EditMode.CREATE &&
+    pointerDateTime.dateTime.isSame(operation.task.startTime, "minute");
+
+  if (createPointerHasNotMoved) {
+    return result.map((task) =>
+      task.id === operation.task.id
+        ? normalizeEditedMidnightBoundary(undefined, task, editType)
+        : task,
+    );
+  }
+
   const idToTaskLookup = new Map(result.map((it) => [it.id, it]));
 
   const editableBlocks = result
@@ -138,7 +151,6 @@ export function transform(
       end: t.getEndTime(it).unix(),
     }))
     .toSorted((a, b) => a.start - b.start);
-  const editType = getEditType(operation.mode);
 
   const transformed = editBlocks(
     editableBlocks,

@@ -99,6 +99,27 @@ describe("Editing", () => {
       expect(getPathToDiff(vault.initialState, vault.state)).toMatchSnapshot();
     });
 
+    test("Creates tasks at the clicked time without dragging", async () => {
+      const { editContext, moveCursorTo, vault } = await setUp({
+        visibleDays: ["2025-07-20"],
+      });
+
+      moveCursorTo(window.moment("2025-07-20 13:00"));
+      editContext.handlers.handleContainerMouseDown();
+
+      await editContext.confirmEdit();
+
+      expect(getPathToDiff(vault.initialState, vault.state)).toEqual({
+        "fixtures/fixture-vault/2025-07-20.md": [
+          "",
+          "+ # Day planner",
+          "+ ",
+          "+ - [ ] 13:00 - 13:30 Text input",
+          "",
+        ].join("\n"),
+      });
+    });
+
     test("Moves a parent task with its nested subtree between notes", async () => {
       const { editContext, moveCursorTo, vault, findByText } = await setUp({
         visibleDays: ["2025-07-28"],
