@@ -26,16 +26,24 @@ Right-click a timeline block to edit the parent item, reveal it in the source fi
 
 ### 3. Nested items can be managed without leaving the planner
 
-The nested item manager can add root items, add child items, edit text, move siblings, delete subtrees, convert bullets into checkbox tasks, and toggle completion. Saving replaces only the child subtree and keeps the parent planner line intact.
+The nested item manager can add root items, add child items, edit text by clicking the item body, move siblings, delete subtrees, convert bullets into checkbox tasks, and toggle completion. Saving replaces only the child subtree and keeps the parent planner line intact.
 
 <img src="./assets/nested-items-editor-demo.png" alt="Day Planner Enhanced nested items editor" width="100%">
 
 <p align="center"><em>Edit nested schedules as a small tree, then save the result back to the source markdown.</em></p>
 
-### 4. Smaller planning improvements
+### 4. Overnight plans continue across days
+
+Plans that cross midnight stay anchored to the day where they start while still appearing naturally in the next day's timeline. A `23:00 - 00:30` entry can remain in the start day's daily note instead of being split into separate notes.
+
+<img src="./assets/overnight-schedule-demo.png" alt="Overnight plan written in the start day's daily note and shown in the next day's timeline" width="100%">
+
+<p align="center"><em>Overnight plans continue into the next day's timeline while staying in the start day's note.</em></p>
+
+### 5. Smaller planning improvements
 
 - **Timed group sorting**: timed groups are ordered by time while untimed notes stay attached to the timed item they follow.
-- **Smoother timeline editing**: click-created blocks use the clicked time as their start, end-of-day moves save the visible `23:59` boundary, newly created blocks stay selected while you type, and auto-scroll waits while you are interacting with the planner.
+- **Smoother timeline editing**: click-created blocks use the clicked time as their start, move-block dragging follows the configured snap interval from the block's original position, end-of-day moves save the visible `23:59` boundary, newly created blocks stay selected while you type, and auto-scroll waits while you are interacting with the planner.
 - **Undo-friendly removal**: timeline block removal is immediate from the context menu and still uses the undoable edit path.
 - **Theme-aware UI polish**: nested dividers, dots, time ranges, mobile controls, and checkbox colors are tuned for scanning and Obsidian themes.
 - **Separate plugin identity**: installs as `day-planner-enhanced`, so it can live separately from the original Day Planner plugin.
@@ -56,13 +64,15 @@ Day Planner Enhanced is integrated with
   - [1. Nested schedules stay grouped in the timeline](#1-nested-schedules-stay-grouped-in-the-timeline)
   - [2. Timeline actions include nested editing and removal](#2-timeline-actions-include-nested-editing-and-removal)
   - [3. Nested items can be managed without leaving the planner](#3-nested-items-can-be-managed-without-leaving-the-planner)
-  - [4. Smaller planning improvements](#4-smaller-planning-improvements)
+  - [4. Overnight plans continue across days](#4-overnight-plans-continue-across-days)
+  - [5. Smaller planning improvements](#5-smaller-planning-improvements)
 - [Installation](#installation)
   - [Install from Obsidian](#install-from-obsidian)
   - [Manual installation fallback](#manual-installation-fallback)
   - [Updating](#updating)
 - [How to use it](#how-to-use-it)
   - [1. Showing events from your daily notes](#1-showing-events-from-your-daily-notes)
+    - [Overnight plans](#overnight-plans)
     - [Editing nested items](#editing-nested-items)
   - [2. tasks community plugin integration, showing events from other files in your vault](#2-tasks-community-plugin-integration-showing-events-from-other-files-in-your-vault)
   - [3. Showing internet calendars](#3-showing-internet-calendars)
@@ -159,9 +169,13 @@ Write your tasks in a daily note, and they show up on the timeline:
 - [ ] 11:00 - 12:30 Grab a brush and put a little make-up
 ```
 
+#### Overnight plans
+
+Plans that cross midnight can stay written in the start day's daily note. Day Planner Enhanced keeps the original `23:00 - 00:30` line in that note and continues the block into the next day's timeline.
+
 #### Editing nested items
 
-Right-click a timeline block and choose **Edit nested items...** to manage the child list under that planner item. The editor can add items, add child items, update text, move siblings up or down, delete nested subtrees, and switch bullets into checkbox tasks without changing the parent planner line.
+Right-click a timeline block and choose **Edit nested items...** to manage the child list under that planner item. The editor can add items, add child items, update text by clicking an item body, move siblings up or down, delete nested subtrees, and switch bullets into checkbox tasks without changing the parent planner line.
 
 ### 2. [tasks community plugin](obsidian://show-plugin?id=obsidian-tasks-plugin) integration, showing events from other files in your vault
 

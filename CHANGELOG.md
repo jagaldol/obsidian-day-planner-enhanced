@@ -4,6 +4,24 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.30.0**, and follows its own versioning.
 
+## 0.2.3
+
+### ✨ New features
+
+- Added cross-midnight timeline support for daily-note plans such as `23:00 - 00:30`, keeping the item anchored in the start day's note while continuing it into the next day's timeline.
+- Made nested item rows faster to edit: clicking the text area now enters inline edit mode, and the old pencil-only path was removed from the row controls.
+
+### 🐞 Fixed issues
+
+- Fixed move-block dragging so timeline blocks move relative to the grabbed block's original position instead of jumping to the pointer-derived time.
+- Fixed continued overnight blocks so only the valid resize controls are shown on the continued segment.
+- Fixed nested time parsing so untimed child text that merely contains an embedded clock, such as `SRT 371(15:36 departure)`, is not promoted into a timed nested schedule.
+- Fixed nested inline edit cancellation so pressing Escape exits the item edit state instead of closing the whole nested-item modal.
+
+### ✨ Other improvements
+
+- Refreshed README screenshots and highlighted overnight timeline behavior in the main feature overview.
+
 ## 0.2.2
 
 ### 🐞 Fixed issues
