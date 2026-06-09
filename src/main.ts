@@ -22,6 +22,11 @@ import { VaultIndexAdapter } from "./feature/vault-index-adapter";
 import { currentTime } from "./global-store/current-time";
 import { settings } from "./global-store/settings";
 import {
+  clearTimelineTaskSelection,
+  createTimelineTaskSelectionTarget,
+  requestTimelineTaskSelection,
+} from "./global-store/timeline-task-selection";
+import {
   fromMarkdown,
   positionContainsPoint,
   sortListsRecursivelyByTimestamp,
@@ -434,13 +439,26 @@ export default class DayPlanner extends Plugin {
         app: this.app,
       });
 
+    const selectTimelineTask = (task: LocalTask) => {
+      const path =
+        task.location?.path ??
+        this.periodicNotes.createDailyNotePath(task.startTime);
+
+      requestTimelineTaskSelection(
+        createTimelineTaskSelectionTarget(task, path),
+      );
+    };
+
     const onUpdate: OnUpdateFn = createUpdateHandler({
       settings: this.settings,
       transactionWriter: this.transactionWriter,
       vaultFacade: this.vaultFacade,
       periodicNotes: this.periodicNotes,
       onEditConfirmed: this.undoNotice.show,
+      onTaskCreationStarted: selectTimelineTask,
+      onTaskCreated: selectTimelineTask,
       onEditCanceled: () => {
+        clearTimelineTaskSelection();
         new Notice("Edit canceled");
       },
       getTextInput: () =>

@@ -4,6 +4,12 @@
   import { isNotVoid } from "typed-assert";
 
   import { getObsidianContext } from "../../context/obsidian-context";
+  import {
+    clearTimelineTaskSelection,
+    isLocatedTimelineTaskSelectionMatch,
+    isTimelineTaskSelectionMatch,
+    pendingTimelineTaskSelection,
+  } from "../../global-store/timeline-task-selection";
   import { timeRangeAtStartOfLineRegExp } from "../../regexp";
   import { type LocalTask } from "../../task-types";
   import { createMarkdownListTokens, getFirstLine } from "../../util/markdown";
@@ -76,9 +82,24 @@
 
     await removeTaskFromPlan(task);
   }
+
+  const autoSelect = $derived(
+    $pendingTimelineTaskSelection !== undefined &&
+      isTimelineTaskSelectionMatch(task, $pendingTimelineTaskSelection),
+  );
+
+  function handleAutoSelect() {
+    const target = $pendingTimelineTaskSelection;
+
+    if (target && isLocatedTimelineTaskSelectionMatch(task, target)) {
+      clearTimelineTaskSelection();
+    }
+  }
 </script>
 
 <Selectable
+  {autoSelect}
+  onAutoSelect={handleAutoSelect}
   onSecondarySelect={(event) =>
     createTimeBlockMenu({
       event,

@@ -13,6 +13,7 @@ import {
 import type { PeriodicNotes } from "./service/periodic-notes";
 import type { VaultFacade } from "./service/vault-facade";
 import type { DayPlannerSettings } from "./settings";
+import type { LocalTask } from "./task-types";
 import type { OnUpdateFn } from "./types";
 import { type ConfirmationModalProps } from "./ui/confirmation-modal";
 import { EditMode } from "./ui/hooks/use-edit/types";
@@ -74,6 +75,8 @@ export const createUpdateHandler = (props: {
   periodicNotes: PeriodicNotes;
   onEditCanceled: () => void;
   onEditConfirmed: () => void;
+  onTaskCreationStarted?: (task: LocalTask) => void;
+  onTaskCreated?: (task: LocalTask) => void;
   getTextInput: () => Promise<string | undefined>;
   getConfirmationInput: (input: ConfirmationModalProps) => Promise<boolean>;
 }): OnUpdateFn => {
@@ -86,6 +89,8 @@ export const createUpdateHandler = (props: {
     periodicNotes,
     getTextInput,
     getConfirmationInput,
+    onTaskCreationStarted,
+    onTaskCreated,
   } = props;
 
   function getPathsToCreate(paths: string[]) {
@@ -98,11 +103,14 @@ export const createUpdateHandler = (props: {
 
   return async (base, next, mode) => {
     const diff = getTaskDiffFromEditState(base, next);
+    let createdTask: LocalTask | undefined;
 
     if (mode === EditMode.CREATE) {
       const created = diff.added[0];
 
       isNotVoid(created);
+
+      onTaskCreationStarted?.(created);
 
       const modalOutput = await getTextInput();
 
@@ -112,7 +120,8 @@ export const createUpdateHandler = (props: {
         return false;
       }
 
-      diff.added[0] = { ...created, text: modalOutput };
+      createdTask = { ...created, text: modalOutput };
+      diff.added[0] = createdTask;
     }
 
     const updates = mapTaskDiffToUpdates(diff, settings(), periodicNotes);
@@ -161,6 +170,10 @@ export const createUpdateHandler = (props: {
     }
 
     await transactionWriter.writeTransaction(transaction);
+
+    if (createdTask) {
+      onTaskCreated?.(createdTask);
+    }
 
     onEditConfirmed();
 

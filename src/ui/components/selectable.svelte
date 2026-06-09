@@ -18,18 +18,23 @@
   }
 
   interface Props {
+    autoSelect?: boolean;
     children: Snippet<[ChildrenProps]>;
+    onAutoSelect?: () => void;
     selectionBlocked?: boolean;
     onSecondarySelect?: (event: MouseEvent | PointerEvent | TouchEvent) => void;
   }
 
   const {
+    autoSelect = false,
     children,
+    onAutoSelect,
     onSecondarySelect,
     selectionBlocked = false,
   }: Props = $props();
 
   let state = $state<SelectionState>("none");
+  let autoSelectionApplied = false;
   const selectionToken = Symbol("selectable");
 
   function setSelection(newState: SelectionState) {
@@ -50,6 +55,22 @@
     return () => {
       setTimelineSelectionActive(selectionToken, false);
     };
+  });
+
+  $effect(() => {
+    if (!autoSelect) {
+      autoSelectionApplied = false;
+
+      return;
+    }
+
+    if (autoSelectionApplied || selectionBlocked) {
+      return;
+    }
+
+    setSelection("primary");
+    autoSelectionApplied = true;
+    onAutoSelect?.();
   });
 
   function clear() {
