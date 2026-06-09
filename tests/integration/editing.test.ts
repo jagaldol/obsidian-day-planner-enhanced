@@ -46,6 +46,28 @@ describe("Editing", () => {
       expect(getPathToDiff(vault.initialState, vault.state)).toMatchSnapshot();
     });
 
+    test("Writes 23:59 when a daily note task is moved to end at midnight", async () => {
+      const { editContext, moveCursorTo, vault, findByText } = await setUp({
+        visibleDays: ["2025-07-19"],
+      });
+
+      editContext.handlers.handleGripMouseDown(
+        findByText("List item under planner heading"),
+        EditMode.DRAG,
+      );
+
+      moveCursorTo(window.moment("2025-07-19 23:30"));
+
+      await editContext.confirmEdit();
+
+      expect(getPathToDiff(vault.initialState, vault.state)).toEqual({
+        "fixtures/fixture-vault/2025-07-19.md": `
+- - 11:00 - 11:30 List item under planner heading
++ - 23:30 - 23:59 List item under planner heading
+`,
+      });
+    });
+
     test("Un-schedules tasks", async () => {
       const { editContext, moveCursorTo, vault, findByText } = await setUp({
         visibleDays: ["2025-07-19"],

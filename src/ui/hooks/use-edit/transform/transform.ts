@@ -50,6 +50,49 @@ function getEditInteraction(mode: EditMode) {
   return "none";
 }
 
+function endsAtStartOfNextDay(task: LocalTask) {
+  const nextDayStart = task.startTime.clone().add(1, "day").startOf("day");
+
+  return t.getEndTime(task).isSame(nextDayStart, "minute");
+}
+
+function clampEndToStartDay(task: LocalTask) {
+  const endOfStartDay = task.startTime.clone().endOf("day").startOf("minute");
+  const durationMinutes = endOfStartDay.diff(task.startTime, "minutes");
+
+  if (durationMinutes <= 0) {
+    return task;
+  }
+
+  return {
+    ...task,
+    durationMinutes,
+  };
+}
+
+function normalizeEditedMidnightBoundary(
+  originalTask: LocalTask | undefined,
+  updatedTask: LocalTask,
+  editType: ReturnType<typeof getEditType>,
+) {
+  const timeChanged =
+    originalTask === undefined || !t.isTimeEqual(originalTask, updatedTask);
+  const endResizeMovedStartBackward =
+    editType === "end" &&
+    originalTask !== undefined &&
+    updatedTask.startTime.isBefore(originalTask.startTime, "minute");
+
+  if (
+    !timeChanged ||
+    endResizeMovedStartBackward ||
+    !endsAtStartOfNextDay(updatedTask)
+  ) {
+    return updatedTask;
+  }
+
+  return clampEndToStartDay(updatedTask);
+}
+
 export function transform(
   baseline: LocalTask[],
   operation: EditOperation,
@@ -57,6 +100,7 @@ export function transform(
   pointerDateTime: PointerDateTime,
 ) {
   const result = baseline.slice();
+  const baselineTaskById = new Map(baseline.map((it) => [it.id, it]));
 
   const isInBaseline = baseline.find((task) => task.id === operation.task.id);
 
@@ -94,12 +138,13 @@ export function transform(
       end: t.getEndTime(it).unix(),
     }))
     .toSorted((a, b) => a.start - b.start);
+  const editType = getEditType(operation.mode);
 
   const transformed = editBlocks(
     editableBlocks,
     operation.task.id,
     pointerDateTime.dateTime.unix(),
-    getEditType(operation.mode),
+    editType,
     getEditInteraction(operation.mode),
     settings.minimalDurationMinutes * 60,
   );
@@ -109,11 +154,17 @@ export function transform(
 
     isNotVoid(task);
 
-    return {
+    const updatedTask = {
       ...task,
       startTime: window.moment.unix(it.start),
       durationMinutes: (it.end - it.start) / 60,
     };
+
+    return normalizeEditedMidnightBoundary(
+      baselineTaskById.get(it.id),
+      updatedTask,
+      editType,
+    );
   });
 }
 /* eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. */

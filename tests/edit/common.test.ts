@@ -212,6 +212,54 @@ describe("drag one & common edit mechanics", () => {
         },
       });
     });
+
+    test("Moving a block to the day end commits the 23:59 boundary", async () => {
+      const task = {
+        ...baseTask,
+        startTime: moment("2023-01-01 15:00"),
+        durationMinutes: 40,
+        id: "1",
+      };
+
+      const {
+        dayToDisplayedTasks,
+        handlers,
+        moveCursorTo,
+        confirmEdit,
+        props,
+      } = setUp({
+        tasks: [task],
+      });
+
+      handlers.handleGripMouseDown(task, EditMode.DRAG);
+      moveCursorTo(moment("2023-01-01 23:20"));
+
+      expect(get(dayToDisplayedTasks)).toMatchObject({
+        [dayKey]: {
+          withTime: [
+            {
+              id: "1",
+              startTime: moment("2023-01-01 23:20"),
+              durationMinutes: 39,
+            },
+          ],
+        },
+      });
+
+      await confirmEdit();
+
+      expect(props.onUpdate).toHaveBeenCalledWith(
+        expect.anything(),
+        [
+          expect.objectContaining({
+            id: "1",
+            startTime: moment("2023-01-01 23:20"),
+            durationMinutes: 39,
+          }),
+        ],
+        expect.anything(),
+      );
+    });
   });
 
   describe("Multi-day rows", () => {
