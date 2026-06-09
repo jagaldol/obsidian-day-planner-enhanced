@@ -8,6 +8,7 @@
 
   import { getObsidianContext } from "../../context/obsidian-context";
   import type { LocalTask } from "../../task-types";
+  import { getIsomorphicClientY } from "../../util/dom";
   import * as t from "../../util/task-utils";
   import { createGestures } from "../actions/gestures";
   import { EditMode } from "../hooks/use-edit/types";
@@ -18,12 +19,50 @@
   export let isActive: boolean;
   export let setIsActive: (value: boolean) => void;
   export let task: LocalTask;
+  let dragStarted = false;
 
   const {
+    pointerDateTime,
     editContext: {
       handlers: { handleGripMouseDown },
     },
   } = getObsidianContext();
+
+  function startDrag(
+    event: MouseEvent | TouchEvent,
+    dragTask: LocalTask,
+    mode: EditMode,
+  ) {
+    if (dragStarted) {
+      return;
+    }
+
+    dragStarted = true;
+    const originStartTime = dragTask.startTime.clone();
+
+    pointerDateTime.set({
+      dateTime: originStartTime.clone(),
+      type: "dateTime",
+    });
+
+    handleGripMouseDown(dragTask, mode, getIsomorphicClientY(event));
+  }
+
+  function handleMoveStart(event: MouseEvent | TouchEvent, mode: EditMode) {
+    startDrag(event, task, mode);
+  }
+
+  function handleMove(event: MouseEvent | TouchEvent, mode: EditMode) {
+    startDrag(event, task, mode);
+  }
+
+  function handleCopyStart(event: MouseEvent | TouchEvent) {
+    startDrag(event, t.copy(task), EditMode.DRAG);
+  }
+
+  function handleCopy(event: MouseEvent | TouchEvent) {
+    handleCopyStart(event);
+  }
 </script>
 
 <ExpandingControls {isActive} {setIsActive}>
@@ -33,7 +72,8 @@
       label="Move block"
       use={[
         createGestures({
-          onpanmove: () => handleGripMouseDown(task, EditMode.DRAG),
+          onpanstart: (event) => handleMoveStart(event, EditMode.DRAG),
+          onpanmove: (event) => handleMove(event, EditMode.DRAG),
         }),
       ]}
     >
@@ -46,7 +86,8 @@
       label="Copy block"
       use={[
         createGestures({
-          onpanmove: () => handleGripMouseDown(t.copy(task), EditMode.DRAG),
+          onpanstart: handleCopyStart,
+          onpanmove: handleCopy,
         }),
       ]}
     >
@@ -59,8 +100,10 @@
         label="Move block and push neighboring blocks"
         use={[
           createGestures({
-            onpanmove: () =>
-              handleGripMouseDown(task, EditMode.DRAG_AND_SHIFT_OTHERS),
+            onpanstart: (event) =>
+              handleMoveStart(event, EditMode.DRAG_AND_SHIFT_OTHERS),
+            onpanmove: (event) =>
+              handleMove(event, EditMode.DRAG_AND_SHIFT_OTHERS),
           }),
         ]}
       >
@@ -71,8 +114,10 @@
         label="Move block and shrink neighboring blocks"
         use={[
           createGestures({
-            onpanmove: () =>
-              handleGripMouseDown(task, EditMode.DRAG_AND_SHRINK_OTHERS),
+            onpanstart: (event) =>
+              handleMoveStart(event, EditMode.DRAG_AND_SHRINK_OTHERS),
+            onpanmove: (event) =>
+              handleMove(event, EditMode.DRAG_AND_SHRINK_OTHERS),
           }),
         ]}
       >

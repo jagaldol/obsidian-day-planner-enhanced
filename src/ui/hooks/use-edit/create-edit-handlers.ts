@@ -62,6 +62,28 @@ export function createEditHandlers({
     startEdit({ task: t.getTimelineSegmentSource(task), mode });
   }
 
+  function handleGripMouseDown(
+    task: WithTime<LocalTask>,
+    mode: EditMode,
+    dragOriginClientY?: number,
+  ) {
+    if (get(editOperation)) {
+      return;
+    }
+
+    const pointerDay = get(pointerDateTime).dateTime;
+
+    isNotVoid(pointerDay, "Day cannot be undefined on edit");
+
+    startEdit({
+      dragOriginClientY,
+      dragOriginStartTime:
+        dragOriginClientY === undefined ? undefined : task.startTime.clone(),
+      task: t.getTimelineSegmentSource(task),
+      mode,
+    });
+  }
+
   async function handleTaskMouseUp(task: LocalTask) {
     if (get(editOperation) || !task.location) {
       return;
@@ -94,7 +116,7 @@ export function createEditHandlers({
   }
 
   return {
-    handleGripMouseDown: handleResizerMouseDown,
+    handleGripMouseDown,
     handleContainerMouseDown,
     handleResizerMouseDown,
     handleTaskMouseUp,

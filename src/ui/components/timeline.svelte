@@ -9,6 +9,7 @@
   import { selectLogEntriesForDay } from "../../redux";
   import type { Task, WithPlacing, WithTime } from "../../task-types";
   import {
+    getIsomorphicClientY,
     getPointerOffsetY,
     isTouchEvent,
     offsetYToMinutes,
@@ -25,6 +26,7 @@
     getRenderKey,
   } from "../../util/task-utils";
   import { createGestures } from "../actions/gestures";
+  import type { EditOperation } from "../hooks/use-edit/types";
 
   import Column from "./column.svelte";
   import LocalTimeBlock from "./local-time-block.svelte";
@@ -164,10 +166,46 @@
     handleContainerMouseDown();
   }
 
-  function handleContainerPointerMove(event: MouseEvent | TouchEvent) {
-    if (get(editOperation)) {
-      updatePointerDateTime(event);
+  function updateRelativeDragPointerDateTime(
+    event: MouseEvent | TouchEvent,
+    operation: EditOperation,
+  ) {
+    if (
+      operation.dragOriginClientY === undefined ||
+      operation.dragOriginStartTime === undefined
+    ) {
+      return;
     }
+
+    const { snapStepMinutes, zoomLevel } = settingsSignal.current;
+    const deltaMinutes =
+      (getIsomorphicClientY(event) - operation.dragOriginClientY) / zoomLevel;
+    const snappedDeltaMinutes =
+      Math.round(deltaMinutes / snapStepMinutes) * snapStepMinutes;
+    const dateTime = operation.dragOriginStartTime
+      .clone()
+      .add(snappedDeltaMinutes, "minutes");
+    const previousDateTime = get(pointerDateTime).dateTime;
+
+    if (!dateTime.isSame(previousDateTime, "minute")) {
+      pointerDateTime.set({ dateTime, type: "dateTime" });
+    }
+  }
+
+  function handleContainerPointerMove(event: MouseEvent | TouchEvent) {
+    const currentEditOperation = get(editOperation);
+
+    if (!currentEditOperation) {
+      return;
+    }
+
+    if (currentEditOperation.dragOriginClientY !== undefined) {
+      updateRelativeDragPointerDateTime(event, currentEditOperation);
+
+      return;
+    }
+
+    updatePointerDateTime(event);
   }
 
   const timelineGestures = createGestures({

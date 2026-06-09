@@ -1,4 +1,5 @@
 import type { LocalTask, WithTime } from "../../../task-types";
+import type { Moment } from "../../../util/obsidian-moment";
 
 export enum EditMode {
   DRAG = "DRAG",
@@ -15,6 +16,8 @@ export enum EditMode {
 }
 
 export interface EditOperation {
+  dragOriginClientY?: number;
+  dragOriginStartTime?: Moment;
   task: WithTime<LocalTask>;
   mode: EditMode;
 }
