@@ -4,6 +4,12 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.30.0**, and follows its own versioning.
 
+## 0.2.2
+
+### 🐞 Fixed issues
+
+- Added scorecard-compatible TypeScript ESLint suppressions to the new timeline interaction stores so Obsidian's automated review no longer reports source-code warnings when it cannot resolve Svelte store types.
+
 ## 0.2.1
 
 ### 🐞 Fixed issues
