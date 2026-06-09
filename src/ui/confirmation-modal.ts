@@ -9,6 +9,8 @@ export interface ConfirmationModalProps {
 }
 
 class ConfirmationModal extends Modal {
+  private acceptButton: HTMLButtonElement | undefined;
+
   constructor(
     app: App,
     props: ConfirmationModalProps & {
@@ -35,25 +37,30 @@ class ConfirmationModal extends Modal {
     this.contentEl.createDiv(
       "planner-confirmation-modal-buttons",
       (buttonsEl) => {
-        buttonsEl
-          .createEl("button", { text: "Cancel" })
-          .addEventListener("click", (e) => {
-            onCancel(e);
-            this.close();
-          });
+        const cancelButton = buttonsEl.createEl("button", { text: "Cancel" });
+        cancelButton.type = "button";
+        cancelButton.addEventListener("click", (e) => {
+          onCancel(e);
+          this.close();
+        });
 
-        buttonsEl
-          .createEl("button", {
-            cls: variant === "warning" ? "mod-warning" : "mod-cta",
-            text: cta,
-          })
-          .addEventListener("click", async (e) => {
-            await onAccept(e);
+        const acceptButton = buttonsEl.createEl("button", {
+          cls: variant === "warning" ? "mod-warning" : "mod-cta",
+          text: cta,
+        });
+        acceptButton.type = "button";
+        acceptButton.addEventListener("click", async (e) => {
+          await onAccept(e);
 
-            this.close();
-          });
+          this.close();
+        });
+        this.acceptButton = acceptButton;
       },
     );
+  }
+
+  onOpen() {
+    window.setTimeout(() => this.acceptButton?.focus());
   }
 }
 

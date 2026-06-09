@@ -5,7 +5,6 @@
 
   import { getObsidianContext } from "../../context/obsidian-context";
   import { timeRangeAtStartOfLineRegExp } from "../../regexp";
-  import { runWithNoticeOnError } from "../../service/list-item-entry-editor";
   import { type LocalTask } from "../../task-types";
   import { createMarkdownListTokens, getFirstLine } from "../../util/markdown";
   import type { HTMLActionArray } from "../actions/use-actions";
@@ -34,9 +33,8 @@
   const {
     editContext: { editOperation },
     workspaceFacade,
-    taskEntryEditor,
     openNestedItemsEditModal,
-    confirmAction,
+    removeTask: removeTaskFromPlan,
     editText,
     editLine,
   } = getObsidianContext();
@@ -76,23 +74,7 @@
   async function removeTask() {
     isNotVoid(task.location);
 
-    const confirmed = await confirmAction({
-      title: "Remove task?",
-      text: "This will remove the selected item and all nested items from the source file.",
-      cta: "Remove",
-      variant: "warning",
-    });
-
-    if (!confirmed) {
-      return;
-    }
-
-    await runWithNoticeOnError(
-      taskEntryEditor.removeAtLocation({
-        path: task.location.path,
-        line: task.location.position.start.line,
-      }),
-    );
+    await removeTaskFromPlan(task);
   }
 </script>
 

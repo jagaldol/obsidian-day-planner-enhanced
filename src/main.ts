@@ -57,6 +57,7 @@ import { createEditTimeEntryModalCreator } from "./ui/create-edit-time-entry-mod
 import { createNestedItemsEditModalCreator } from "./ui/create-nested-items-edit-modal";
 import { createEditorMenuCallback } from "./ui/editor-menu";
 import { useDateRanges } from "./ui/hooks/use-date-ranges";
+import { EditMode } from "./ui/hooks/use-edit/types";
 import { mountStatusBarWidget } from "./ui/hooks/use-status-bar-widget";
 import { useTasks } from "./ui/hooks/use-tasks";
 import { useVisibleDays } from "./ui/hooks/use-visible-days";
@@ -587,11 +588,21 @@ export default class DayPlanner extends Plugin {
       this.app,
       this.taskEntryEditor,
     );
+    const removeTask: ObsidianContext["removeTask"] = (task) => {
+      const base = get(localTasks);
+
+      return onUpdate(
+        base,
+        base.filter((candidate) => candidate.id !== task.id),
+        EditMode.DELETE,
+      );
+    };
 
     const defaultObsidianContext: ObsidianContext = {
       periodicNotes: this.periodicNotes,
       openEditTimeEntryModal,
       openNestedItemsEditModal,
+      removeTask,
       taskEntryEditor: this.taskEntryEditor,
       confirmAction,
       editText,

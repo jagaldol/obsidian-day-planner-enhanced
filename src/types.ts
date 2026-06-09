@@ -68,6 +68,7 @@ export interface ObsidianContext {
   taskEntryEditor: ListItemEntryEditor;
   openEditTimeEntryModal: OpenEditTimeEntryModal;
   openNestedItemsEditModal: OpenNestedItemsEditModal;
+  removeTask: (task: LocalTask) => Promise<boolean>;
   confirmAction: (props: ConfirmationModalProps) => Promise<boolean>;
   // todo: rename to promptUserToEditText
   editText: (props: {
