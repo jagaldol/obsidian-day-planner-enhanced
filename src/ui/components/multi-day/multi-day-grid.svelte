@@ -198,8 +198,8 @@
       {#each $dateRange as day}
         <Timeline
           --column-background-color={getColumnBackgroundColor(day)}
+          autoScrollBlocked={true}
           {day}
-          isUnderCursor={true}
         />
       {/each}
     </Scroller>

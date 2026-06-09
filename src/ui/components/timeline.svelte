@@ -34,8 +34,8 @@
 
   const {
     day,
-    isUnderCursor = false,
-  }: { day: Moment; isUnderCursor?: boolean } = $props();
+    autoScrollBlocked = false,
+  }: { autoScrollBlocked?: boolean; day: Moment } = $props();
 
   const {
     settings,
@@ -190,7 +190,7 @@
     visibleHours={getVisibleHours($settings)}
   >
     {#if $isToday(day)}
-      <Needle autoScrollBlocked={isUnderCursor} />
+      <Needle {autoScrollBlocked} />
     {/if}
 
     <div
@@ -233,7 +233,7 @@
     visibleHours={getVisibleHours($settings)}
   >
     {#if $isToday(day)}
-      <Needle autoScrollBlocked={isUnderCursor} />
+      <Needle {autoScrollBlocked} />
     {/if}
 
     <div class="tasks absolute-stretch-x">

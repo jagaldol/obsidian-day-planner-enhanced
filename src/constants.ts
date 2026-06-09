@@ -43,6 +43,7 @@ export const floatingUiOffset = 8;
 
 export const scrollOnHoverZoneHeightPercent = 8;
 export const scrollSpeedPixelsPerAnimationFrame = 8;
+export const autoScrollResumeDelayMillis = 5 * 1000;
 
 export enum MouseButton {
   LEFT = 0,

@@ -3,6 +3,7 @@
   import type { Snippet } from "svelte";
   import { on } from "svelte/events";
 
+  import { autoScrollResumeDelayMillis } from "../../constants";
   import { getObsidianContext } from "../../context/obsidian-context";
   import { createAutoScroll, getScrollZones } from "../../util/dom";
 
@@ -16,14 +17,21 @@
     onscroll?: (event: Event) => void;
   } = $props();
 
-  let isUnderCursor = $state(false);
-  let el: HTMLElement | undefined = $state();
-
-  const { startScroll, stopScroll } = createAutoScroll();
-
   const {
     editContext: { editOperation },
   } = getObsidianContext();
+
+  let isUnderCursor = $state(false);
+  let el: HTMLElement | undefined = $state();
+  let autoScrollBlockedUntil = $state(0);
+  let autoScrollUnblockTimeout: number | undefined;
+  const autoScrollBlocked = $derived(
+    isUnderCursor ||
+      autoScrollBlockedUntil > Date.now() ||
+      Boolean($editOperation),
+  );
+
+  const { startScroll, stopScroll } = createAutoScroll();
 
   function blockPanOnEdit(el: HTMLElement) {
     const off = on(el, "touchmove", (event) => {
@@ -38,6 +46,32 @@
       },
     };
   }
+
+  function delayAutoScroll() {
+    autoScrollBlockedUntil = Date.now() + autoScrollResumeDelayMillis;
+
+    if (autoScrollUnblockTimeout !== undefined) {
+      window.clearTimeout(autoScrollUnblockTimeout);
+    }
+
+    autoScrollUnblockTimeout = window.setTimeout(() => {
+      autoScrollBlockedUntil = 0;
+      autoScrollUnblockTimeout = undefined;
+    }, autoScrollResumeDelayMillis);
+  }
+
+  function handleScroll(event: Event) {
+    delayAutoScroll();
+    onscroll?.(event);
+  }
+
+  $effect(() => {
+    return () => {
+      if (autoScrollUnblockTimeout !== undefined) {
+        window.clearTimeout(autoScrollUnblockTimeout);
+      }
+    };
+  });
 </script>
 
 <div
@@ -49,6 +83,7 @@
   onmouseleave={() => {
     isUnderCursor = false;
   }}
+  onpointerdown={delayAutoScroll}
   onpointerleave={stopScroll}
   onpointermove={(event) => {
     if (!$editOperation || !el) {
@@ -65,10 +100,12 @@
       stopScroll();
     }
   }}
-  {onscroll}
+  onpointerup={delayAutoScroll}
+  onscroll={handleScroll}
+  onwheel={delayAutoScroll}
   use:blockPanOnEdit
 >
-  {@render children(isUnderCursor)}
+  {@render children(autoScrollBlocked)}
 </div>
 
 <!-- eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. -->

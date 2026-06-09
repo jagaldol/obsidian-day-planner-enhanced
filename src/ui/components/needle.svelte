@@ -3,6 +3,10 @@
   import { currentTimeSignal } from "../../global-store/current-time";
   import { timeToTimelineOffset } from "../../global-store/derived-settings";
   import { settings } from "../../global-store/settings";
+  import {
+    canAutoScrollToNow,
+    timelineSelectionActive,
+  } from "../../global-store/timeline-auto-scroll";
   import { getMinutesSinceMidnight } from "../../util/moment";
 
   interface Props {
@@ -20,7 +24,13 @@
   );
 
   function scrollIntoView() {
-    if ($settings.centerNeedle && !autoScrollBlocked) {
+    if (
+      canAutoScrollToNow({
+        autoScrollBlocked,
+        centerNeedle: $settings.centerNeedle,
+        selectionActive: $timelineSelectionActive,
+      })
+    ) {
       el?.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   }

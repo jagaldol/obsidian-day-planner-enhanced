@@ -108,9 +108,9 @@
       <Scroller
         class={["planner-timeline-scroller", "planner-flex-scrollable"]}
       >
-        {#snippet children(isUnderCursor)}
+        {#snippet children(autoScrollBlocked)}
           <Ruler visibleHours={getVisibleHours($settings)} />
-          <Timeline day={firstDayInRange} {isUnderCursor} />
+          <Timeline {autoScrollBlocked} day={firstDayInRange} />
         {/snippet}
       </Scroller>
     </Tree>

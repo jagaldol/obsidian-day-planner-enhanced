@@ -3,6 +3,7 @@
   import { type Snippet } from "svelte";
 
   import { MouseButton, vibrationDurationMillis } from "../../constants";
+  import { setTimelineSelectionActive } from "../../global-store/timeline-auto-scroll";
   import { isTouchEvent } from "../../util/dom";
   import { createGestures } from "../actions/gestures";
   import { pointerUpOutside } from "../actions/pointer-up-outside";
@@ -29,6 +30,7 @@
   }: Props = $props();
 
   let state = $state<SelectionState>("none");
+  const selectionToken = Symbol("selectable");
 
   function setSelection(newState: SelectionState) {
     if (newState !== "none") {
@@ -41,6 +43,14 @@
 
     state = newState;
   }
+
+  $effect(() => {
+    setTimelineSelectionActive(selectionToken, state !== "none");
+
+    return () => {
+      setTimelineSelectionActive(selectionToken, false);
+    };
+  });
 
   function clear() {
     setSelection("none");
