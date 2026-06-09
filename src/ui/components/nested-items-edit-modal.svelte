@@ -300,9 +300,7 @@
   </div>
 
   <div class="nested-items-list">
-    {#if items.length === 0}
-      <div class="empty-state">No nested items</div>
-    {:else}
+    {#if items.length > 0}
       {#each items as item, index}
         {@render itemCard(
           item,
@@ -861,13 +859,6 @@
     width: 16px;
     height: 16px;
     stroke-width: 2.2;
-  }
-
-  .empty-state {
-    pointer-events: none;
-    padding: var(--size-4-4);
-    color: var(--text-muted);
-    text-align: center;
   }
 
   .footer-buttons {
