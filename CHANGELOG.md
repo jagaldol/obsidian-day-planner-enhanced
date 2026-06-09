@@ -4,6 +4,20 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.30.0**, and follows its own versioning.
 
+## 0.2.1
+
+### 🐞 Fixed issues
+
+- Fixed end-of-day timeline moves so tasks moved to the bottom of the day are saved as `23:59` in the source note instead of displaying as `23:59` while writing `00:00`.
+- Fixed click-created timeline tasks so the clicked position becomes the task start time and the configured default duration is applied from there.
+- Reduced timeline auto-scroll interruptions while interacting with the planner, editing a task, or keeping a timeline block selected.
+- Fixed the empty nested-item editor state so the add action no longer overlaps with an empty-state message.
+
+### ✨ Other improvements
+
+- Timeline block removal now happens immediately from the context menu while still using the undoable edit path.
+- Newly created timeline blocks stay selected while the title prompt is open, preventing auto-scroll from pulling the view away while typing.
+
 ## 0.2.0
 
 ### ✨ New features

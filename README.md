@@ -35,6 +35,8 @@ The nested item manager can add root items, add child items, edit text, move sib
 ### 4. Smaller planning improvements
 
 - **Timed group sorting**: timed groups are ordered by time while untimed notes stay attached to the timed item they follow.
+- **Smoother timeline editing**: click-created blocks use the clicked time as their start, end-of-day moves save the visible `23:59` boundary, newly created blocks stay selected while you type, and auto-scroll waits while you are interacting with the planner.
+- **Undo-friendly removal**: timeline block removal is immediate from the context menu and still uses the undoable edit path.
 - **Theme-aware UI polish**: nested dividers, dots, time ranges, mobile controls, and checkbox colors are tuned for scanning and Obsidian themes.
 - **Separate plugin identity**: installs as `day-planner-enhanced`, so it can live separately from the original Day Planner plugin.
 
