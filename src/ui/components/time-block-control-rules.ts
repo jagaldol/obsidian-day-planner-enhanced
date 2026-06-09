@@ -15,7 +15,7 @@ export function getDisabledFloatingControls(
   const controls: FloatingTimeBlockControl[] = [];
 
   if (task.timelineSegment?.startsBeforeSegment) {
-    controls.push("top");
+    controls.push("top", "topEnd");
   }
 
   if (task.timelineSegment?.continuesAfterSegment) {

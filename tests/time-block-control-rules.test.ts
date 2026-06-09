@@ -10,7 +10,7 @@ it.each([
   },
   {
     description: "continued from previous day",
-    result: ["top"],
+    result: ["top", "topEnd"],
     timelineSegment: {
       continuesAfterSegment: false,
       sourceDurationMinutes: 120,
@@ -28,7 +28,7 @@ it.each([
   },
   {
     description: "continues across days",
-    result: ["top", "bottom"],
+    result: ["top", "topEnd", "bottom"],
     timelineSegment: {
       continuesAfterSegment: true,
       sourceDurationMinutes: 3 * 24 * 60,
@@ -36,7 +36,7 @@ it.each([
     },
   },
 ])(
-  "Disables resize controls for $description",
+  "Disables floating controls for $description",
   ({ result, timelineSegment }) => {
     expect(
       getDisabledFloatingControls({
