@@ -5,14 +5,13 @@
     ChevronDown,
     ChevronUp,
     ListPlus,
-    Pencil,
     Plus,
     Square,
     SquareCheck,
     Trash2,
     X,
   } from "lucide-svelte";
-  import { onDestroy, untrack } from "svelte";
+  import { onDestroy, onMount, untrack } from "svelte";
   import { isNotVoid } from "typed-assert";
 
   import { timeRangeAtStartOfLineRegExp } from "../../regexp";
@@ -21,11 +20,19 @@
   let {
     initialItems,
     parentText,
+    editController,
+    onEditEscape,
+    onEditStateChange,
     onSave,
     onCancel,
   }: {
     initialItems: EditableNestedListItem[];
     parentText: string;
+    editController?: {
+      cancelActiveEdit?: () => void;
+    };
+    onEditEscape?: () => void;
+    onEditStateChange?: (isEditing: boolean) => void;
     onSave: (items: EditableNestedListItem[]) => Promise<void> | void;
     onCancel: () => void;
   } = $props();
@@ -225,6 +232,83 @@
     editingText = getFirstLine(item.text);
   }
 
+  function beginItemEdit(pathKey: string, item: EditableNestedListItem) {
+    applyOpenEdit();
+    clearMoveFeedback();
+    beginEdit(pathKey, item);
+  }
+
+  function consumeEditShortcut(event: KeyboardEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+  }
+
+  function clearEscapeCloseSuppression() {
+    if (escapeCloseSuppressionTimeout !== undefined) {
+      window.clearTimeout(escapeCloseSuppressionTimeout);
+    }
+
+    escapeCloseSuppressionTimeout = undefined;
+    isSuppressingEscapeClose = false;
+  }
+
+  function suppressEscapeCloseForCurrentKey() {
+    if (escapeCloseSuppressionTimeout !== undefined) {
+      window.clearTimeout(escapeCloseSuppressionTimeout);
+    }
+
+    isSuppressingEscapeClose = true;
+    escapeCloseSuppressionTimeout = window.setTimeout(
+      clearEscapeCloseSuppression,
+      300,
+    );
+  }
+
+  function cancelEditFromEscape() {
+    onEditEscape?.();
+    suppressEscapeCloseForCurrentKey();
+    cancelEdit();
+  }
+
+  function handleEditKeydown(event: KeyboardEvent, pathKey: string) {
+    if (event.key === "Enter") {
+      consumeEditShortcut(event);
+      applyEdit(pathKey);
+      return;
+    }
+
+    if (event.key === "Escape") {
+      consumeEditShortcut(event);
+      cancelEditFromEscape();
+    }
+  }
+
+  function handleWindowKeydown(event: KeyboardEvent) {
+    if (event.key !== "Escape") {
+      return;
+    }
+
+    if (editingPathKey === undefined && !isSuppressingEscapeClose) {
+      return;
+    }
+
+    consumeEditShortcut(event);
+
+    if (editingPathKey !== undefined) {
+      cancelEditFromEscape();
+    }
+  }
+
+  function handleWindowKeyup(event: KeyboardEvent) {
+    if (event.key !== "Escape" || !isSuppressingEscapeClose) {
+      return;
+    }
+
+    consumeEditShortcut(event);
+    clearEscapeCloseSuppression();
+  }
+
   function applyEdit(pathKey: string) {
     if (editingPathKey !== pathKey) {
       return;
@@ -286,9 +370,36 @@
   let movedPathKey = $state<string | undefined>();
   let movedDirection = $state<-1 | 1 | undefined>();
   let moveFeedbackTimeout: number | undefined;
+  let escapeCloseSuppressionTimeout: number | undefined;
+  let isSuppressingEscapeClose = false;
   const parentDisplay = $derived(getDisplayParts(parentText));
 
-  onDestroy(clearMoveFeedback);
+  $effect(() => {
+    onEditStateChange?.(editingPathKey !== undefined);
+  });
+
+  onMount(() => {
+    if (editController) {
+      editController.cancelActiveEdit = cancelEdit;
+    }
+
+    window.addEventListener("keydown", handleWindowKeydown, true);
+    window.addEventListener("keyup", handleWindowKeyup, true);
+
+    return () => {
+      window.removeEventListener("keydown", handleWindowKeydown, true);
+      window.removeEventListener("keyup", handleWindowKeyup, true);
+    };
+  });
+
+  onDestroy(() => {
+    clearMoveFeedback();
+    clearEscapeCloseSuppression();
+
+    if (editController) {
+      editController.cancelActiveEdit = undefined;
+    }
+  });
 </script>
 
 <div class="nested-items-wrapper">
@@ -367,26 +478,24 @@
           <div class="edit-form">
             <input
               aria-label="Nested item text"
-              onkeydown={(event) => {
-                if (event.key === "Enter") {
-                  applyEdit(pathKey);
-                }
-
-                if (event.key === "Escape") {
-                  cancelEdit();
-                }
-              }}
+              onkeydown={(event) => handleEditKeydown(event, pathKey)}
               bind:value={editingText}
               use:focusOnMount
             />
           </div>
         {:else}
-          <span class="item-content">
+          <button
+            class="item-content"
+            aria-label={`Edit ${display.title}`}
+            onclick={() => beginItemEdit(pathKey, item)}
+            tabindex="-1"
+            type="button"
+          >
             {#if display.timeRange}
               <span class="item-time-range">{display.timeRange}</span>
             {/if}
             <span class="item-text">{display.title}</span>
-          </span>
+          </button>
         {/if}
 
         {#if pathKey === movedPathKey}
@@ -445,16 +554,7 @@
 
           <span class="action-divider" aria-hidden="true"></span>
 
-          <div class="action-group" aria-label="Edit item">
-            <button
-              class="icon-button"
-              aria-label="Edit"
-              onclick={() => beginEdit(pathKey, item)}
-              title="Edit"
-              type="button"
-            >
-              <Pencil aria-hidden="true" />
-            </button>
+          <div class="action-group" aria-label="Item actions">
             <button
               class="icon-button"
               aria-label="Add child"
@@ -706,10 +806,30 @@
   }
 
   .item-content {
+    cursor: text;
+
     display: flex;
+    flex: 1 1 auto;
     flex-direction: column;
     gap: var(--size-2-1);
+    align-items: flex-start;
+
     min-width: 0;
+    min-height: 44px;
+    padding: var(--size-4-2);
+
+    font: inherit;
+    color: inherit;
+    text-align: left;
+
+    background-color: transparent;
+    border: 0;
+    border-radius: var(--radius-s);
+    box-shadow: none;
+  }
+
+  .item-content:focus {
+    outline: none;
   }
 
   .item-time-range {
