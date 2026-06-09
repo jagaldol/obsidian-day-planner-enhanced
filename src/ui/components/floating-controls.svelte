@@ -31,9 +31,10 @@
   type Props = {
     anchor: Snippet<[AnchorProps]>;
     active: boolean;
+    disabled?: readonly ActiveControl[];
   } & Partial<Record<ActiveControl, Snippet<[FloatingUiProps]>>>;
 
-  const { active, anchor, ...snippets }: Props = $props();
+  const { active, anchor, disabled = [], ...snippets }: Props = $props();
 
   const {
     editContext: { editOperation },
@@ -75,12 +76,15 @@
       name: "top",
     },
   ];
+  const visibleControls = $derived(
+    controls.filter(({ name }) => !disabled.includes(name)),
+  );
 </script>
 
 {@render anchor({ actions })}
 
 {#if !$editOperation && active}
-  <ShowActiveOrAll blocks={controls}>
+  <ShowActiveOrAll blocks={visibleControls}>
     {#snippet block({ isActive, setIsActive, name, use })}
       <FloatingUi onpointerup={(event) => event.stopPropagation()} {use}>
         {@render snippets?.[name]?.({ isActive, setIsActive })}

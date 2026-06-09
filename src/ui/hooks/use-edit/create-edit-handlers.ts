@@ -59,7 +59,7 @@ export function createEditHandlers({
 
     isNotVoid(pointerDay, "Day cannot be undefined on edit");
 
-    startEdit({ task, mode });
+    startEdit({ task: t.getTimelineSegmentSource(task), mode });
   }
 
   async function handleTaskMouseUp(task: LocalTask) {

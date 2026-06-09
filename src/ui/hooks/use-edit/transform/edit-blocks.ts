@@ -36,6 +36,19 @@ function setStartWithMinDuration(
   };
 }
 
+function setEndWithMinDuration(
+  block: Block,
+  newEnd: number,
+  minDuration: number,
+) {
+  const newDuration = Math.max(newEnd - block.start, minDuration);
+
+  return {
+    ...block,
+    end: block.start + newDuration,
+  };
+}
+
 function move(block: Block, newCoords: number) {
   return {
     ...block,
@@ -101,10 +114,7 @@ function editBlock(
   }
 
   if (changeType === "end") {
-    const mirrored = mirror(block, newCoords);
-    const updated = setStartWithMinDuration(mirrored, newCoords, minDuration);
-
-    return mirror(updated, newCoords);
+    return setEndWithMinDuration(block, newCoords, minDuration);
   }
 
   return move(block, newCoords);

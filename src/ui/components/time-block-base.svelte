@@ -27,6 +27,31 @@
     properContrastColors: { normal, muted, faint },
     backgroundColor,
   } = $derived(useColorOverrides({ task }));
+
+  const continuationTitle = $derived.by(() => {
+    const { timelineSegment } = task;
+
+    if (!timelineSegment) {
+      return undefined;
+    }
+
+    if (
+      timelineSegment.startsBeforeSegment &&
+      timelineSegment.continuesAfterSegment
+    ) {
+      return "Continues across days";
+    }
+
+    if (timelineSegment.startsBeforeSegment) {
+      return "Continued from previous day";
+    }
+
+    if (timelineSegment.continuesAfterSegment) {
+      return "Continues to next day";
+    }
+
+    return undefined;
+  });
 </script>
 
 <div class="padding">
@@ -37,16 +62,30 @@
     style:--time-block-bg-color={backgroundColor}
     class={[
       "content",
+      task.timelineSegment?.startsBeforeSegment &&
+        "continues-from-previous-day",
+      task.timelineSegment?.continuesAfterSegment && "continues-to-next-day",
       task.truncated?.includes("left") && "truncated-left",
       task.truncated?.includes("right") && "truncated-right",
       task.truncated?.includes("bottom") && "truncated-bottom",
     ]}
     {onpointerup}
+    title={continuationTitle}
     use:useActions={use}
   >
+    {#if task.timelineSegment?.startsBeforeSegment}
+      <span class="continuation-cap continuation-cap-top" aria-hidden="true"
+      ></span>
+    {/if}
+
     {@render children()}
 
     {@render blockEndDecoration?.()}
+
+    {#if task.timelineSegment?.continuesAfterSegment}
+      <span class="continuation-cap continuation-cap-bottom" aria-hidden="true"
+      ></span>
+    {/if}
   </div>
 </div>
 
@@ -141,6 +180,34 @@
 
     border: var(--time-block-outline-width, 0) solid
       var(--time-block-outline-color, transparent);
+  }
+
+  .continuation-cap {
+    pointer-events: none;
+
+    position: absolute;
+    z-index: 3;
+    right: 0;
+    left: var(--time-block-strip-width, 0);
+
+    height: 3px;
+
+    background: linear-gradient(
+      90deg,
+      transparent 0,
+      color-mix(in srgb, var(--interactive-accent) 45%, transparent) 18%,
+      color-mix(in srgb, var(--interactive-accent) 55%, transparent) 50%,
+      color-mix(in srgb, var(--interactive-accent) 45%, transparent) 82%,
+      transparent 100%
+    );
+  }
+
+  .continuation-cap-top {
+    top: 0;
+  }
+
+  .continuation-cap-bottom {
+    bottom: 0;
   }
 
   :global(.is-mobile) .content {

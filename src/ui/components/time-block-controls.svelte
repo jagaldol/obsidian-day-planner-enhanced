@@ -20,6 +20,7 @@
   import FloatingControls from "./floating-controls.svelte";
   import ResizeControls from "./resize-controls.svelte";
   import Selectable from "./selectable.svelte";
+  import { getDisabledFloatingControls } from "./time-block-control-rules";
 
   interface TimeBlockProps {
     isActive: boolean;
@@ -87,6 +88,13 @@
     $pendingTimelineTaskSelection !== undefined &&
       isTimelineTaskSelectionMatch(task, $pendingTimelineTaskSelection),
   );
+  const startsBeforeSegment = $derived(
+    task.timelineSegment?.startsBeforeSegment === true,
+  );
+  const continuesAfterSegment = $derived(
+    task.timelineSegment?.continuesAfterSegment === true,
+  );
+  const disabledFloatingControls = $derived(getDisabledFloatingControls(task));
 
   function handleAutoSelect() {
     const target = $pendingTimelineTaskSelection;
@@ -112,7 +120,10 @@
   selectionBlocked={Boolean($editOperation)}
 >
   {#snippet children(selectable)}
-    <FloatingControls active={selectable.state === "primary"}>
+    <FloatingControls
+      active={selectable.state === "primary"}
+      disabled={disabledFloatingControls}
+    >
       {#snippet anchor(floatingControls)}
         {@render timeBlock({
           isActive: selectable.state !== "none",
@@ -131,13 +142,13 @@
       {/snippet}
 
       {#snippet bottom({ isActive, setIsActive })}
-        {#if !task.isAllDayEvent}
+        {#if !task.isAllDayEvent && !continuesAfterSegment}
           <ResizeControls {isActive} reverse {setIsActive} {task} />
         {/if}
       {/snippet}
 
       {#snippet top({ isActive, setIsActive })}
-        {#if !task.isAllDayEvent}
+        {#if !task.isAllDayEvent && !startsBeforeSegment}
           <ResizeControls fromTop {isActive} reverse {setIsActive} {task} />
         {/if}
       {/snippet}

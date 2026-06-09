@@ -22,6 +22,13 @@ export type WithPlacing<T> = T & {
   placing: HorizontalPlacing;
 };
 
+export interface TimelineSegment {
+  continuesAfterSegment?: boolean;
+  sourceDurationMinutes: number;
+  sourceStartTime: Moment;
+  startsBeforeSegment?: boolean;
+}
+
 export type BaseTask = {
   /**
    * Tasks get an ID on parsing. It is unique to a line in a file, not to a
@@ -32,6 +39,7 @@ export type BaseTask = {
   isAllDayEvent?: boolean;
   // TODO: move to TimeBlockView
   truncated?: Side[];
+  timelineSegment?: TimelineSegment;
 };
 
 export type WithTime<T> = T & {

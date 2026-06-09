@@ -73,7 +73,13 @@ describe("drag one & common edit mechanics", () => {
             {
               id: "1",
               startTime: moment("2023-01-01 23:00"),
-              durationMinutes: 59,
+              durationMinutes: 60,
+              timelineSegment: {
+                continuesAfterSegment: true,
+                sourceDurationMinutes: 120,
+                sourceStartTime: moment("2023-01-01 23:00"),
+                startsBeforeSegment: false,
+              },
             },
           ],
         },
@@ -83,10 +89,95 @@ describe("drag one & common edit mechanics", () => {
               id: "1",
               startTime: moment("2023-01-02 00:00"),
               durationMinutes: 60,
+              timelineSegment: {
+                continuesAfterSegment: false,
+                sourceDurationMinutes: 120,
+                sourceStartTime: moment("2023-01-01 23:00"),
+                startsBeforeSegment: true,
+              },
             },
           ],
         },
       });
+    });
+
+    test("Does not add a next-day timeline chunk when a task ends exactly at 24:00", () => {
+      const { dayToDisplayedTasks } = setUp({
+        tasks: [
+          {
+            ...baseTask,
+            startTime: moment("2023-01-01 23:00"),
+            durationMinutes: 60,
+            id: "1",
+          },
+        ],
+      });
+
+      expect(get(dayToDisplayedTasks)).toMatchObject({
+        [dayKey]: {
+          withTime: [
+            {
+              id: "1",
+              startTime: moment("2023-01-01 23:00"),
+              durationMinutes: 60,
+              timelineSegment: undefined,
+            },
+          ],
+        },
+      });
+      expect(get(dayToDisplayedTasks)[nextDayKey]?.withTime ?? []).toHaveLength(
+        0,
+      );
+    });
+
+    test("Editing the continued next-day chunk keeps the source task in the start day", async () => {
+      const task = {
+        ...baseTask,
+        startTime: moment("2023-01-01 23:00"),
+        durationMinutes: 180,
+        id: "1",
+      };
+      const {
+        dayToDisplayedTasks,
+        handlers,
+        moveCursorTo,
+        confirmEdit,
+        props,
+      } = setUp({
+        tasks: [task],
+      });
+      const continuedChunk = get(dayToDisplayedTasks)[nextDayKey]?.withTime[0];
+
+      expect(continuedChunk).toMatchObject({
+        id: "1",
+        startTime: moment("2023-01-02 00:00"),
+        durationMinutes: 120,
+        timelineSegment: {
+          sourceDurationMinutes: 180,
+          sourceStartTime: moment("2023-01-01 23:00"),
+          startsBeforeSegment: true,
+        },
+      });
+
+      handlers.handleResizerMouseDown(
+        continuedChunk as typeof task,
+        EditMode.RESIZE,
+      );
+      moveCursorTo(moment("2023-01-02 04:00"));
+
+      await confirmEdit();
+
+      expect(props.onUpdate).toHaveBeenCalledWith(
+        expect.anything(),
+        [
+          expect.objectContaining({
+            id: "1",
+            startTime: moment("2023-01-01 23:00"),
+            durationMinutes: 300,
+          }),
+        ],
+        expect.anything(),
+      );
     });
 
     test("Can turn a single day task into 2 tasks if it spans midnight", async () => {
@@ -115,8 +206,7 @@ describe("drag one & common edit mechanics", () => {
             {
               id: "1",
               startTime: moment("2023-01-01 23:00"),
-              // todo: where is the extra minute?
-              durationMinutes: 59,
+              durationMinutes: 60,
             },
           ],
         },
@@ -197,7 +287,7 @@ describe("drag one & common edit mechanics", () => {
             {
               id: "1",
               startTime: moment("2023-01-01 23:00"),
-              durationMinutes: 59,
+              durationMinutes: 60,
             },
           ],
         },
@@ -213,7 +303,7 @@ describe("drag one & common edit mechanics", () => {
       });
     });
 
-    test("Moving a block to the day end commits the 23:59 boundary", async () => {
+    test("Moving a block to the day end keeps the 24:00 boundary", async () => {
       const task = {
         ...baseTask,
         startTime: moment("2023-01-01 15:00"),
@@ -240,7 +330,7 @@ describe("drag one & common edit mechanics", () => {
             {
               id: "1",
               startTime: moment("2023-01-01 23:20"),
-              durationMinutes: 39,
+              durationMinutes: 40,
             },
           ],
         },
@@ -254,7 +344,7 @@ describe("drag one & common edit mechanics", () => {
           expect.objectContaining({
             id: "1",
             startTime: moment("2023-01-01 23:20"),
-            durationMinutes: 39,
+            durationMinutes: 40,
           }),
         ],
         expect.anything(),

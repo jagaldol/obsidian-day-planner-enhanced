@@ -21,6 +21,7 @@ import {
   type RemoteTask,
   type Task,
   type TaskLocation,
+  type TimelineSegment,
   type WithTime,
 } from "../task-types";
 
@@ -56,6 +57,42 @@ export function getEndTime(task: {
   durationMinutes: number;
 }) {
   return task.startTime.clone().add(task.durationMinutes, "minutes");
+}
+
+export function createTimelineSegment(
+  task: WithTime<Task>,
+  startTime: Moment,
+  endTime: Moment,
+): TimelineSegment | undefined {
+  const sourceEndTime = getEndTime(task);
+  const startsBeforeSegment = startTime.isAfter(task.startTime, "minute");
+  const continuesAfterSegment = endTime.isBefore(sourceEndTime, "minute");
+
+  if (!startsBeforeSegment && !continuesAfterSegment) {
+    return undefined;
+  }
+
+  return {
+    continuesAfterSegment,
+    sourceDurationMinutes: task.durationMinutes,
+    sourceStartTime: task.startTime.clone(),
+    startsBeforeSegment,
+  };
+}
+
+export function getTimelineSegmentSource<T extends WithTime<LocalTask>>(
+  task: T,
+): T {
+  if (!task.timelineSegment) {
+    return task;
+  }
+
+  return {
+    ...task,
+    durationMinutes: task.timelineSegment.sourceDurationMinutes,
+    startTime: task.timelineSegment.sourceStartTime.clone(),
+    timelineSegment: undefined,
+  };
 }
 
 // todo: remove this inconsistency
@@ -126,10 +163,11 @@ export function getNotificationKey(task: WithTime<Task>) {
  * notes get sent under a heading based on the new date.
  */
 export function copy(original: WithTime<LocalTask>): WithTime<LocalTask> {
+  const source = getTimelineSegmentSource(original);
   let location: TaskLocation | undefined;
 
-  if (hasDateFromProp(original)) {
-    const originalLocation = original.location;
+  if (hasDateFromProp(source)) {
+    const originalLocation = source.location;
 
     isNotVoid(
       originalLocation,
@@ -142,7 +180,7 @@ export function copy(original: WithTime<LocalTask>): WithTime<LocalTask> {
   }
 
   return {
-    ...original,
+    ...source,
     location,
     id: getId(),
   };
@@ -154,10 +192,53 @@ export function createTimestamp(
   format: string,
   separator = " - ",
 ) {
-  const start = minutesToMoment(startMinutes);
-  const end = addMinutes(start, durationMinutes);
+  const { end, start } = createTimestampParts(
+    startMinutes,
+    durationMinutes,
+    format,
+  );
 
-  return `${start.format(format)}${separator}${end.format(format)}`;
+  return `${start}${separator}${end}`;
+}
+
+export function createTimestampParts(
+  startMinutes: number,
+  durationMinutes: number,
+  format: string,
+) {
+  const start = minutesToMoment(startMinutes);
+  const endMinutes = startMinutes + durationMinutes;
+
+  return {
+    end: formatTimestampEnd(endMinutes, format),
+    start: start.format(format),
+  };
+}
+
+function uses24HourFormat(format: string) {
+  return /^(?:HH?|kk?)/.test(format);
+}
+
+function formatTimestampEnd(minutesSinceMidnight: number, format: string) {
+  const shouldRenderEndOfDayAs24 =
+    minutesSinceMidnight === 24 * 60 && uses24HourFormat(format);
+
+  if (!shouldRenderEndOfDayAs24) {
+    return addMinutes(minutesToMoment(0), minutesSinceMidnight).format(format);
+  }
+
+  return formatEndOfDayAs24(format);
+}
+
+function formatEndOfDayAs24(format: string) {
+  const midnight = minutesToMoment(0).format(format);
+  const hourToken = /^(?:HH?|kk?)/.exec(format)?.[0];
+
+  if (!hourToken) {
+    return midnight;
+  }
+
+  return `24${midnight.slice(minutesToMoment(0).format(hourToken).length)}`;
 }
 
 export function getEmptyTasksForDay() {
@@ -339,10 +420,15 @@ export function getBlockProps(task: Task, settings: DayPlannerSettings) {
   const result: string[] = [];
 
   if (settings.showTimestampInTaskBlock && isWithTime(task)) {
+    const sourceStartTime =
+      task.timelineSegment?.sourceStartTime ?? task.startTime;
+    const sourceDurationMinutes =
+      task.timelineSegment?.sourceDurationMinutes ?? task.durationMinutes;
+
     result.push(
       createTimestamp(
-        getMinutesSinceMidnight(task.startTime),
-        task.durationMinutes,
+        getMinutesSinceMidnight(sourceStartTime),
+        sourceDurationMinutes,
         settings.timestampFormat,
         emDash,
       ),

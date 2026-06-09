@@ -2,7 +2,10 @@
   import { getObsidianContext } from "../../context/obsidian-context";
   import type { LocalTask } from "../../task-types";
   import { getMinutesSinceMidnight } from "../../util/moment";
-  import { createTimestamp, toRenderableMarkdown } from "../../util/task-utils";
+  import {
+    createTimestampParts,
+    toRenderableMarkdown,
+  } from "../../util/task-utils";
   import { addLineDataToCheckboxes, isHTMLElement } from "../../util/dom";
   import { on } from "svelte/events";
   import type { Snippet } from "svelte";
@@ -68,15 +71,28 @@
   }
 
   const { listItem, nestedListItems } = $derived(toRenderableMarkdown(task));
-  const timeRange = $derived(
-    task.isAllDayEvent
-      ? undefined
-      : createTimestamp(
-          getMinutesSinceMidnight(task.startTime),
-          task.durationMinutes,
-          $settings.timestampFormat,
-        ),
-  );
+  const timeRange = $derived.by(() => {
+    if (task.isAllDayEvent) {
+      return undefined;
+    }
+
+    const sourceStartTime =
+      task.timelineSegment?.sourceStartTime ?? task.startTime;
+    const sourceDurationMinutes =
+      task.timelineSegment?.sourceDurationMinutes ?? task.durationMinutes;
+    const timeParts = createTimestampParts(
+      getMinutesSinceMidnight(sourceStartTime),
+      sourceDurationMinutes,
+      $settings.timestampFormat,
+    );
+
+    return {
+      end: timeParts.end,
+      highlightEnd: task.timelineSegment?.continuesAfterSegment === true,
+      highlightStart: task.timelineSegment?.startsBeforeSegment === true,
+      start: timeParts.start,
+    };
+  });
   const compactThresholdMinutes = $derived(
     $settings.zoomLevel <= 2
       ? 80 / 2 ** $settings.zoomLevel
@@ -128,7 +144,25 @@
 >
   <div class="time-summary-row">
     {#if timeRange}
-      <div class="time-block-range">{timeRange}</div>
+      <div
+        class={[
+          "time-block-range",
+          (timeRange.highlightStart || timeRange.highlightEnd) &&
+            "has-other-day-time",
+        ]}
+      >
+        <span
+          class={[
+            "time-block-time",
+            timeRange.highlightStart && "is-other-day",
+          ]}>{timeRange.start}</span
+        >
+        <span class="time-block-separator"> - </span>
+        <span
+          class={["time-block-time", timeRange.highlightEnd && "is-other-day"]}
+          >{timeRange.end}</span
+        >
+      </div>
     {/if}
 
     <div
@@ -208,8 +242,11 @@
 
   .time-block-range {
     overflow: hidden;
-    flex: 0 0 auto;
+    display: inline-flex;
+    flex: 0 1 auto;
+    align-items: baseline;
 
+    min-width: 0;
     margin-block-end: 0;
 
     font-size: 0.86em;
@@ -219,6 +256,21 @@
     color: var(--text-muted);
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .time-block-time {
+    overflow: hidden;
+    min-width: 0;
+    text-overflow: ellipsis;
+  }
+
+  .time-block-time.is-other-day {
+    font-weight: var(--font-semibold);
+    color: color-mix(in srgb, var(--interactive-accent) 72%, var(--text-muted));
+  }
+
+  .time-block-separator {
+    flex: 0 0 auto;
   }
 
   .first-line-wrapper {

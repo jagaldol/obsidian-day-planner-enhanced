@@ -14,17 +14,28 @@ export function parseTime(asText: string, day: Moment) {
   const hours = hours12h ?? hours24h;
   const minutes = minutes12h ?? minutes24h;
 
-  let parsedHours = parseInt(hours);
+  let parsedHours = parseInt(hours, 10);
 
   if (Number.isNaN(parsedHours)) {
     throw new Error(`${asText} is not a valid timestamp`);
   }
 
-  const parsedMinutes = parseInt(minutes) || 0;
+  const parsedMinutes = parseInt(minutes, 10) || 0;
 
   const ampmNormalized = ampm?.toLowerCase().trim();
 
-  if (ampmNormalized === "pm") {
+  if (ampmNormalized && (parsedHours < 1 || parsedHours > 12)) {
+    throw new Error(`${asText} is not a valid timestamp`);
+  }
+
+  if (
+    !ampmNormalized &&
+    (parsedHours > 24 || (parsedHours === 24 && parsedMinutes !== 0))
+  ) {
+    throw new Error(`${asText} is not a valid timestamp`);
+  }
+
+  if (ampmNormalized === "pm" && parsedHours < 12) {
     parsedHours += 12;
   } else if (ampmNormalized === "am" && parsedHours === 12) {
     parsedHours = 0;

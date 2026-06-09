@@ -148,8 +148,9 @@ export function useEditContext(props: {
 
       return chunks.map(([startTime, endTime]) => ({
         ...task,
-        startTime,
         durationMinutes: m.getDiffInMinutes(startTime, endTime),
+        startTime,
+        timelineSegment: t.createTimelineSegment(task, startTime, endTime),
       }));
     });
 

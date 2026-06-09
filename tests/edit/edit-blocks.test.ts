@@ -95,6 +95,17 @@ describe("block transformations", () => {
     );
   });
 
+  test("resize end less than minimal duration keeps the start fixed", () => {
+    const expectedBlocks = [
+      { id: "1", start: 0, end: 10 },
+      { id: "2", start: 10, end: 15 },
+      { id: "3", start: 20, end: 30 },
+      { id: "4", start: 30, end: 40 },
+    ];
+
+    expect(editBlocks(blocks, "2", 5, "end", "none")).toEqual(expectedBlocks);
+  });
+
   test("does not mess with other initially overlapping blocks", () => {
     const initialBlocks = [
       { id: "1", start: 0, end: 10 },

@@ -82,15 +82,16 @@ export function splitMultiday(
     throw new Error(`Invalid Moment objects: ${start}, ${end}`);
   }
 
-  const endOfDayForStart = start.clone().endOf("day");
+  const startOfNextDay = start.clone().add(1, "day").startOf("day");
 
-  if (end.isBefore(endOfDayForStart)) {
+  if (end.isSameOrBefore(startOfNextDay, "minute")) {
     return [...chunks, [start, end]];
   }
 
-  const newStart = start.clone().add(1, "day").startOf("day");
-
-  return splitMultiday(newStart, end, [...chunks, [start, endOfDayForStart]]);
+  return splitMultiday(startOfNextDay, end, [
+    ...chunks,
+    [start, startOfNextDay],
+  ]);
 }
 
 export function getEarliestMoment(moments: Moment[]) {
