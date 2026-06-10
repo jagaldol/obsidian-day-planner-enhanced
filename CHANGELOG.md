@@ -4,6 +4,13 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.30.0**, and follows its own versioning.
 
+## 0.2.4
+
+### 🐞 Fixed issues
+
+- Fixed overnight daily-note plans so entries like `22:00 - 01:10` are indexed for both the start day and the ending day. The continued `00:00 - 01:10` segment now appears when viewing only the ending day's timeline.
+- Applied the same day-key range indexing to timed Tasks-plugin scheduled entries, while keeping exact-midnight endings exclusive so `23:00 - 00:00` does not create an empty next-day segment.
+
 ## 0.2.3
 
 ### ✨ New features
