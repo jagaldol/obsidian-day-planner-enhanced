@@ -4,6 +4,12 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.30.0**, and follows its own versioning.
 
+## 0.2.5
+
+### 🐞 Fixed issues
+
+- Fixed nested item edits so saved child lists always use four-space indentation per level, matching Obsidian's markdown list handling instead of preserving two-space or tab-based child indentation.
+
 ## 0.2.4
 
 ### 🐞 Fixed issues
