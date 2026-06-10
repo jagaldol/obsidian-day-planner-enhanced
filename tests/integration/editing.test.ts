@@ -406,7 +406,7 @@ describe("Editing", () => {
 
       expect(getPathToDiff(vault.initialState, vault.state)).toEqual({
         "fixtures/fixture-vault/2025-07-19.md": `
-+   - First child
++     - First child
 `,
       });
     });

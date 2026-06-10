@@ -80,6 +80,8 @@ function getLineIndentation(line: string) {
   return line.match(/^\s*/)?.[0] ?? "";
 }
 
+const nestedListItemIndentationStep = "    ";
+
 function getFirstLineAndRest(text: string) {
   const [firstLine = "", ...rest] = text.split("\n");
 
@@ -119,21 +121,6 @@ function serializeNestedListItems(
   return items.flatMap((item) =>
     serializeNestedListItem(item, indentation, indentationStep),
   );
-}
-
-function getIndentationStep(
-  parentIndentation: string,
-  childIndentation: string,
-) {
-  if (childIndentation.startsWith(parentIndentation)) {
-    const indentationStep = childIndentation.slice(parentIndentation.length);
-
-    if (indentationStep.length > 0) {
-      return indentationStep;
-    }
-  }
-
-  return "  ";
 }
 
 export const runWithNoticeOnError = <A, E>(
@@ -332,28 +319,17 @@ export class ListItemEntryEditor {
         try: () =>
           this.vaultFacade.editFile(path, (contents) => {
             const lines = contents.split("\n");
-            const firstExistingChild = existingChildren[0];
-            const firstExistingChildLine =
-              firstExistingChild === undefined
-                ? undefined
-                : lines[firstExistingChild.position.start.line];
             const parentLine = lines[listItem.position.start.line];
 
             isNotVoid(parentLine);
 
             const parentIndentation = getLineIndentation(parentLine);
             const childIndentation =
-              firstExistingChildLine === undefined
-                ? `${parentIndentation}  `
-                : getLineIndentation(firstExistingChildLine);
-            const indentationStep = getIndentationStep(
-              parentIndentation,
-              childIndentation,
-            );
+              parentIndentation + nestedListItemIndentationStep;
             const replacementLines = serializeNestedListItems(
               children,
               childIndentation,
-              indentationStep,
+              nestedListItemIndentationStep,
             );
 
             if (existingChildren.length === 0) {
