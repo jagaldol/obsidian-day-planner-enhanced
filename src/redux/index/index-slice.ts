@@ -31,6 +31,7 @@ import {
   getDiffInMinutes,
   strictParse,
 } from "../../util/moment";
+import type { Moment } from "../../util/obsidian-moment";
 import { getDayKey, getEndTime } from "../../util/task-utils";
 import { createAppSlice } from "../create-app-slice";
 import type { AppListenerEffect } from "../store";
@@ -424,6 +425,14 @@ export function createIndexListener(props: {
     return { start, end, parent, dayKeys, id };
   }
 
+  function getPlanEntryDayKeys(start: Moment, end: Moment) {
+    const inclusiveEnd = end.isAfter(start, "minute")
+      ? end.clone().subtract(1, "minute")
+      : end;
+
+    return getDayKeysInRange(start, inclusiveEnd);
+  }
+
   function isInsideDailyNoteParseScope(
     position: Pos,
     plannerHeadingSectionPosition?: PartialPos,
@@ -464,7 +473,6 @@ export function createIndexListener(props: {
 
     const result = {
       id: createId(parentId, "tasks-scheduled"),
-      dayKeys: [getDayKey(scheduledDate)],
       // todo P3: we can add parent id later
       parent: parentId,
     };
@@ -478,6 +486,7 @@ export function createIndexListener(props: {
       return [
         {
           ...result,
+          dayKeys: [getDayKey(scheduledDate)],
           start: scheduledDate.format(clockFormat),
           end: scheduledDate.clone().add(1, "hour").format(clockFormat),
           isAllDay: true,
@@ -485,16 +494,17 @@ export function createIndexListener(props: {
       ];
     }
 
+    const endTime = getEndTime({
+      startTime: time.startTime,
+      durationMinutes: time.durationMinutes ?? settings.defaultDurationMinutes,
+    });
+
     return [
       {
         ...result,
+        dayKeys: getPlanEntryDayKeys(time.startTime, endTime),
         start: time.startTime.format(clockFormat),
-        // todo: duplication
-        end: getEndTime({
-          startTime: time.startTime,
-          durationMinutes:
-            time.durationMinutes ?? settings.defaultDurationMinutes,
-        }).format(clockFormat),
+        end: endTime.format(clockFormat),
       },
     ];
   }
@@ -601,14 +611,13 @@ export function createIndexListener(props: {
           day: dateFromPath,
         });
         const id = createId(listItemEntry.id, "daily");
-        const dayKeys = [getDayKey(dateFromPath)];
-
         if (time) {
           const { startTime, durationMinutes } = time;
           const endTime = getEndTime({
             startTime,
             durationMinutes: durationMinutes ?? settings.defaultDurationMinutes,
           });
+          const dayKeys = getPlanEntryDayKeys(startTime, endTime);
 
           listItemEntry.planEntries.push({
             id,
@@ -618,6 +627,8 @@ export function createIndexListener(props: {
             end: endTime.format(clockFormat),
           });
         } else if (isTaskCache(listItemCache)) {
+          const dayKeys = [getDayKey(dateFromPath)];
+
           listItemEntry.planEntries.push({
             id,
             dayKeys,

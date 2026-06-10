@@ -9,7 +9,12 @@ import { createInMemoryFile, type InMemoryFile } from "../../util/fakes";
 
 const { join } = path.posix;
 
-const dailyNoteFileNames = ["2025-07-19", "2025-07-20", "2025-07-28"];
+const dailyNoteFileNames = [
+  "2025-07-19",
+  "2025-07-20",
+  "2025-07-21",
+  "2025-07-28",
+];
 
 const fixturesDirPath = "fixtures";
 const dumpPath = join(fixturesDirPath, "metadata-dump", "tasks.json");

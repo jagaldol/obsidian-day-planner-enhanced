@@ -200,6 +200,31 @@ describe("Task views", () => {
     );
   });
 
+  test("Shows a daily-note overnight plan on the next day's timeline", async () => {
+    const { editContext } = await setUp({
+      loadedFixtures: ["2025-07-21.md"],
+      visibleDays: ["2025-07-22"],
+    });
+
+    const displayedTasks = editContext.getDisplayedTasksForTimeline(
+      window.moment("2025-07-22"),
+    );
+
+    expect(get(displayedTasks).withTime).toContainEqual(
+      expect.objectContaining({
+        text: "23:00 - 00:30 Reading a Book",
+        startTime: window.moment("2025-07-22 00:00"),
+        durationMinutes: 30,
+        timelineSegment: expect.objectContaining({
+          sourceStartTime: window.moment("2025-07-21 23:00"),
+          sourceDurationMinutes: 90,
+          startsBeforeSegment: true,
+          continuesAfterSegment: false,
+        }),
+      }),
+    );
+  });
+
   test.each([
     [
       {
