@@ -49,6 +49,7 @@ export interface DayPlannerSettings {
   showUncheduledTasks: boolean;
   showUnscheduledNestedTasks: boolean;
   showTimelineInSidebar: boolean;
+  enableTimeTracker: boolean;
   showNow: boolean;
   showNext: boolean;
   snapStepMinutes: number;
@@ -103,6 +104,7 @@ export const defaultSettings: DayPlannerSettings = {
   firstDayOfWeek: "monday",
   multiDayRange: "3-days",
   showTimelineInSidebar: true,
+  enableTimeTracker: true,
   timelineColumns: { planner: true, timeTracker: false },
 };
 

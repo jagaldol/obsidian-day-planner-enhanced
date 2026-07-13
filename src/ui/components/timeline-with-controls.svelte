@@ -4,7 +4,10 @@
 
   import { getDateRangeContext } from "../../context/date-range-context";
   import { getObsidianContext } from "../../context/obsidian-context";
-  import { getVisibleHours } from "../../global-store/derived-settings";
+  import {
+    getAvailableTimelineColumns,
+    getVisibleHours,
+  } from "../../global-store/derived-settings";
   import { settings } from "../../global-store/settings";
   import type { Task } from "../../task-types";
   import { createColumnSelectionMenu } from "../column-selection-menu";
@@ -45,7 +48,9 @@
     });
   }
 
-  const { timeTracker, planner } = $derived($settings.timelineColumns);
+  const { timeTracker, planner } = $derived(
+    getAvailableTimelineColumns($settings),
+  );
 </script>
 
 <ErrorBoundary>

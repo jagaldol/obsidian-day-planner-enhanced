@@ -1,5 +1,13 @@
 import type { DayPlannerSettings } from "../settings";
 
+export function getAvailableTimelineColumns(settings: DayPlannerSettings) {
+  if (!settings.enableTimeTracker) {
+    return { planner: true, timeTracker: false };
+  }
+
+  return settings.timelineColumns;
+}
+
 export function getHourSize(settings: DayPlannerSettings) {
   return settings.zoomLevel * 60;
 }

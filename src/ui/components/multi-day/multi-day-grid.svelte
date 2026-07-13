@@ -6,7 +6,10 @@
   import { getDateRangeContext } from "../../../context/date-range-context";
   import { getObsidianContext } from "../../../context/obsidian-context";
   import { isToday } from "../../../global-store/current-time";
-  import { getVisibleHours } from "../../../global-store/derived-settings";
+  import {
+    getAvailableTimelineColumns,
+    getVisibleHours,
+  } from "../../../global-store/derived-settings";
   import { isOnWeekend } from "../../../util/moment";
   import { type Moment } from "../../../util/obsidian-moment";
   import {
@@ -52,7 +55,9 @@
 
   let visibleSideControls = $state<SideControls>("none");
   let timelineInternalColumnCount = $derived.by(() => {
-    const columnFlags = Object.values(settingsSignal.current.timelineColumns);
+    const columnFlags = Object.values(
+      getAvailableTimelineColumns(settingsSignal.current),
+    );
 
     return columnFlags.filter(Boolean).length;
   });

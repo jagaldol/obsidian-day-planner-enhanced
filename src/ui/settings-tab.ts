@@ -466,6 +466,23 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
       );
 
     new SettingGroup(containerEl)
+      .setHeading("Time tracking")
+      .addSetting((setting) =>
+        setting
+          .setName("Enable time tracker")
+          .setDesc(
+            "Show time-tracking views, timeline columns, and clock actions. Existing time records are kept unchanged.",
+          )
+          .addToggle((toggle) =>
+            toggle
+              .setValue(this.plugin.settings().enableTimeTracker)
+              .onChange((value: boolean) => {
+                this.update({ enableTimeTracker: value });
+              }),
+          ),
+      );
+
+    new SettingGroup(containerEl)
       .setHeading("Status bar widget")
       .addSetting((setting) =>
         setting.setName("Show active task").addToggle((toggle) =>

@@ -4,11 +4,12 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.31.0**, and follows its own versioning.
 
-## Unreleased
+## 0.3.0
 
 ### ✨ New features
 
 - Synced the Time Tracker with upstream 0.31.0, including recent-clock filtering, active-clock time editing, grouped recent entries, compact tracker controls, and pending indicators for asynchronous actions.
+- Added an on/off setting for Time Tracker views, timeline columns, and clock actions while preserving existing Markdown time records.
 
 ### ✨ Other improvements
 
@@ -20,6 +21,10 @@ This plugin is an independent fork of [Obsidian Day Planner](https://github.com/
 - Fixed the completed-task visibility setting so it hides only completed checkbox tasks while retaining plain list items, incomplete tasks, and custom task states.
 - Prevented the all-day section from appearing and shifting the timeline whenever an edit starts, while retaining its resize handle when all-day items are present.
 - Made completed task text and nested completed items follow the active Obsidian theme's completed-item color.
+- Kept multi-day controls clickable above the timeline grid and resize overlays.
+- Preserved planner Markdown when chronological sorting encounters nested list-like text or separator lines.
+- Fixed moves into All day events so the source task immediately loses its time range and remains visible in its new section.
+- Kept dragged blocks aligned with the pointer while scrolling between All day events and the timeline.
 
 ## 0.2.5
 

@@ -94,6 +94,20 @@
         ),
       );
 
+    new SettingGroup(el).setHeading("Time tracking").addSetting((setting) =>
+      setting
+        .setName("Enable time tracker")
+        .setDesc("Existing time records are kept unchanged")
+        .addToggle((toggle) =>
+          toggle.setValue($settings.enableTimeTracker).onChange((value) => {
+            $settings = {
+              ...$settings,
+              enableTimeTracker: value,
+            };
+          }),
+        ),
+    );
+
     const allDayEventsGroup = new SettingGroup(el)
       .setHeading("All day events")
       .addSetting((setting) =>

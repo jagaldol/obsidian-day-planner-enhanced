@@ -5,7 +5,11 @@
 
   import { getObsidianContext } from "../../context/obsidian-context";
   import { currentTimeSignal, isToday } from "../../global-store/current-time";
-  import { getVisibleHours, snap } from "../../global-store/derived-settings";
+  import {
+    getAvailableTimelineColumns,
+    getVisibleHours,
+    snap,
+  } from "../../global-store/derived-settings";
   import { selectLogEntriesForDay } from "../../redux";
   import type { Task, WithPlacing, WithTime } from "../../task-types";
   import {
@@ -61,6 +65,7 @@
 
   const displayedTasksForTimeline = $derived(getDisplayedTasksForTimeline(day));
   const dayKey = $derived(getDayKey(day));
+  const timelineColumns = $derived(getAvailableTimelineColumns($settings));
 
   const logEntriesForDay = useSelector((state) =>
     selectLogEntriesForDay(state, dayKey, currentTimeSignal.current),
@@ -244,7 +249,7 @@
   });
 </script>
 
-{#if $settings.timelineColumns.planner}
+{#if timelineColumns.planner}
   <Column
     --timeline-column-z-index={$isToday(day) ? "6" : "auto"}
     visibleHours={getVisibleHours($settings)}
@@ -288,7 +293,7 @@
   </Column>
 {/if}
 
-{#if $settings.timelineColumns.timeTracker}
+{#if timelineColumns.timeTracker}
   <Column
     --timeline-column-z-index={$isToday(day) ? "6" : "auto"}
     visibleHours={getVisibleHours($settings)}

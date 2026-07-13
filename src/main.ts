@@ -69,6 +69,10 @@ import { useVisibleDays } from "./ui/hooks/use-visible-days";
 import MultiDayView from "./ui/multi-day-view";
 import { DayPlannerReleaseNotesView } from "./ui/release-notes";
 import { DayPlannerSettingsTab } from "./ui/settings-tab";
+import {
+  createTimeTrackerCommandCheck,
+  createTimeTrackerViewSynchronizer,
+} from "./ui/time-tracker-availability";
 import TimeTrackerView from "./ui/time-tracker-view";
 import TimelineView from "./ui/timeline-view";
 import { UndoNotice } from "./ui/undo-notice";
@@ -88,6 +92,10 @@ export default class DayPlanner extends Plugin {
   private transactionWriter!: TransactionWriter;
   private metadataCacheFacade!: MetadataCacheFacade;
   private undoNotice!: UndoNotice;
+  private enqueueTimeTrackerViewOperation!: (
+    operation: () => Promise<void>,
+  ) => Promise<void>;
+  private syncTimeTrackerView!: (enabled: boolean) => Promise<void>;
 
   async onload() {
     const { vault, metadataCache } = this.app;
@@ -158,11 +166,23 @@ export default class DayPlanner extends Plugin {
       localTasks,
     });
 
+    const timeTrackerViewSynchronizer = createTimeTrackerViewSynchronizer({
+      openSilently: async () => {
+        await this.initLeafSilently(viewTypeTimeTracker);
+      },
+      detach: async () => {
+        await this.detachLeavesOfType(viewTypeTimeTracker);
+      },
+    });
+    this.enqueueTimeTrackerViewOperation = timeTrackerViewSynchronizer.enqueue;
+    this.syncTimeTrackerView = timeTrackerViewSynchronizer.sync;
+
     const handleEditorMenu = createEditorMenuCallback({
       taskEntryEditor: this.taskEntryEditor,
       metadataCacheFacade: this.metadataCacheFacade,
       metadataCache,
       listPropsParser,
+      isTimeTrackerEnabled: () => this.settings().enableTimeTracker,
     });
 
     this.registerEvent(this.app.workspace.on("editor-menu", handleEditorMenu));
@@ -174,8 +194,9 @@ export default class DayPlanner extends Plugin {
     await this.handleNewPluginVersion();
 
     this.app.workspace.onLayoutReady(async () => {
+      this.registerTimeTrackerSettingListener();
       await this.initLeafSilently(viewTypeTimeline);
-      await this.initLeafSilently(viewTypeTimeTracker);
+      await this.syncTimeTrackerView(this.settings().enableTimeTracker);
     });
 
     const timeTrackingFeature = new VaultIndexAdapter(
@@ -193,7 +214,7 @@ export default class DayPlanner extends Plugin {
     return Promise.all([
       this.detachLeavesOfType(viewTypeTimeline),
       this.detachLeavesOfType(viewTypeMultiDay),
-      this.detachLeavesOfType(viewTypeTimeTracker),
+      this.syncTimeTrackerView(false),
     ]);
   }
 
@@ -214,9 +235,19 @@ export default class DayPlanner extends Plugin {
   };
 
   initTimeTrackerTab = async () => {
-    await this.app.workspace.getLeaf("tab").setViewState({
-      type: viewTypeTimeTracker,
-      active: true,
+    if (!this.settings().enableTimeTracker) {
+      return;
+    }
+
+    await this.enqueueTimeTrackerViewOperation(async () => {
+      if (!this.settings().enableTimeTracker) {
+        return;
+      }
+
+      await this.app.workspace.getLeaf("tab").setViewState({
+        type: viewTypeTimeTracker,
+        active: true,
+      });
     });
   };
 
@@ -258,8 +289,19 @@ export default class DayPlanner extends Plugin {
 
   initTimelineLeaf = async () => this.initRightPanelLeaf(viewTypeTimeline);
 
-  initTimeTrackerLeaf = async () =>
-    this.initRightPanelLeaf(viewTypeTimeTracker);
+  initTimeTrackerLeaf = async () => {
+    if (!this.settings().enableTimeTracker) {
+      return;
+    }
+
+    await this.enqueueTimeTrackerViewOperation(async () => {
+      if (!this.settings().enableTimeTracker) {
+        return;
+      }
+
+      await this.initRightPanelLeaf(viewTypeTimeTracker);
+    });
+  };
 
   private async handleNewPluginVersion() {
     if (this.settings().pluginVersion === currentPluginVersion) {
@@ -279,6 +321,12 @@ export default class DayPlanner extends Plugin {
   }
 
   private registerCommands() {
+    const timeTrackerCommand = (execute: () => void) =>
+      createTimeTrackerCommandCheck({
+        execute,
+        isEnabled: () => this.settings().enableTimeTracker,
+      });
+
     this.addCommand({
       id: "show-day-planner-timeline",
       name: "Show timeline",
@@ -306,13 +354,13 @@ export default class DayPlanner extends Plugin {
     this.addCommand({
       id: "show-time-tracker",
       name: "Show time tracker",
-      callback: this.initTimeTrackerLeaf,
+      checkCallback: timeTrackerCommand(this.initTimeTrackerLeaf),
     });
 
     this.addCommand({
       id: "show-time-tracker-tab",
       name: "Show time tracker in regular tab",
-      callback: this.initTimeTrackerTab,
+      checkCallback: timeTrackerCommand(this.initTimeTrackerTab),
     });
 
     this.addCommand({
@@ -364,22 +412,43 @@ export default class DayPlanner extends Plugin {
       id: "clock-in",
       icon: "play",
       name: "Clock in",
-      editorCallback: () => this.taskEntryEditor.clockInUnderCursor(),
+      editorCheckCallback: timeTrackerCommand(() =>
+        this.taskEntryEditor.clockInUnderCursor(),
+      ),
     });
 
     this.addCommand({
       icon: "square",
       id: "clock-out",
       name: "Clock out",
-      editorCallback: () => this.taskEntryEditor.clockOutUnderCursor(),
+      editorCheckCallback: timeTrackerCommand(() =>
+        this.taskEntryEditor.clockOutUnderCursor(),
+      ),
     });
 
     this.addCommand({
       icon: "trash-2",
       id: "cancel-clock",
       name: "Cancel clock",
-      editorCallback: () => this.taskEntryEditor.cancelClockUnderCursor(),
+      editorCheckCallback: timeTrackerCommand(() =>
+        this.taskEntryEditor.cancelClockUnderCursor(),
+      ),
     });
+  }
+
+  private registerTimeTrackerSettingListener() {
+    let previous = this.settings().enableTimeTracker;
+
+    this.register(
+      this.settingsStore.subscribe(({ enableTimeTracker }) => {
+        if (enableTimeTracker === previous) {
+          return;
+        }
+
+        previous = enableTimeTracker;
+        void this.syncTimeTrackerView(enableTimeTracker);
+      }),
+    );
   }
 
   private initSettingsStore(props: {
@@ -546,31 +615,34 @@ export default class DayPlanner extends Plugin {
     this.addCommand({
       id: "jump-to-active-clock",
       name: "Jump to active clock",
-      callback: () => {
-        const currentTasksWithActiveClockProps = selectActiveLogEntries(
-          store.getState(),
-        );
+      checkCallback: createTimeTrackerCommandCheck({
+        isEnabled: () => this.settings().enableTimeTracker,
+        execute: () => {
+          const currentTasksWithActiveClockProps = selectActiveLogEntries(
+            store.getState(),
+          );
 
-        if (currentTasksWithActiveClockProps.length === 0) {
-          new Notice("No active clocks found");
+          if (currentTasksWithActiveClockProps.length === 0) {
+            new Notice("No active clocks found");
 
-          return;
-        }
+            return;
+          }
 
-        const firstTaskWithActiveClockProp =
-          currentTasksWithActiveClockProps[0];
+          const firstTaskWithActiveClockProp =
+            currentTasksWithActiveClockProps[0];
 
-        isNotVoid(firstTaskWithActiveClockProp);
+          isNotVoid(firstTaskWithActiveClockProp);
 
-        const { location } = firstTaskWithActiveClockProp;
+          const { location } = firstTaskWithActiveClockProp;
 
-        isNotVoid(location);
+          isNotVoid(location);
 
-        this.workspaceFacade.revealLineInFile(
-          location.path,
-          location.position?.start?.line,
-        );
-      },
+          this.workspaceFacade.revealLineInFile(
+            location.path,
+            location.position?.start?.line,
+          );
+        },
+      }),
     });
 
     if (envMode === "development") {

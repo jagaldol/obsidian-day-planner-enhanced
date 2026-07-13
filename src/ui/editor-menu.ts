@@ -19,6 +19,7 @@ export const createEditorMenuCallback =
     metadataCacheFacade: MetadataCacheFacade;
     listPropsParser: ListPropsParser;
     metadataCache: MetadataCache;
+    isTimeTrackerEnabled: () => boolean;
   }) =>
   async (menu: Menu, editor: Editor, info: MarkdownView | MarkdownFileInfo) => {
     const {
@@ -26,7 +27,12 @@ export const createEditorMenuCallback =
       metadataCacheFacade,
       metadataCache,
       listPropsParser,
+      isTimeTrackerEnabled,
     } = props;
+
+    if (!isTimeTrackerEnabled()) {
+      return;
+    }
 
     const path = info.file?.path;
 
