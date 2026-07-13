@@ -475,7 +475,8 @@ export default class DayPlanner extends Plugin {
     // Although this is synchronous, without wrapping into a promise, weird things happen:
     // - when re-initializing the weekly view, it gets deleted every other time instead of getting re-created
     // - or the tabs get hidden
-    await this.app.workspace.detachLeavesOfType(type);
+    this.app.workspace.detachLeavesOfType(type);
+    await Promise.resolve();
   }
 
   private showReleaseNotes = async () => {

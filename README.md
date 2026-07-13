@@ -92,6 +92,8 @@ Day Planner Enhanced is integrated with
 
 Day Planner Enhanced is listed in Obsidian's community plugin directory and can be installed from Obsidian's built-in community plugin browser.
 
+Day Planner Enhanced requires Obsidian 1.11.0 or newer.
+
 Before installing, disable the original Day Planner plugin if it is already enabled in the same vault. This fork has its own plugin identity, but it still shares some Day Planner concepts, commands, and view behavior from the upstream codebase.
 
 ### Install from Obsidian

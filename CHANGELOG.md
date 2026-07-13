@@ -4,6 +4,17 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.31.0**, and follows its own versioning.
 
+## 0.3.1
+
+### 🐞 Fixed issues
+
+- Corrected the declared compatibility requirement to Obsidian 1.11.0 for every published Enhanced release that uses the newer settings API.
+- Removed an invalid `await` on synchronous workspace cleanup while preserving its asynchronous completion boundary.
+
+### ✨ Other improvements
+
+- Replaced a deprecated Lucide icon alias with its current name.
+
 ## 0.3.0
 
 ### ✨ New features
