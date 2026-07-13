@@ -68,7 +68,7 @@ describe("Editing", () => {
       });
     });
 
-    test("Un-schedules tasks", async () => {
+    test("Converts plain timed list items to all-day tasks", async () => {
       const { editContext, moveCursorTo, vault, findByText } = await setUp({
         visibleDays: ["2025-07-19"],
       });
@@ -82,7 +82,12 @@ describe("Editing", () => {
 
       await editContext.confirmEdit();
 
-      expect(getPathToDiff(vault.initialState, vault.state)).toMatchSnapshot();
+      expect(getPathToDiff(vault.initialState, vault.state)).toEqual({
+        "fixtures/fixture-vault/2025-07-19.md": `
+- - 11:00 - 11:30 List item under planner heading
++ - [ ] List item under planner heading
+`,
+      });
     });
 
     test("Creates tasks", async () => {

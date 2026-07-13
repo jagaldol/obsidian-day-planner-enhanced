@@ -72,8 +72,14 @@ export function transform(
   );
 
   if (pointerDateTime.type === "date") {
+    // Untimed plain list items are not indexed as all-day plan entries, so
+    // persist converted blocks as tasks while preserving checkbox statuses.
+    const needsTaskStatus =
+      operation.task.status === undefined && operation.task.task === undefined;
+
     return result.with(indexOfEditedTask, {
       ...operation.task,
+      ...(needsTaskStatus ? { status: settings.taskStatusOnCreation } : {}),
       isAllDayEvent: true,
       startTime: pointerDateTime.dateTime,
       durationMinutes: 60,

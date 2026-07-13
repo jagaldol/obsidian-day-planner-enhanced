@@ -63,15 +63,6 @@ exports[`Editing > Daily notes > Moves a parent task with its nested subtree bet
 }
 `;
 
-exports[`Editing > Daily notes > Un-schedules tasks 1`] = `
-{
-  "fixtures/fixture-vault/2025-07-19.md": "
-- - 11:00 - 11:30 List item under planner heading
-+ - List item under planner heading
-",
-}
-`;
-
 exports[`Editing > Dataview > Schedules tasks ('brackets') 1`] = `
 {
   "fixtures/fixture-vault/tasks.md": "

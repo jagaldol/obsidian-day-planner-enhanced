@@ -258,6 +258,10 @@ describe("Indexing", () => {
         }),
         expect.objectContaining({
           text: expect.stringContaining("Task"),
+          isAllDayEvent: true,
+          location: expect.objectContaining({
+            path: "fixtures/fixture-vault/2025-07-19.md",
+          }),
         }),
       ]),
     );

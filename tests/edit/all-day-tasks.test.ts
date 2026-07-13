@@ -2,6 +2,7 @@ import moment from "moment";
 import { get } from "svelte/store";
 import { test, expect, describe } from "vitest";
 
+import { defaultSettingsForTests } from "../../src/settings";
 import { EditMode } from "../../src/ui/hooks/use-edit/types";
 import * as t from "../../src/util/task-utils";
 
@@ -40,7 +41,13 @@ describe("all-day tasks", () => {
 
   test("a scheduled task changes its type to all-day", () => {
     const { handlers, moveCursorTo, getDisplayedAllDayTasksForMultiDayRow } =
-      setUp({ tasks: baseTasks });
+      setUp({
+        tasks: baseTasks,
+        settings: {
+          ...defaultSettingsForTests,
+          taskStatusOnCreation: ">",
+        },
+      });
 
     const task = baseTasks[0];
 
@@ -50,6 +57,30 @@ describe("all-day tasks", () => {
     expect(get(getDisplayedAllDayTasksForMultiDayRow)(range)).toMatchObject([
       {
         ...task,
+        isAllDayEvent: true,
+      },
+    ]);
+  });
+
+  test("a scheduled plain list item becomes a task when changed to all-day", () => {
+    const task = { ...baseTasks[0], status: undefined };
+    const { handlers, moveCursorTo, getDisplayedAllDayTasksForMultiDayRow } =
+      setUp({
+        tasks: [task],
+        settings: {
+          ...defaultSettingsForTests,
+          eventFormatOnCreation: "bullet",
+          taskStatusOnCreation: ">",
+        },
+      });
+
+    handlers.handleGripMouseDown(task, EditMode.DRAG);
+    moveCursorTo(task.startTime, "date");
+
+    expect(get(getDisplayedAllDayTasksForMultiDayRow)(range)).toMatchObject([
+      {
+        ...task,
+        status: ">",
         isAllDayEvent: true,
       },
     ]);
