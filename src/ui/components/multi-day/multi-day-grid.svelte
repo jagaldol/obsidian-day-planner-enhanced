@@ -328,6 +328,7 @@
 
   .controls-sidebar {
     position: absolute;
+    z-index: 10;
     top: 0;
     right: var(--scrollbar-width);
 
