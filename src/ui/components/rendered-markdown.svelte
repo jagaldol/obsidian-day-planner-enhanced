@@ -4,6 +4,7 @@
   import { getMinutesSinceMidnight } from "../../util/moment";
   import {
     createTimestampParts,
+    isCompleted,
     toRenderableMarkdown,
   } from "../../util/task-utils";
   import { addLineDataToCheckboxes, isHTMLElement } from "../../util/dom";
@@ -140,6 +141,7 @@
     "planner-sticky-block-content",
     isCompact && "is-compact",
     useStackedHeader && "is-stacked-header",
+    isCompleted(task.task ?? task.status) && "is-completed",
   ]}
 >
   <div class="time-summary-row">
@@ -216,6 +218,15 @@
     );
   }
 
+  .rendered-markdown.is-completed {
+    --planner-time-block-summary-color: var(
+      --checklist-done-color,
+      var(--text-faint)
+    );
+
+    color: var(--checklist-done-color, var(--text-faint));
+  }
+
   .rendered-markdown :global(p),
   .rendered-markdown :global(ul) {
     margin-block: 0;
@@ -238,7 +249,7 @@
 
   .rendered-markdown :global(li.task-list-item[data-task="x"]),
   .rendered-markdown :global(li.task-list-item[data-task="X"]) {
-    color: var(--text-faint);
+    color: var(--checklist-done-color, var(--text-faint));
   }
 
   .time-block-range {
@@ -285,7 +296,7 @@
       var(--font-semibold)
     );
     line-height: 1.28;
-    color: var(--text-normal);
+    color: var(--planner-time-block-summary-color, var(--text-normal));
   }
 
   .first-line-wrapper :global(p) {

@@ -120,6 +120,27 @@ describe("Clocking out", () => {
   });
 });
 
+describe("Editing clocks", () => {
+  test("Edits the active clock start while keeping it open", async () => {
+    const path = "fixtures/fixture-vault/one-task-two-log-records.md";
+    const { taskEntryEditor, vault } = await setUp({
+      loadedFixtures: ["one-task-two-log-records.md"],
+    });
+
+    await Effect.runPromise(
+      taskEntryEditor.editLastClockAtLocation(
+        { path, line: 0 },
+        { start: "2025-01-01 16:30:00" },
+      ),
+    );
+
+    const diff = getPathToDiff(vault.initialState, vault.state)[path];
+
+    expect(diff).toContain("+       - start: '2025-01-01 16:30:00'");
+    expect(diff).not.toContain("+         end:");
+  });
+});
+
 describe("Canceling clocks", () => {
   test("Cancels clocks", async () => {
     const { taskEntryEditor, vault } = await setUp({

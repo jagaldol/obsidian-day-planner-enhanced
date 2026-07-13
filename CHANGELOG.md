@@ -13,6 +13,13 @@ This plugin is an independent fork of [Obsidian Day Planner](https://github.com/
 ### ✨ Other improvements
 
 - Preserved Day Planner Enhanced's nested schedule rendering, overnight planning, Markdown sorting safeguards, plugin identity, and independent release history while establishing upstream 0.31.0 as the new merge baseline.
+- Debounced recent-clock filtering to keep the Time Tracker responsive while typing.
+
+### 🐞 Fixed issues
+
+- Fixed the completed-task visibility setting so it hides only completed checkbox tasks while retaining plain list items, incomplete tasks, and custom task states.
+- Prevented the all-day section from appearing and shifting the timeline whenever an edit starts, while retaining its resize handle when all-day items are present.
+- Made completed task text and nested completed items follow the active Obsidian theme's completed-item color.
 
 ## 0.2.5
 

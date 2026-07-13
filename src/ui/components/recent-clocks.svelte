@@ -8,6 +8,10 @@
   import type { LocalTask } from "../../task-types";
   import { groupBy } from "../../util/collection";
   import { getDayKey } from "../../util/task-utils";
+  import {
+    getRecentClockFilterKeywords,
+    matchesRecentClockFilter,
+  } from "../recent-clock-filter";
   import { createRecentClockMenu } from "../recent-clock-menu";
 
   import { runWithNoticeOnError } from "./../../service/list-item-entry-editor";
@@ -27,20 +31,26 @@
   );
 
   let fieldState = $state("");
+  let debouncedFieldState = $state("");
 
-  const keywords = $derived(
-    fieldState.split(/\s+/)?.map((keyword) => keyword.trim().toLowerCase()),
-  );
+  $effect(() => {
+    const value = fieldState;
+    const timeout = window.setTimeout(() => {
+      debouncedFieldState = value;
+    }, 200);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  });
+
+  const keywords = $derived(getRecentClockFilterKeywords(debouncedFieldState));
 
   const filtered = $derived(
-    keywords.every((keyword) => keyword.length === 0)
+    keywords.length === 0
       ? recentLogRecords.current
-      : recentLogRecords.current.filter((it) =>
-          keywords.every(
-            (keyword) =>
-              it.text.toLowerCase().includes(keyword) ||
-              it.location?.path.toLowerCase().includes(keyword),
-          ),
+      : recentLogRecords.current.filter((task) =>
+          matchesRecentClockFilter(task, keywords),
         ),
   );
 
