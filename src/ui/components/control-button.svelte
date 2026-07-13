@@ -1,5 +1,6 @@
 <script lang="ts">
   /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
+  import { LoaderCircle } from "lucide-svelte";
   import { type Snippet } from "svelte";
 
   const {
@@ -8,6 +9,7 @@
     disabled = false,
     classes,
     onclick,
+    icon,
     children,
     ...rest
   }: {
@@ -16,27 +18,51 @@
     isActive?: boolean;
     disabled?: boolean;
     classes?: string;
-    onclick: (event: MouseEvent) => void;
-    children: Snippet;
+    onclick: (event: MouseEvent) => void | Promise<void>;
+    icon?: Snippet;
+    children?: Snippet;
   } = $props();
+
+  let isPending = $state(false);
 </script>
 
 <div
   class={["clickable-icon", classes, rest.class, { "is-active": isActive }]}
   aria-disabled={disabled}
   aria-label={label}
-  {onclick}
+  onclick={async (event: MouseEvent) => {
+    try {
+      isPending = true;
+
+      await onclick(event);
+    } finally {
+      isPending = false;
+    }
+  }}
 >
-  {@render children()}
+  {#if isPending}
+    <LoaderCircle class="is-spinning svg-icon" />
+  {:else}
+    {@render icon?.()}
+  {/if}
+  {@render children?.()}
 </div>
 
 <!-- eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. -->
 
 <style>
   .clickable-icon {
+    display: flex;
+    gap: var(--size-2-1);
+
     color: var(--color, var(--icon-color));
     white-space: nowrap;
+
     border: var(--control-button-border, none);
-    border-radius: var(--border-radius, var(--clickable-icon-radius));
+    border-radius: var(--border-radius, var(--radius-s));
+  }
+
+  :global(.is-spinning) {
+    animation: spin 1.5s infinite linear;
   }
 </style>

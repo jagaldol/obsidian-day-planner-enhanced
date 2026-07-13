@@ -1,6 +1,10 @@
 <script lang="ts">
   /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
+  import { Delete } from "lucide-svelte";
+
   import { clockFormat } from "../../constants";
+
+  import ControlButton from "./control-button.svelte";
 
   let {
     initialStart,
@@ -21,18 +25,21 @@
     window.moment(inputValue).format(clockFormat);
 
   let start = $derived(toInputFormat(initialStart));
-  let end = $derived(toInputFormat(initialEnd));
+  let end: string | undefined = $derived(toInputFormat(initialEnd));
 </script>
 
 <div class="modal-wrapper">
   <div class="start-end-wrapper">
-    <label>
-      Start: <input type="datetime-local" bind:value={start} />
-    </label>
-
-    <label>
-      End: <input type="datetime-local" bind:value={end} />
-    </label>
+    <input type="datetime-local" bind:value={start} />
+    <span class="arrow">→</span>
+    <input type="datetime-local" bind:value={end} />
+    <ControlButton
+      onclick={() => {
+        end = undefined;
+      }}
+    >
+      <Delete class="svg-icon" />
+    </ControlButton>
   </div>
 
   <div class="buttons-wrapper">
@@ -62,8 +69,9 @@
   .start-end-wrapper {
     display: flex;
     flex-wrap: wrap;
+    gap: var(--size-4-1);
     row-gap: var(--size-4-2);
-    justify-content: space-between;
+    align-self: center;
   }
 
   .buttons-wrapper {
@@ -73,10 +81,12 @@
     align-items: flex-end;
   }
 
-  label {
-    display: inline-flex;
-    gap: var(--size-4-2);
-    align-items: center;
-    color: var(--text-muted);
+  input[type="datetime-local"] {
+    border-radius: var(--radius-s);
+  }
+
+  .arrow {
+    margin-inline: var(--size-4-2);
+    font-size: var(--font-ui-large);
   }
 </style>

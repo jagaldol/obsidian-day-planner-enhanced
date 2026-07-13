@@ -114,6 +114,8 @@
     grid-template-columns: 1fr auto;
     flex: 1 0 0;
 
+    padding: var(--time-block-content-padding);
+
     font-family: var(--planner-time-block-font-family, var(--font-interface));
     font-size: var(--planner-time-block-font-size, var(--font-ui-small));
     color: var(--text-muted);

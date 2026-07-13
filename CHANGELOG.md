@@ -2,7 +2,17 @@
 
 All notable changes to **Day Planner Enhanced** are documented here.
 
-This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.30.0**, and follows its own versioning.
+This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.31.0**, and follows its own versioning.
+
+## Unreleased
+
+### ✨ New features
+
+- Synced the Time Tracker with upstream 0.31.0, including recent-clock filtering, active-clock time editing, grouped recent entries, compact tracker controls, and pending indicators for asynchronous actions.
+
+### ✨ Other improvements
+
+- Preserved Day Planner Enhanced's nested schedule rendering, overnight planning, Markdown sorting safeguards, plugin identity, and independent release history while establishing upstream 0.31.0 as the new merge baseline.
 
 ## 0.2.5
 

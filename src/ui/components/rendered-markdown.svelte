@@ -194,6 +194,7 @@
     display: flex;
     flex: 1 0 0;
     flex-direction: column;
+    gap: var(--rendered-markdown-gap);
 
     min-width: 0;
     padding: var(--rendered-markdown-padding, 9px 11px 7px);

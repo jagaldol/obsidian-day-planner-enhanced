@@ -147,7 +147,9 @@
       <ControlButton
         --border-radius="0"
         label="Open note for day"
-        onclick={async () => await workspaceFacade.openFileForDay(day)}
+        onclick={async () => {
+          await workspaceFacade.openFileForDay(day);
+        }}
       >
         {#if $isToday(day)}
           🔵
