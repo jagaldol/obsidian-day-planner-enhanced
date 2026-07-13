@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
 import { produce } from "immer";
 import type { Node, Parent, Text as MdastText, ListItem } from "mdast";
-import type { Heading, List, Root, Nodes } from "mdast";
+import type { Heading, List, Root, Nodes, Paragraph } from "mdast";
 import { fromMarkdown } from "mdast-util-from-markdown";
 import * as mdast from "mdast-util-to-markdown";
 import type { EditorPosition } from "obsidian";
@@ -10,7 +10,6 @@ import type { Point } from "unist";
 
 import { compareTimestamps } from "../parser/parser";
 import {
-  dashOrNumberWithMultipleSpaces,
   escapedSquareBracket,
   listItemRegExp,
   timeRangeAtStartOfLineRegExp,
@@ -20,10 +19,11 @@ import { takeWhile } from "../util/collection";
 export { fromMarkdown };
 
 function normalizeNestedTextIndentation(listItem: string) {
-  const lines = listItem.split("\n");
+  const normalizedListMarker = listItem.replace(/^(-|\d+[.)])[\t ]+/u, "$1 ");
+  const lines = normalizedListMarker.split("\n");
 
   if (lines.length === 1) {
-    return listItem;
+    return normalizedListMarker;
   }
 
   const linesAfterFirst = lines.slice(1);
@@ -55,6 +55,26 @@ export function toMarkdown(nodes: Nodes) {
       bullet: "-",
       listItemIndent: "tab",
       handlers: {
+        heading: (node, parent, state, info) => {
+          const isSetextHeading =
+            node.position?.start.line !== node.position?.end.line;
+
+          if (parent?.type === "listItem" && isSetextHeading) {
+            // A dash-only child line is parsed as a Setext heading. In a
+            // planner list it is a separator, so keep it from promoting the
+            // whole schedule item to an ATX heading during serialization.
+            const paragraph: Paragraph = { ...node, type: "paragraph" };
+
+            return `${mdast.defaultHandlers.paragraph(
+              paragraph,
+              parent,
+              state,
+              info,
+            )}\n\n***`;
+          }
+
+          return mdast.defaultHandlers.heading(node, parent, state, info);
+        },
         listItem: (...args) =>
           normalizeNestedTextIndentation(
             mdast.defaultHandlers.listItem(...args),
@@ -355,8 +375,6 @@ export function toMdastPoint(editorPosition: EditorPosition) {
 }
 
 function postProcess(input: string) {
-  return input
-    .replace(dashOrNumberWithMultipleSpaces, "$1 ")
-    .replace(escapedSquareBracket, "[");
+  return input.replace(escapedSquareBracket, "[");
 }
 /* eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. */

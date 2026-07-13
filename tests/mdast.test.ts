@@ -7,6 +7,7 @@ import {
   isList,
   sortListsRecursively,
   sortListsRecursivelyByTimestamp,
+  sortListsRecursivelyInMarkdown,
   toMarkdown,
 } from "../src/mdast/mdast";
 
@@ -184,6 +185,53 @@ test("Does not sort embedded clock text as a timed group", () => {
 
   expect(actual).toBe(expected);
 });
+
+test.each([
+  "Compare model output (version 5.6)",
+  "Complete migration phase 2.",
+  "Keep the trailing marker -",
+])(
+  "preserves the next schedule line after list-like text: %s",
+  (nestedItem) => {
+    const input = `- 10:00 - 11:00 Focus session
+  - ${nestedItem}
+- 09:00 - 10:00 Preparation
+  - Review the checklist
+- 11:00 - 12:00 Break
+`;
+    const expected = `- 09:00 - 10:00 Preparation
+    - Review the checklist
+- 10:00 - 11:00 Focus session
+    - ${nestedItem}
+- 11:00 - 12:00 Break
+`;
+
+    const actual = sortListsRecursivelyInMarkdown(input);
+
+    expect(actual).toBe(expected);
+    expect(sortListsRecursivelyInMarkdown(actual)).toBe(expected);
+  },
+);
+
+test.each(["-", "--", "---", "----", "=", "==", "==="])(
+  "keeps an indented %s separator from turning a schedule into a heading",
+  (separator) => {
+    const input = `- 10:00 - 11:00 Focus session
+  ${separator}
+- 11:00 - 12:00 Break
+`;
+    const expected = `- 10:00 - 11:00 Focus session
+
+    ***
+- 11:00 - 12:00 Break
+`;
+
+    const actual = sortListsRecursivelyInMarkdown(input);
+
+    expect(actual).toBe(expected);
+    expect(sortListsRecursivelyInMarkdown(actual)).toBe(expected);
+  },
+);
 
 test.todo("Tabs don't get replaced with spaces on roundtripping");
 
