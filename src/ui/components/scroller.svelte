@@ -5,7 +5,12 @@
 
   import { autoScrollResumeDelayMillis } from "../../constants";
   import { getObsidianContext } from "../../context/obsidian-context";
-  import { createAutoScroll, getScrollZones } from "../../util/dom";
+  import {
+    createAutoScroll,
+    dispatchAutoScrollPointerMove,
+    getScrollZones,
+    type ClientCoordinates,
+  } from "../../util/dom";
 
   const {
     children,
@@ -25,13 +30,31 @@
   let el: HTMLElement | undefined = $state();
   let autoScrollBlockedUntil = $state(0);
   let autoScrollUnblockTimeout: number | undefined;
+  let lastEditPointerCoordinates: ClientCoordinates | undefined;
   const autoScrollBlocked = $derived(
     isUnderCursor ||
       autoScrollBlockedUntil > Date.now() ||
       Boolean($editOperation),
   );
 
-  const { startScroll, stopScroll } = createAutoScroll();
+  const { startScroll, stopScroll } = createAutoScroll(
+    (scroller, scrollDeltaY) => {
+      if (!$editOperation || !lastEditPointerCoordinates) {
+        return;
+      }
+
+      dispatchAutoScrollPointerMove(
+        scroller,
+        lastEditPointerCoordinates,
+        scrollDeltaY,
+      );
+    },
+  );
+
+  function stopEditAutoScroll() {
+    lastEditPointerCoordinates = undefined;
+    stopScroll();
+  }
 
   function blockPanOnEdit(el: HTMLElement) {
     const off = on(el, "touchmove", (event) => {
@@ -67,10 +90,18 @@
 
   $effect(() => {
     return () => {
+      stopEditAutoScroll();
+
       if (autoScrollUnblockTimeout !== undefined) {
         window.clearTimeout(autoScrollUnblockTimeout);
       }
     };
+  });
+
+  $effect(() => {
+    if (!$editOperation) {
+      stopEditAutoScroll();
+    }
   });
 </script>
 
@@ -84,11 +115,18 @@
     isUnderCursor = false;
   }}
   onpointerdown={delayAutoScroll}
-  onpointerleave={stopScroll}
+  onpointerleave={stopEditAutoScroll}
   onpointermove={(event) => {
     if (!$editOperation || !el) {
+      stopEditAutoScroll();
+
       return;
     }
+
+    lastEditPointerCoordinates = {
+      clientX: event.clientX,
+      clientY: event.clientY,
+    };
 
     const scrollZones = getScrollZones(event, el);
 
@@ -100,7 +138,10 @@
       stopScroll();
     }
   }}
-  onpointerup={delayAutoScroll}
+  onpointerup={() => {
+    stopEditAutoScroll();
+    delayAutoScroll();
+  }}
   onscroll={handleScroll}
   onwheel={delayAutoScroll}
   use:blockPanOnEdit

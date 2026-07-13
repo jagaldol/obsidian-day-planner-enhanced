@@ -18,6 +18,7 @@ export enum EditMode {
 export interface EditOperation {
   dragOriginClientY?: number;
   dragOriginStartTime?: Moment;
+  dragScrollOffsetY?: number;
   task: WithTime<LocalTask>;
   mode: EditMode;
 }

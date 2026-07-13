@@ -33,9 +33,13 @@ export function getIsomorphicClientY(
     return event.clientY;
   }
 
-  const firstTouch = event.touches[0];
+  const firstTouch = event.touches[0] ?? event.changedTouches[0];
 
-  return firstTouch.pageY;
+  if (!firstTouch) {
+    throw new Error("Touch event does not contain pointer coordinates");
+  }
+
+  return firstTouch.clientY;
 }
 
 export function isEventRelated(
@@ -99,9 +103,13 @@ export function getPointerOffsetY(
   el: HTMLElement,
   event: MouseEvent | TouchEvent,
 ) {
+  return getClientOffsetY(el, getIsomorphicClientY(event));
+}
+
+export function getClientOffsetY(el: HTMLElement, clientY: number) {
   const viewportToElOffsetY = el.getBoundingClientRect().top;
 
-  return getIsomorphicClientY(event) - viewportToElOffsetY;
+  return clientY - viewportToElOffsetY;
 }
 
 export function getScrollZones(
@@ -122,20 +130,99 @@ export function getScrollZones(
 type ScrollDirection = "up" | "down";
 type ScrollProps = { el: HTMLElement; direction: ScrollDirection };
 
-export function createAutoScroll() {
-  let scrolling = false;
+export const autoScrollPointerMoveEventName =
+  "day-planner-auto-scroll-pointer-move";
 
-  function stopScroll() {
-    scrolling = false;
+export interface ClientCoordinates {
+  clientX: number;
+  clientY: number;
+}
+
+export interface AutoScrollPointerMove {
+  clientY: number;
+  scrollDeltaY: number;
+}
+
+export function dispatchAutoScrollPointerMove(
+  scroller: HTMLElement,
+  coordinates: ClientCoordinates,
+  scrollDeltaY: number,
+) {
+  const { clientX, clientY } = coordinates;
+  const hitTarget = scroller.ownerDocument.elementFromPoint(clientX, clientY);
+
+  if (!hitTarget || !scroller.contains(hitTarget)) {
+    return;
   }
 
-  function scroll(props: ScrollProps) {
-    const { el, direction } = props;
+  const customEventConstructor =
+    scroller.ownerDocument.defaultView?.CustomEvent ?? CustomEvent;
+
+  hitTarget.dispatchEvent(
+    new customEventConstructor(autoScrollPointerMoveEventName, {
+      bubbles: true,
+      detail: { clientY, scrollDeltaY },
+    }),
+  );
+}
+
+export function listenForAutoScrollPointerMove(
+  node: HTMLElement,
+  listener: (move: AutoScrollPointerMove) => void,
+) {
+  const handleAutoScrollPointerMove = (event: Event) => {
+    const { clientY, scrollDeltaY } = (
+      event as CustomEvent<Partial<AutoScrollPointerMove>>
+    ).detail ?? { clientY: undefined, scrollDeltaY: undefined };
+
+    if (typeof clientY !== "number" || typeof scrollDeltaY !== "number") {
+      return;
+    }
+
+    listener({ clientY, scrollDeltaY });
+  };
+
+  node.addEventListener(
+    autoScrollPointerMoveEventName,
+    handleAutoScrollPointerMove,
+  );
+
+  return {
+    destroy() {
+      node.removeEventListener(
+        autoScrollPointerMoveEventName,
+        handleAutoScrollPointerMove,
+      );
+    },
+  };
+}
+
+export function createAutoScroll(
+  onScrollFrame?: (scroller: HTMLElement, scrollDeltaY: number) => void,
+) {
+  let currentScroll: ScrollProps | undefined;
+  let framePending = false;
+
+  function stopScroll() {
+    currentScroll = undefined;
+  }
+
+  function scroll() {
+    if (framePending) {
+      return;
+    }
+
+    framePending = true;
 
     window.requestAnimationFrame(() => {
-      if (!scrolling) {
+      framePending = false;
+
+      if (!currentScroll) {
         return;
       }
+
+      const { el, direction } = currentScroll;
+      const previousScrollTop = el.scrollTop;
 
       if (direction === "up") {
         el.scrollTop -= scrollSpeedPixelsPerAnimationFrame;
@@ -143,18 +230,19 @@ export function createAutoScroll() {
         el.scrollTop += scrollSpeedPixelsPerAnimationFrame;
       }
 
-      scroll(props);
+      const scrollDeltaY = el.scrollTop - previousScrollTop;
+
+      if (scrollDeltaY !== 0) {
+        onScrollFrame?.(el, scrollDeltaY);
+      }
+
+      scroll();
     });
   }
 
   function startScroll(props: ScrollProps) {
-    if (scrolling) {
-      return;
-    }
-
-    scrolling = true;
-
-    scroll(props);
+    currentScroll = props;
+    scroll();
   }
 
   return { startScroll, stopScroll };

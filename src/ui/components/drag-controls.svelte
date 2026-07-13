@@ -11,6 +11,7 @@
   import { getIsomorphicClientY } from "../../util/dom";
   import * as t from "../../util/task-utils";
   import { createGestures } from "../actions/gestures";
+  import { getDragStartState } from "../hooks/use-edit/drag-pointer";
   import { EditMode } from "../hooks/use-edit/types";
 
   import BlockControlButton from "./block-control-button.svelte";
@@ -38,14 +39,14 @@
     }
 
     dragStarted = true;
-    const originStartTime = dragTask.startTime.clone();
+    const dragStartState = getDragStartState(
+      dragTask,
+      getIsomorphicClientY(event),
+    );
 
-    pointerDateTime.set({
-      dateTime: originStartTime.clone(),
-      type: "dateTime",
-    });
+    pointerDateTime.set(dragStartState.pointerDateTime);
 
-    handleGripMouseDown(dragTask, mode, getIsomorphicClientY(event));
+    handleGripMouseDown(dragTask, mode, dragStartState.dragOriginClientY);
   }
 
   function handleMoveStart(event: MouseEvent | TouchEvent, mode: EditMode) {

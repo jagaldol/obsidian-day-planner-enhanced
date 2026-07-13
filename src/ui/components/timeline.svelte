@@ -9,9 +9,11 @@
   import { selectLogEntriesForDay } from "../../redux";
   import type { Task, WithPlacing, WithTime } from "../../task-types";
   import {
+    getClientOffsetY,
     getIsomorphicClientY,
     getPointerOffsetY,
     isTouchEvent,
+    listenForAutoScrollPointerMove,
     offsetYToMinutes,
   } from "../../util/dom";
   import {
@@ -26,6 +28,11 @@
     getRenderKey,
   } from "../../util/task-utils";
   import { createGestures } from "../actions/gestures";
+  import {
+    getDragPointerDateTime,
+    shouldUpdateDateTimePointer,
+    withDragScrollOffset,
+  } from "../hooks/use-edit/drag-pointer";
   import type { EditOperation } from "../hooks/use-edit/types";
 
   import Column from "./column.svelte";
@@ -141,6 +148,14 @@
 
   let el: HTMLElement | undefined = $state();
 
+  function setDateTimePointer(dateTime: Moment) {
+    const previousPointerDateTime = get(pointerDateTime);
+
+    if (shouldUpdateDateTimePointer(previousPointerDateTime, dateTime)) {
+      pointerDateTime.set({ dateTime, type: "dateTime" });
+    }
+  }
+
   function updatePointerDateTime(event: MouseEvent | TouchEvent) {
     isNotVoid(el);
 
@@ -154,11 +169,8 @@
       minutesSinceMidnight,
       window.moment(day),
     );
-    const previousDateTime = get(pointerDateTime).dateTime;
 
-    if (!dateTime.isSame(previousDateTime, "minute")) {
-      pointerDateTime.set({ dateTime, type: "dateTime" });
-    }
+    setDateTimePointer(dateTime);
   }
 
   function handleContainerPointerDown(event: MouseEvent | TouchEvent) {
@@ -166,30 +178,21 @@
     handleContainerMouseDown();
   }
 
-  function updateRelativeDragPointerDateTime(
-    event: MouseEvent | TouchEvent,
+  function updateDragPointerDateTime(
+    clientY: number,
     operation: EditOperation,
   ) {
-    if (
-      operation.dragOriginClientY === undefined ||
-      operation.dragOriginStartTime === undefined
-    ) {
-      return;
-    }
+    isNotVoid(el);
 
-    const { snapStepMinutes, zoomLevel } = settingsSignal.current;
-    const deltaMinutes =
-      (getIsomorphicClientY(event) - operation.dragOriginClientY) / zoomLevel;
-    const snappedDeltaMinutes =
-      Math.round(deltaMinutes / snapStepMinutes) * snapStepMinutes;
-    const dateTime = operation.dragOriginStartTime
-      .clone()
-      .add(snappedDeltaMinutes, "minutes");
-    const previousDateTime = get(pointerDateTime).dateTime;
+    const dateTime = getDragPointerDateTime({
+      clientY,
+      day: window.moment(day),
+      operation,
+      settings: settingsSignal.current,
+      timelineOffsetY: getClientOffsetY(el, clientY),
+    });
 
-    if (!dateTime.isSame(previousDateTime, "minute")) {
-      pointerDateTime.set({ dateTime, type: "dateTime" });
-    }
+    setDateTimePointer(dateTime);
   }
 
   function handleContainerPointerMove(event: MouseEvent | TouchEvent) {
@@ -199,13 +202,32 @@
       return;
     }
 
-    if (currentEditOperation.dragOriginClientY !== undefined) {
-      updateRelativeDragPointerDateTime(event, currentEditOperation);
+    updateDragPointerDateTime(
+      getIsomorphicClientY(event),
+      currentEditOperation,
+    );
+  }
 
-      return;
-    }
+  function updateDragPointerOnAutoScroll(node: HTMLElement) {
+    return listenForAutoScrollPointerMove(node, ({ clientY, scrollDeltaY }) => {
+      let currentEditOperation = get(editOperation);
 
-    updatePointerDateTime(event);
+      if (!currentEditOperation) {
+        return;
+      }
+
+      const scrolledEditOperation = withDragScrollOffset(
+        currentEditOperation,
+        scrollDeltaY,
+      );
+
+      if (scrolledEditOperation !== currentEditOperation) {
+        currentEditOperation = scrolledEditOperation;
+        editOperation.set(currentEditOperation);
+      }
+
+      updateDragPointerDateTime(clientY, currentEditOperation);
+    });
   }
 
   const timelineGestures = createGestures({
@@ -244,6 +266,7 @@
       onpointermove={handleContainerPointerMove}
       onpointerup={confirmEdit}
       use:timelineGestures
+      use:updateDragPointerOnAutoScroll
     >
       {#each $displayedTasksForTimeline.withTime as task (getRenderKey(task))}
         {@const separatorVisibility = plannerSeparatorVisibility.get(
