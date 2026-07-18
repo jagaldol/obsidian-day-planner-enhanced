@@ -18,10 +18,12 @@ This plugin is an independent fork of [Obsidian Day Planner](https://github.com/
 - Fixed completed-clock editing and deletion when multiple log entries share the same start time, so the selected indexed entry is updated instead of the first matching timestamp.
 - Fixed creating clocks on tasks that do not already have properties.
 - Debounced Time Tracker search and retained the completed-task visibility and edit-layout fixes from the upstream release.
+- Fixed Community plugin preview diagnostics around method binding, modal callbacks, DOM helpers, and lint directives.
 
 ### ✨ Other improvements
 
 - Adopted upstream's modular vault indexing, search ordering, and composed clock-editing services while preserving Enhanced's nested schedule, overnight plan, and timeline interaction behavior.
+- Added searchable Obsidian 1.13 settings definitions while retaining the legacy settings renderer for Obsidian 1.11 and 1.12 compatibility.
 - Removed unused OverlayScrollbars and `ts-dedent` dependencies.
 
 ## 0.3.1

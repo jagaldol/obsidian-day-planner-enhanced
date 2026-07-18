@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
-import { pipe } from "effect";
+import { pipe, Struct } from "effect";
 import { get } from "svelte/store";
 
 import { bullet, defaultDayFormat, emDash } from "../constants";
@@ -170,8 +170,7 @@ export function copy(
     throw new Error("Cannot copy unwritten time blocks");
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { path, position, ...withoutFileLocation } = source;
+  const withoutFileLocation = Struct.omit(source, "path", "position");
 
   return {
     ...withoutFileLocation,

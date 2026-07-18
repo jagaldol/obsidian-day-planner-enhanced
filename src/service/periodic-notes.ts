@@ -23,8 +23,16 @@ export class PeriodicNotes {
     return getAllDailyNotes();
   }
 
-  createDailyNote(day: Moment) {
-    return createDailyNote(day);
+  async createDailyNote(day: Moment): Promise<TFile> {
+    const dailyNote = await createDailyNote(day);
+
+    if (!dailyNote) {
+      throw new Error(
+        `Could not create daily note for ${day.format("YYYY-MM-DD")}`,
+      );
+    }
+
+    return dailyNote;
   }
 
   getDateFromPath(path: string, type: "day" | "month" | "year") {

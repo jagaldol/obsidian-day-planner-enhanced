@@ -86,13 +86,13 @@ export class ClockInOnAnythingModal extends SuggestModal<Suggestion> {
     setIcon(iconEl, getSuggestionIcon(item));
   }
 
-  async onChooseSuggestion(item: Suggestion) {
+  onChooseSuggestion(item: Suggestion) {
     const { logEntryEditor, vaultFacade } = this;
 
     if (item.type === "create") {
       const path = item.name.endsWith(".md") ? item.name : `${item.name}.md`;
 
-      return runWithNoticeOnError(
+      void runWithNoticeOnError(
         Effect.gen(function* () {
           yield* Effect.tryPromise({
             try: () => vaultFacade.createFile(path, ""),
@@ -103,8 +103,9 @@ export class ClockInOnAnythingModal extends SuggestModal<Suggestion> {
           yield* logEntryEditor.clockIn({ path });
         }),
       );
+      return;
     }
 
-    return runWithNoticeOnError(logEntryEditor.clockIn(item));
+    void runWithNoticeOnError(logEntryEditor.clockIn(item));
   }
 }

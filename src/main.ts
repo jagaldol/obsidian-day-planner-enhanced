@@ -182,9 +182,8 @@ export default class DayPlanner extends Plugin {
 
     const { dispatch } = store;
 
-    this.searchOrderingService = new DefaultSearchOrderingService(
-      vault,
-      store.getState,
+    this.searchOrderingService = new DefaultSearchOrderingService(vault, () =>
+      store.getState(),
     );
 
     this.taskEntryEditor = new ListItemEntryEditor(
