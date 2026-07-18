@@ -13,15 +13,42 @@ const ampm = "\\s?[apAP][mM](?!\\w)";
 
 const time12h = `(${hours12h})(?:${hourMinuteSeparator}?(${minutes}))(${ampm})`;
 const time24h = `(${hours24h})(?:${hourMinuteSeparator}?(${minutes}))`;
+const separatedTime24h = `(${hours24h})(?:${hourMinuteSeparator}(${minutes}))`;
 const time = `(?:${time12h}|${time24h})(?!\\d)`;
+const separatedTime = `(?:${time12h}|${separatedTime24h})(?!\\d)`;
+const compactTime = `(?:[0-2]\\d${minutes})(?!\\d)`;
 
 const timeRangeSeparator = `\\s?-\\s?`;
-const timeRange = `(?<start>${time})(?:${timeRangeSeparator}(?<end>${time}))?`;
+
+function createTimestampRegExps(timestampFormat: string) {
+  const acceptsCompact = timestampFormat === "HHmm";
+  const rangeEnd = acceptsCompact
+    ? `(?:${separatedTime}|${compactTime})`
+    : separatedTime;
+  const rangeStart = acceptsCompact
+    ? `(?:${separatedTime}|${compactTime}(?=${timeRangeSeparator}${rangeEnd}))`
+    : separatedTime;
+  const timeRange = `(?<start>${rangeStart})(?:${timeRangeSeparator}(?<end>${rangeEnd}))?`;
+
+  return {
+    timeRange: new RegExp(timeRange, "im"),
+    timeRangeAtStartOfLine: new RegExp(`^${timeRange}`, "im"),
+  };
+}
+
+const initialTimestampRegExps = createTimestampRegExps("HH:mm");
 
 export const timeRegExp = new RegExp(`^${time}$`);
+export let timeRangeRegExp = initialTimestampRegExps.timeRange;
+export let timeRangeAtStartOfLineRegExp =
+  initialTimestampRegExps.timeRangeAtStartOfLine;
 
-export const timeRangeRegExp = new RegExp(timeRange, "im");
-export const timeRangeAtStartOfLineRegExp = new RegExp(`^${timeRange}`, "im");
+export function configureTimestampRegExps(timestampFormat: string) {
+  const next = createTimestampRegExps(timestampFormat);
+
+  timeRangeRegExp = next.timeRange;
+  timeRangeAtStartOfLineRegExp = next.timeRangeAtStartOfLine;
+}
 
 const datePattern = "\\d{4}-\\d{2}-\\d{2}";
 
