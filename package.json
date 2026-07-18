@@ -91,11 +91,17 @@
     "node-ical": "0.18.0",
     "obsidian": "^1.13.1",
     "obsidian-daily-notes-interface": "^0.9.5",
-    "svelte": "^5.55.0",
+    "svelte": "^5.56.6",
     "svelte-portal": "^2.2.1",
     "tinygesture": "^3.0.0",
     "ts-pattern": "^5.5.0",
     "typed-assert": "^1.0.9",
     "zod": "^4.0.14"
+  },
+  "overrides": {
+    "axios": "1.16.0",
+    "follow-redirects": "1.16.0",
+    "form-data": "4.0.6",
+    "uuid": "11.1.1"
   }
 }

@@ -592,7 +592,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
   setControlValue(key: string, value: unknown): void {
     this.updateSettings({
       [key]: value,
-    } as Partial<DayPlannerSettings>);
+    });
 
     if (key === "eventFormatOnCreation") {
       this.refreshSettings();

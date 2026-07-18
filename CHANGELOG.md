@@ -24,6 +24,7 @@ This plugin is an independent fork of [Obsidian Day Planner](https://github.com/
 
 - Adopted upstream's modular vault indexing, search ordering, and composed clock-editing services while preserving Enhanced's nested schedule, overnight plan, and timeline interaction behavior.
 - Added searchable Obsidian 1.13 settings definitions while retaining the legacy settings renderer for Obsidian 1.11 and 1.12 compatibility.
+- Refreshed production dependency resolutions flagged by the Community plugin preview security scan.
 - Removed unused OverlayScrollbars and `ts-dedent` dependencies.
 
 ## 0.3.1
