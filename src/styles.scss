@@ -265,14 +265,42 @@
   overflow: hidden;
 }
 
-.planner-flex-container > * {
+// Explicit flex ownership keeps WebKit from collapsing nested timeline scrollers.
+.planner-timeline-layout > * {
+  min-height: 0;
+}
+
+.planner-timeline-layout > .planner-timeline-controls {
+  flex: 0 0 auto;
+  max-height: 100%;
+}
+
+.planner-timeline-layout > .planner-timeline-controls.settings-visible,
+.planner-timeline-layout > .planner-timeline-fill {
+  flex-grow: 1;
+  flex-shrink: 1;
+  flex-basis: 0;
+}
+
+.planner-timeline-layout > .planner-timeline-fill {
+  max-height: none;
+}
+
+.planner-timeline-layout > .planner-timeline-all-day {
+  flex: 0 1 auto;
+  max-height: 100%;
+}
+
+.planner-time-tracker-layout > * {
   flex: 1 1 0;
   min-height: 0;
   max-height: max-content;
 }
 
-.planner-flex-scrollable {
-  flex: 1 1 auto;
+.planner-timeline-scrollable {
+  flex-grow: 1;
+  flex-shrink: 1;
+  flex-basis: 0;
   min-height: 0;
   overflow: auto;
 }

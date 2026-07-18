@@ -58,6 +58,7 @@
 
   {#if $settings.showUncheduledTasks}
     <Tree
+      class="planner-timeline-all-day"
       onpointermove={handleResizeableBoxPointerMove}
       onpointerup={editContext.confirmEdit}
       title="All day events"
@@ -88,7 +89,7 @@
   {/if}
 
   {#if $settings.showTimelineInSidebar}
-    <Tree title="Timeline">
+    <Tree class="planner-timeline-fill" title="Timeline">
       {#snippet controls()}
         <ControlButton
           --border-radius="0"
@@ -109,7 +110,7 @@
         </ControlButton>
       {/snippet}
       <Scroller
-        class={["planner-timeline-scroller", "planner-flex-scrollable"]}
+        class={["planner-timeline-scroller", "planner-timeline-scrollable"]}
       >
         {#snippet children(autoScrollBlocked)}
           <Ruler visibleHours={getVisibleHours($settings)} />

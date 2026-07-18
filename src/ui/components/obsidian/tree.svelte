@@ -11,9 +11,11 @@
     controls,
     onpointermove,
     onpointerup,
+    ...rest
   }: {
     title: string;
     children: Snippet;
+    class?: string;
     flair?: Snippet;
     controls?: Snippet;
     onpointermove?: (event: PointerEvent) => void;
@@ -32,7 +34,7 @@
 </script>
 
 <!--Partially uses Obsidian's classes for search result matches-->
-<div class="tree-container" {onpointermove} {onpointerup}>
+<div class={["tree-container", rest.class]} {onpointermove} {onpointerup}>
   <div class="tree-header-container">
     <div class="tree-item-self is-clickable" onclick={toggleTree}>
       <div

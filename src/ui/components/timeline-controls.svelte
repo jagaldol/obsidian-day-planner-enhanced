@@ -78,7 +78,10 @@
   }
 </script>
 
-<div class="controls">
+<div
+  class="controls planner-timeline-controls"
+  class:settings-visible={settingsVisible}
+>
   <div class="header">
     <div class="buttons-left">
       <ControlButton label="Go to today" onclick={goToToday}>
@@ -164,6 +167,7 @@
   .header {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
+    flex: 0 0 auto;
     padding-right: var(--size-4-3);
   }
 
@@ -183,10 +187,13 @@
   }
 
   .settings-wrapper {
-    overflow: scroll;
+    overflow: auto;
     display: flex;
+    flex: 1 1 auto;
     flex-direction: column;
     gap: var(--size-4-2);
+
+    min-height: 0;
   }
 
   .settings-wrapper > :global(*) {
