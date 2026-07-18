@@ -18,19 +18,17 @@ describe("delete edits", () => {
       id: "deleted",
       text: "09:00 - 10:00 Remove me\nnotes",
       startTime: moment("2023-01-01 09:00"),
-      location: {
-        path: "daily.md",
-        position: {
-          start: {
-            line: 1,
-            col: 0,
-            offset: 7,
-          },
-          end: {
-            line: 1,
-            col: 0,
-            offset: 7,
-          },
+      path: "daily.md",
+      position: {
+        start: {
+          line: 1,
+          col: 0,
+          offset: 7,
+        },
+        end: {
+          line: 1,
+          col: 0,
+          offset: 7,
         },
       },
     };
@@ -39,19 +37,17 @@ describe("delete edits", () => {
       id: "kept",
       text: "11:00 - 12:00 Keep me",
       startTime: moment("2023-01-01 11:00"),
-      location: {
-        path: "daily.md",
-        position: {
-          start: {
-            line: 3,
-            col: 0,
-            offset: 41,
-          },
-          end: {
-            line: 3,
-            col: 0,
-            offset: 41,
-          },
+      path: "daily.md",
+      position: {
+        start: {
+          line: 3,
+          col: 0,
+          offset: 41,
+        },
+        end: {
+          line: 3,
+          col: 0,
+          offset: 41,
         },
       },
     };

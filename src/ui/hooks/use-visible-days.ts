@@ -3,7 +3,7 @@ import { derived, type Readable } from "svelte/store";
 
 import { areArraysEqual, uniqBy } from "../../util/collection";
 import type { Moment } from "../../util/obsidian-moment";
-import { getDayKey } from "../../util/task-utils";
+import { getDayKey } from "../../util/time-block-utils";
 
 export function useVisibleDays(
   ranges: Readable<Record<string, Array<Moment>>>,

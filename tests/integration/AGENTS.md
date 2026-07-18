@@ -23,7 +23,7 @@ Higher-level integration tests that exercise the full pipeline from indexed vaul
 ## For AI Agents
 
 ### Working In This Directory
-- `task-views.test.ts` is the contract for nested-schedule rendering; update it when changing `src/util/task-utils.ts` divider/time-range behavior.
+- `task-views.test.ts` is the contract for nested-schedule rendering; update it when changing `src/util/time-block-utils.ts` divider/time-range behavior.
 - Regenerate the metadata dump via the dev dump command rather than editing it by hand.
 
 ### Testing Requirements
@@ -35,7 +35,7 @@ Higher-level integration tests that exercise the full pipeline from indexed vaul
 ## Dependencies
 
 ### Internal
-- `src/redux/index/`, `src/util/task-utils.ts`, `fixtures/`, `tests/integration/util/`
+- `src/redux/index/`, `src/util/time-block-utils.ts`, `fixtures/`, `tests/integration/util/`
 
 ### External
 - `vitest`

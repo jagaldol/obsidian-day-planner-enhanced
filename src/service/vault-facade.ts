@@ -20,6 +20,10 @@ export class VaultFacade {
     await this.vault.modify(file, newContents);
   }
 
+  async createFile(path: string, contents: string) {
+    await this.vault.create(path, contents);
+  }
+
   async editLineInFile(
     path: string,
     lineNumber: number,

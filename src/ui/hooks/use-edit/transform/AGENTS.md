@@ -33,7 +33,7 @@ Pure transformation functions that compute the next task list for an in-progress
 
 ### Internal
 
-- `src/ui/hooks/use-edit/types.ts`, `src/util/task-utils.ts`, `src/global-store/derived-settings.ts`
+- `src/ui/hooks/use-edit/types.ts`, `src/util/time-block-utils.ts`, `src/global-store/derived-settings.ts`
 
 ### External
 

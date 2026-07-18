@@ -7,9 +7,9 @@
   } from "lucide-svelte";
 
   import { getObsidianContext } from "../../context/obsidian-context";
-  import type { LocalTask } from "../../task-types";
+  import type { EditableTimeBlock, WithDuration } from "../../time-block-types";
   import { getIsomorphicClientY } from "../../util/dom";
-  import * as t from "../../util/task-utils";
+  import * as t from "../../util/time-block-utils";
   import { createGestures } from "../actions/gestures";
   import { getDragStartState } from "../hooks/use-edit/drag-pointer";
   import { EditMode } from "../hooks/use-edit/types";
@@ -19,7 +19,7 @@
 
   export let isActive: boolean;
   export let setIsActive: (value: boolean) => void;
-  export let task: LocalTask;
+  export let task: EditableTimeBlock;
   let dragStarted = false;
 
   const {
@@ -31,7 +31,7 @@
 
   function startDrag(
     event: MouseEvent | TouchEvent,
-    dragTask: LocalTask,
+    dragTask: WithDuration<EditableTimeBlock>,
     mode: EditMode,
   ) {
     if (dragStarted) {

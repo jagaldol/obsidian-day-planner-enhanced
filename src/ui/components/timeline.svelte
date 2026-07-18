@@ -11,7 +11,11 @@
     snap,
   } from "../../global-store/derived-settings";
   import { selectLogEntriesForDay } from "../../redux";
-  import type { Task, WithPlacing, WithTime } from "../../task-types";
+  import type {
+    TimeBlock,
+    WithDuration,
+    WithPlacing,
+  } from "../../time-block-types";
   import {
     getClientOffsetY,
     getIsomorphicClientY,
@@ -30,7 +34,7 @@
     getDayKey,
     getEndMinutes,
     getRenderKey,
-  } from "../../util/task-utils";
+  } from "../../util/time-block-utils";
   import { createGestures } from "../actions/gestures";
   import {
     getDragPointerDateTime,
@@ -77,7 +81,7 @@
   }
 
   function createSeparatorVisibilityLookup(
-    tasks: Array<WithPlacing<WithTime<Task>>>,
+    tasks: Array<WithPlacing<WithDuration<TimeBlock>>>,
   ) {
     const separatorVisibilityByRenderKey = new Map<
       string,
@@ -85,7 +89,7 @@
     >();
     const tasksByStartMinute = new Map<
       number,
-      Array<WithPlacing<WithTime<Task>>>
+      Array<WithPlacing<WithDuration<TimeBlock>>>
     >();
 
     tasks.forEach((task) => {
@@ -126,8 +130,8 @@
   }
 
   function coversHorizontalRange(
-    candidate: WithPlacing<WithTime<Task>>,
-    task: WithPlacing<WithTime<Task>>,
+    candidate: WithPlacing<WithDuration<TimeBlock>>,
+    task: WithPlacing<WithDuration<TimeBlock>>,
   ) {
     const epsilon = 0.0001;
     const candidateStart = candidate.placing.offsetPercent;
@@ -140,7 +144,7 @@
     );
   }
 
-  function startsOnTimelineGridLine(task: WithTime<Task>) {
+  function startsOnTimelineGridLine(task: WithDuration<TimeBlock>) {
     return getMinutesSinceMidnight(task.startTime) % 30 === 0;
   }
 

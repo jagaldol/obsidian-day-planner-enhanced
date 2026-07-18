@@ -1,0 +1,122 @@
+import type { Pos } from "obsidian";
+
+import { clockFormat } from "../../../constants";
+import { getTimeFromLine } from "../../../parser/parser";
+import { createId } from "../../../redux/index/index-slice";
+import type { DayPlannerSettings } from "../../../settings";
+import {
+  getHeadingSectionPosition,
+  isInside,
+  isTaskCache,
+  type PartialPos,
+} from "../../../util/metadata";
+import { getDayKeysInRangeEndExclusive } from "../../../util/moment";
+import { getDayKey, getEndTime } from "../../../util/time-block-utils";
+import type { PeriodicNotes } from "../../periodic-notes";
+import type { FileWithMetadata } from "../index-service";
+import type {
+  ListItemIndexExtensionService,
+  RawListItemEntryWithContext,
+} from "../list-item-index-extension-service";
+
+export class DailyNoteExtensionService
+  implements ListItemIndexExtensionService
+{
+  constructor(
+    private readonly periodicNotes: PeriodicNotes,
+    private readonly settings: DayPlannerSettings,
+  ) {}
+
+  forFile(props: FileWithMetadata) {
+    const { path, metadata } = props;
+
+    const dateFromPath = this.periodicNotes.getDateFromPath(path, "day");
+    const plannerHeadingSectionPosition = getHeadingSectionPosition(
+      metadata,
+      this.settings.plannerHeading,
+    );
+
+    return ({
+      listItemCache,
+      rawListItemEntry,
+    }: RawListItemEntryWithContext) => {
+      if (
+        !dateFromPath ||
+        !this.isInsideDailyNoteParseScope(
+          listItemCache.position,
+          plannerHeadingSectionPosition,
+        )
+      ) {
+        return {};
+      }
+
+      const time = getTimeFromLine({
+        line: rawListItemEntry.text,
+        day: dateFromPath,
+      });
+      const id = createId(rawListItemEntry.id, "daily");
+
+      if (time) {
+        const { startTime, durationMinutes } = time;
+        const endTime = getEndTime({
+          startTime,
+          durationMinutes:
+            durationMinutes ?? this.settings.defaultDurationMinutes,
+        });
+        const dayKeys = getDayKeysInRangeEndExclusive(startTime, endTime);
+
+        return {
+          planEntries: [
+            {
+              id,
+              dayKeys,
+              parentId: rawListItemEntry.id,
+              start: startTime.format(clockFormat),
+              end: endTime.format(clockFormat),
+              source: "dailyNoteDate" as const,
+            },
+          ],
+        };
+      }
+
+      if (isTaskCache(listItemCache)) {
+        const dayKeys = [getDayKey(dateFromPath)];
+
+        return {
+          planEntries: [
+            {
+              id,
+              dayKeys,
+              parentId: rawListItemEntry.id,
+              start: dateFromPath.format(clockFormat),
+              end: dateFromPath
+                .clone()
+                .add(this.settings.defaultDurationMinutes, "minutes")
+                .format(clockFormat),
+              isAllDay: true,
+              source: "dailyNoteDate" as const,
+            },
+          ],
+        };
+      }
+
+      return {};
+    };
+  }
+
+  private isInsideDailyNoteParseScope(
+    position: Pos,
+    plannerHeadingSectionPosition?: PartialPos,
+  ) {
+    const shouldScanAllDailyNote = this.settings.plannerHeading.length === 0;
+
+    if (shouldScanAllDailyNote) {
+      return true;
+    }
+
+    return (
+      plannerHeadingSectionPosition &&
+      isInside(position, plannerHeadingSectionPosition)
+    );
+  }
+}

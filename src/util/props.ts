@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
-import { Either, pipe } from "effect";
+import { Array, Either, pipe } from "effect";
 import { stringifyYaml } from "obsidian";
 import { z } from "zod";
 
@@ -11,7 +11,6 @@ import {
   shortScheduledPropRegExp,
 } from "../regexp";
 
-import { takeWhile } from "./collection";
 import {
   createCodeBlock,
   createIndentation,
@@ -19,7 +18,7 @@ import {
   indent,
 } from "./markdown";
 import { strictParse } from "./moment";
-import { appendText } from "./task-utils";
+import { appendText } from "./time-block-utils";
 
 const dateTimeSchema = z.string().refine((it) => strictParse(it).isValid());
 
@@ -73,6 +72,10 @@ export function addOpenClock(props: Props): Props {
       ],
     },
   };
+}
+
+export function addOpenClockOrCreateProps(props?: Props): Props {
+  return props ? addOpenClock(props) : createPropsWithOpenClock();
 }
 
 export function cancelOpenClock(props: Props): Props {
@@ -158,6 +161,21 @@ export function editLogEntry(
   };
 }
 
+export function editLastLogEntry(
+  props: Props,
+  patch: { start?: string; end?: string },
+): Props {
+  const log = props.planner?.log;
+
+  if (!log?.length) {
+    throw new Error("No log entries");
+  }
+
+  const last = log[log.length - 1];
+
+  return editLogEntry(props, { originalStart: last.start, patch });
+}
+
 export function createProp(
   key: string,
   value: string,
@@ -187,9 +205,9 @@ export function updateProp(
 }
 
 export function deleteProps(text: string) {
-  return takeWhile(
-    (line) => !line.trimStart().startsWith(codeFence),
+  return Array.takeWhile(
     text.split("\n"),
+    (line) => !line.trimStart().startsWith(codeFence),
   )
     .join("\n")
     .replaceAll(propRegexp, "")

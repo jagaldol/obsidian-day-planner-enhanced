@@ -2,9 +2,9 @@
 import { derived, writable } from "svelte/store";
 
 import { getObsidianContext } from "../../context/obsidian-context";
-import type { TaskLocation } from "../../task-types";
+import { isListItemSourced, type LocalTimeBlock } from "../../time-block-types";
 
-export function hoverPreview(task: { location?: TaskLocation }) {
+export function hoverPreview(task: LocalTimeBlock) {
   return (el: HTMLElement) => {
     const { isModPressed, showPreview } = getObsidianContext();
     let currentEvent: MouseEvent | undefined;
@@ -32,14 +32,20 @@ export function hoverPreview(task: { location?: TaskLocation }) {
     );
 
     const unsubscribe = shouldShowPreview.subscribe((newValue) => {
-      if (newValue && task.location?.path && currentEvent) {
-        showPreview(
-          el,
-          currentEvent,
-          task.location.path,
-          task.location.position?.start?.line,
-        );
+      if (!newValue || !currentEvent) {
+        return;
       }
+
+      if (task.source === "unwritten") {
+        return;
+      }
+
+      showPreview(
+        el,
+        currentEvent,
+        task.path,
+        isListItemSourced(task) ? task.position.start.line : undefined,
+      );
     });
 
     return {

@@ -4,10 +4,20 @@ import { derived, type Readable, type Writable } from "svelte/store";
 import type { PeriodicNotes } from "../../service/periodic-notes";
 import { WorkspaceFacade } from "../../service/workspace-facade";
 import type { DayPlannerSettings } from "../../settings";
-import type { LocalTask, RemoteTask, Task, WithTime } from "../../task-types";
+import type {
+  EditableTimeBlock,
+  RemoteTimeBlock,
+  TimeBlock,
+  WithDuration,
+} from "../../time-block-types";
 import type { OnEditAbortedFn, OnUpdateFn, PointerDateTime } from "../../types";
 import type { Moment } from "../../util/obsidian-moment";
 import { getUpdateTrigger } from "../../util/store";
+import {
+  getEndTime,
+  hideNestedTimedLocalTasks,
+  isWithDuration,
+} from "../../util/time-block-utils";
 
 import { useEditContext } from "./use-edit/use-edit-context";
 import { useNewlyStartedTasks } from "./use-newly-started-tasks";
@@ -20,9 +30,9 @@ export function useTasks(props: {
   onUpdate: OnUpdateFn;
   onEditAborted: OnEditAbortedFn;
   pointerDateTime: Readable<PointerDateTime>;
-  remoteTasks: Readable<RemoteTask[]>;
+  remoteTasks: Readable<RemoteTimeBlock[]>;
   periodicNotes: PeriodicNotes;
-  localTasks: Readable<LocalTask[]>;
+  localTasks: Readable<EditableTimeBlock[]>;
 }) {
   const {
     settingsStore,
@@ -32,23 +42,33 @@ export function useTasks(props: {
     pointerDateTime,
     onUpdate,
     onEditAborted,
-    remoteTasks,
-    localTasks,
+    remoteTasks: remoteTimeBlocks,
+    localTasks: localTimeBlocks,
   } = props;
 
   const tasksWithTimeForToday = derived(
-    [localTasks, remoteTasks, currentTime],
-    ([$localTasks, $remoteTasks, $currentTime]: [Task[], Task[], Moment]) => {
-      return $localTasks
-        .concat($remoteTasks)
-        .filter(
-          (task): task is WithTime<Task> =>
-            task.startTime.isSame($currentTime, "day") && !task.isAllDayEvent,
-        );
+    [localTimeBlocks, remoteTimeBlocks, currentTime],
+    ([$localTimeBlocks, $remoteTimeBlocks, $currentTime]: [
+      TimeBlock[],
+      TimeBlock[],
+      Moment,
+    ]) => {
+      const startOfToday = $currentTime.clone().startOf("day");
+      const endOfToday = startOfToday.clone().add(1, "day");
+
+      return hideNestedTimedLocalTasks(
+        $localTimeBlocks.concat($remoteTimeBlocks),
+      ).filter(
+        (timeBlock): timeBlock is WithDuration<TimeBlock> =>
+          isWithDuration(timeBlock) &&
+          !timeBlock.isAllDayEvent &&
+          timeBlock.startTime.isBefore(endOfToday) &&
+          getEndTime(timeBlock).isAfter(startOfToday),
+      );
     },
   );
 
-  const abortEditTrigger = derived(localTasks, getUpdateTrigger);
+  const abortEditTrigger = derived(localTimeBlocks, getUpdateTrigger);
 
   const editContext = useEditContext({
     periodicNotes,
@@ -56,8 +76,8 @@ export function useTasks(props: {
     onUpdate,
     onEditAborted,
     settings: settingsStore,
-    localTasks,
-    remoteTasks,
+    localTasks: localTimeBlocks,
+    remoteTasks: remoteTimeBlocks,
     pointerDateTime,
     abortEditTrigger,
   });

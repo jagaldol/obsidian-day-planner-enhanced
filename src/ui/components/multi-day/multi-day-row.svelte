@@ -3,9 +3,9 @@
 
   import { getDateRangeContext } from "../../../context/date-range-context";
   import { getObsidianContext } from "../../../context/obsidian-context";
-  import type { Task, WithTime } from "../../../task-types";
-  import { isLocal, type RemoteTask } from "../../../task-types";
-  import * as t from "../../../util/task-utils";
+  import type { TimeBlock, WithDuration } from "../../../time-block-types";
+  import { isLocal, type RemoteTimeBlock } from "../../../time-block-types";
+  import * as t from "../../../util/time-block-utils";
   import UnscheduledTimeBlock from "../unscheduled-time-block.svelte";
 
   const { editContext } = getObsidianContext();
@@ -23,19 +23,21 @@
     }),
   );
 
-  function getDaySpanFromDurationMinutes(remoteTask: WithTime<RemoteTask>) {
+  function getDaySpanFromDurationMinutes(
+    remoteTask: WithDuration<RemoteTimeBlock>,
+  ) {
     return t.getEndTime(remoteTask).diff(remoteTask.startTime, "days");
   }
 
-  function getSpan(task: Task) {
-    if (isLocal(task) || !t.isWithTime(task)) {
+  function getSpan(task: TimeBlock) {
+    if (isLocal(task) || !t.isWithDuration(task)) {
       return 1;
     }
 
     return getDaySpanFromDurationMinutes(task);
   }
 
-  function getColumnIndex(task: Task) {
+  function getColumnIndex(task: TimeBlock) {
     const foundIndex = dateRange.current.findIndex((date) =>
       date.isSame(task.startTime, "day"),
     );

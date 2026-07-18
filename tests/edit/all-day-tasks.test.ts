@@ -4,7 +4,7 @@ import { test, expect, describe } from "vitest";
 
 import { defaultSettingsForTests } from "../../src/settings";
 import { EditMode } from "../../src/ui/hooks/use-edit/types";
-import * as t from "../../src/util/task-utils";
+import * as t from "../../src/util/time-block-utils";
 
 import {
   baseTasks,
@@ -92,13 +92,21 @@ describe("all-day tasks", () => {
 
     const task = baseTasks[0];
 
+    if (task.source === "unwritten") {
+      throw new Error("The fixture task must be a written one");
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { path, position, ...taskWithoutFileLocation } = task;
+
     handlers.handleGripMouseDown(t.copy(task), EditMode.DRAG);
     moveCursorTo(task.startTime, "date");
 
     expect(get(getDisplayedAllDayTasksForMultiDayRow)(range)).toMatchObject([
       {
-        ...task,
-        location: undefined,
+        ...taskWithoutFileLocation,
+        source: "unwritten",
+        destination: { type: "plannerHeading" },
         id: expect.any(String),
         isAllDayEvent: true,
       },

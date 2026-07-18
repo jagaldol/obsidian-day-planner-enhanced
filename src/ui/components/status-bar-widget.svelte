@@ -2,87 +2,165 @@
   /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
   import { fromStore, type Readable } from "svelte/store";
 
+  import { statusBarTextLimit } from "../../constants";
+  import { currentTimeSignal } from "../../global-store/current-time";
   import { settingsSignal } from "../../global-store/settings";
-  import { type Task, type WithTime } from "../../task-types";
+  import { selectActiveLogEntries } from "../../redux/index/index-slice";
+  import type { RootState } from "../../redux/store";
+  import type { UseSelector } from "../../redux/use-selector";
+  import type { LogEntryEditor } from "../../service/log-entry-editor";
+  import type { WorkspaceFacade } from "../../service/workspace-facade";
+  import { type TimeBlock, type WithDuration } from "../../time-block-types";
+  import { ellipsis } from "../../util/ellipsis";
+  import { fromDiff } from "../../util/moment";
+  import { getOneLineSummary } from "../../util/time-block-utils";
+  import { createActiveClockMenu } from "../active-clock-menu";
+  import type { OpenEditTimeEntryModal } from "../create-edit-time-entry-modal";
   import { useStatusBarWidget } from "../hooks/use-status-bar-widget";
 
-  import { SkipForward, Play } from "./lucide";
+  import { SkipForward, Play, Timer } from "./lucide";
   import MiniTimeline from "./mini-timeline.svelte";
 
   const {
     onClick,
     tasksWithTimeForToday,
+    useSelector,
+    logEntryEditor,
+    workspaceFacade,
+    openEditTimeEntryModal,
+    openClockInOnAnythingModal,
   }: {
     onClick: () => Promise<void>;
-    tasksWithTimeForToday: Readable<Array<WithTime<Task>>>;
+    tasksWithTimeForToday: Readable<Array<WithDuration<TimeBlock>>>;
+    useSelector: UseSelector<RootState>;
+    logEntryEditor: LogEntryEditor;
+    workspaceFacade: WorkspaceFacade;
+    openEditTimeEntryModal: OpenEditTimeEntryModal;
+    openClockInOnAnythingModal: () => void;
   } = $props();
 
   const { current, next } = $derived(
     fromStore(useStatusBarWidget({ tasksWithTimeForToday })).current,
   );
 
-  const { showNow, showNext, progressIndicator, timestampFormat } = $derived(
-    settingsSignal.current,
+  const {
+    showNow,
+    showNext,
+    progressIndicator,
+    timestampFormat,
+    enableTimeTracker,
+    showActiveClockInStatusBar,
+  } = $derived(settingsSignal.current);
+
+  const activeLogRecords = $derived(useSelector(selectActiveLogEntries));
+
+  const newestActiveClock = $derived(
+    activeLogRecords.current
+      .toSorted((a, b) => b.startTime.diff(a.startTime))
+      .at(0),
   );
+
+  function handleClockClick(event: MouseEvent) {
+    if (!newestActiveClock) {
+      openClockInOnAnythingModal();
+
+      return;
+    }
+
+    createActiveClockMenu({
+      event,
+      task: newestActiveClock,
+      logEntryEditor,
+      workspaceFacade,
+      openEditTimeEntryModal,
+    });
+  }
 </script>
 
-<div class="root" onclick={onClick}>
-  {#if !current && !next}
-    <span class="status-bar-item-segment">All done</span>
-  {:else}
-    {#if showNow && current}
-      <span class="status-bar-item-segment">
-        <Play class="status-bar-item-icon" />
-        {current.text} (-{current.timeLeft}, till {current.endTime.format(
-          timestampFormat,
-        )})
-      </span>
-    {/if}
-
-    {#if showNext && next}
-      <span class="status-bar-item-segment">
-        <SkipForward class="status-bar-item-icon" />
-        {next.text} (in {next.timeToNext})
-      </span>
-    {/if}
-
-    {#if showNow && current}
-      {#if progressIndicator === "pie"}
-        <div
-          class="status-bar-item-segment progress-pie day-planner"
-          data-value={current.percentageComplete}
-        ></div>
-      {:else if progressIndicator === "bar"}
-        <div class="status-bar-item-segment day-planner-progress-bar">
-          <div
-            style="width: {current.percentageComplete}%;"
-            class="day-planner-progress-value"
-          ></div>
-        </div>
+{#if enableTimeTracker && showActiveClockInStatusBar}
+  <div
+    class="status-bar-item mod-clickable stopwatch"
+    aria-label={newestActiveClock
+      ? "Open clock menu"
+      : "Day Planner: Clock in on anything"}
+    data-tooltip-position="top"
+    onclick={handleClockClick}
+  >
+    <div class="status-bar-item-segment">
+      <Timer class="status-bar-item-icon" />
+      {#if newestActiveClock}
+        {ellipsis(getOneLineSummary(newestActiveClock), statusBarTextLimit)}
+        ({fromDiff(
+          newestActiveClock.startTime,
+          currentTimeSignal.current,
+        ).format(timestampFormat)})
       {/if}
-    {/if}
-  {/if}
+    </div>
+  </div>
+{/if}
 
-  {#if progressIndicator === "mini-timeline"}
+{#if showNow && current}
+  <div
+    class="status-bar-item current"
+    aria-label="Current time block"
+    data-tooltip-position="top"
+    onclick={onClick}
+  >
+    <div class="status-bar-item-segment">
+      <span class="status-bar-item-icon">
+        <Play />
+      </span>
+      {current.text} (-{current.timeLeft}, till {current.endTime.format(
+        timestampFormat,
+      )})
+    </div>
+    {#if progressIndicator === "pie"}
+      <div
+        class="status-bar-item-segment progress-pie"
+        data-value={current.percentageComplete}
+      ></div>
+    {:else if progressIndicator === "bar"}
+      <div class="status-bar-item-segment">
+        <div style="width: {current.percentageComplete}%;"></div>
+      </div>
+    {/if}
+  </div>
+{/if}
+
+{#if showNext && next}
+  <div
+    class="status-bar-item next"
+    aria-label="Next time block"
+    data-tooltip-position="top"
+    onclick={onClick}
+  >
+    <div class="status-bar-item-segment">
+      <span class="status-bar-item-icon">
+        <SkipForward class="status-bar-item-icon" />
+      </span>
+      {next.text} (in {next.timeToNext})
+    </div>
+  </div>
+{/if}
+
+{#if progressIndicator === "mini-timeline"}
+  <div class="status-bar-item mini-timeline">
     <MiniTimeline {tasksWithTimeForToday} />
-  {/if}
-</div>
+  </div>
+{/if}
 
 <!-- eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. -->
 
 <style>
-  .root {
+  :global(.planner-status-bar-widget-root) {
     display: contents;
   }
 
-  .root :global(.status-bar-item-icon) {
-    display: inline-flex;
-  }
-
-  .status-bar-item-segment {
-    display: flex;
-    gap: var(--size-2-1);
-    align-items: center;
+  .mini-timeline,
+  .current,
+  .next,
+  .stopwatch {
+    padding-block: 0;
   }
 
   .status-bar-item-segment.progress-pie {

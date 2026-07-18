@@ -28,7 +28,7 @@ exports[`Clocking in > Clocks in on tasks with existing clocks 1`] = `
 }
 `;
 
-exports[`Clocking in > Clocks in on tasks without clocks 1`] = `
+exports[`Clocking in > Creates a new props block when clocking in on a task without log entries 1`] = `
 {
   "fixtures/fixture-vault/2025-07-19.md": "
 +   \`\`\`yaml

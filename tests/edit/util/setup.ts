@@ -9,7 +9,10 @@ import {
   type DayPlannerSettings,
   defaultSettingsForTests,
 } from "../../../src/settings";
-import type { LocalTask, RemoteTask } from "../../../src/task-types";
+import type {
+  EditableTimeBlock,
+  RemoteTimeBlock,
+} from "../../../src/time-block-types";
 import type { PointerDateTime } from "../../../src/types";
 import { useEditContext } from "../../../src/ui/hooks/use-edit/use-edit-context";
 
@@ -22,8 +25,8 @@ function createProps({
   tasks,
   settings,
 }: {
-  remoteTasks: RemoteTask[];
-  tasks: LocalTask[];
+  remoteTasks: RemoteTimeBlock[];
+  tasks: EditableTimeBlock[];
   settings: DayPlannerSettings;
 }) {
   const onUpdate = vi.fn().mockResolvedValue(true);
@@ -57,8 +60,8 @@ export function setUp({
   tasks = baseTasks,
   settings = defaultSettingsForTests,
 }: {
-  remoteTasks?: RemoteTask[];
-  tasks?: LocalTask[];
+  remoteTasks?: RemoteTimeBlock[];
+  tasks?: EditableTimeBlock[];
   settings?: DayPlannerSettings;
 } = {}) {
   const props = createProps({ remoteTasks, tasks, settings });

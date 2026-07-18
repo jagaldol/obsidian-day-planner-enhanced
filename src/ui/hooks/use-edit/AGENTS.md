@@ -43,7 +43,7 @@ The task-editing engine. Manages an edit operation (drag, resize, create, schedu
 ### Internal
 
 - `src/ui/hooks/use-edit/transform/`, `src/service/diff-writer.ts`
-- `src/util/task-utils.ts`, `src/global-store/derived-settings.ts`
+- `src/util/time-block-utils.ts`, `src/global-store/derived-settings.ts`
 
 ### External
 

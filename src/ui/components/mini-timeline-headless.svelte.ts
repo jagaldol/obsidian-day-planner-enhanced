@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
 import { addHorizontalPlacing } from "../../overlap/overlap";
-import type { Task, WithTime } from "../../task-types";
+import type { TimeBlock, WithDuration } from "../../time-block-types";
 import type { Signal } from "../../types";
 import { doesOverlapWithRange } from "../../util/moment";
 import type { Moment } from "../../util/obsidian-moment";
-import * as t from "../../util/task-utils";
+import * as t from "../../util/time-block-utils";
 
 export class MiniTimeline {
   private readonly hours = 3;
@@ -16,7 +16,9 @@ export class MiniTimeline {
 
   constructor(
     private readonly currentTimeSignal: Signal<Moment>,
-    private readonly tasksWithTimeForToday: Signal<Array<WithTime<Task>>>,
+    private readonly tasksWithTimeForToday: Signal<
+      Array<WithDuration<TimeBlock>>
+    >,
   ) {}
 
   timeMarkerOffsetPx = $derived(
@@ -46,10 +48,14 @@ export class MiniTimeline {
             },
           ),
         )
-        .map((it) => ({
-          ...t.clamp(it, this.rangeStart, this.rangeEnd),
-          leftPx: it.startTime.clone().diff(this.rangeStart, `minutes`),
-        })),
+        .map((it) => {
+          const clamped = t.clamp(it, this.rangeStart, this.rangeEnd);
+
+          return {
+            ...clamped,
+            leftPx: clamped.startTime.clone().diff(this.rangeStart, `minutes`),
+          };
+        }),
     ),
   );
 }

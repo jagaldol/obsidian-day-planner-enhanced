@@ -1,29 +1,27 @@
 <script lang="ts">
   /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
+  import { Array } from "effect";
   import { File, Play } from "lucide-svelte";
-  import { isNotVoid } from "typed-assert";
+  import { debounce } from "obsidian";
 
   import { getObsidianContext } from "../../context/obsidian-context";
   import { selectRecentLogEntries } from "../../redux/index/index-selectors";
-  import type { LocalTask } from "../../task-types";
-  import { groupBy } from "../../util/collection";
-  import { getDayKey } from "../../util/task-utils";
-  import {
-    getRecentClockFilterKeywords,
-    matchesRecentClockFilter,
-  } from "../recent-clock-filter";
+  import type { LogTimeBlock } from "../../time-block-types";
+  import { runWithNoticeOnError } from "../../util/effect";
+  import { filterByKeywords } from "../../util/keyword-filter";
+  import { removeMarkdownExtension } from "../../util/markdown";
+  import { getDayKey } from "../../util/time-block-utils";
   import { createRecentClockMenu } from "../recent-clock-menu";
 
-  import { runWithNoticeOnError } from "./../../service/list-item-entry-editor";
   import BlockControls from "./block-controls.svelte";
   import BlockList from "./block-list.svelte";
   import ControlButton from "./control-button.svelte";
-  import LocalTimeBlock from "./local-time-block.svelte";
+  import LocalTimeBlockComponent from "./local-time-block.svelte";
   import Pill from "./pill.svelte";
   import Properties from "./properties.svelte";
   import Selectable from "./selectable.svelte";
 
-  const { workspaceFacade, useSelector, taskEntryEditor, settingsSignal } =
+  const { workspaceFacade, useSelector, logEntryEditor, settingsSignal } =
     getObsidianContext();
 
   const recentLogRecords = useSelector((state) =>
@@ -33,29 +31,27 @@
   let fieldState = $state("");
   let debouncedFieldState = $state("");
 
+  const updateDebouncedFieldState = debounce((value: string) => {
+    debouncedFieldState = value;
+  }, 200);
+
   $effect(() => {
-    const value = fieldState;
-    const timeout = window.setTimeout(() => {
-      debouncedFieldState = value;
-    }, 200);
+    updateDebouncedFieldState(fieldState);
 
     return () => {
-      window.clearTimeout(timeout);
+      updateDebouncedFieldState.cancel();
     };
   });
 
-  const keywords = $derived(getRecentClockFilterKeywords(debouncedFieldState));
-
   const filtered = $derived(
-    keywords.length === 0
-      ? recentLogRecords.current
-      : recentLogRecords.current.filter((task) =>
-          matchesRecentClockFilter(task, keywords),
-        ),
+    filterByKeywords(recentLogRecords.current, debouncedFieldState, (it) => [
+      it.text,
+      it.path,
+    ]),
   );
 
   const grouped = $derived(
-    groupBy((task) => getDayKey(task.startTime), filtered),
+    Array.groupBy(filtered, (task) => getDayKey(task.startTime)),
   );
 </script>
 
@@ -81,18 +77,19 @@
       {window.moment(title).format(settingsSignal.current.timelineDateFormat)}
     </div>
   {/snippet}
-  {#snippet match(task: LocalTask)}
+  {#snippet match(task: LogTimeBlock)}
     <Selectable
-      onSecondarySelect={(event) =>
+      onSecondarySelect={(event) => {
         createRecentClockMenu({
           event,
           task,
-          taskEntryEditor,
+          logEntryEditor,
           workspaceFacade,
-        })}
+        });
+      }}
     >
       {#snippet children({ use, onpointerup, state })}
-        <LocalTimeBlock
+        <LocalTimeBlockComponent
           isActive={state === "secondary"}
           {onpointerup}
           {task}
@@ -103,14 +100,7 @@
               <ControlButton
                 label="Start tracking time on this task"
                 onclick={async () => {
-                  isNotVoid(task.location);
-
-                  await runWithNoticeOnError(
-                    taskEntryEditor.clockInAtLocation({
-                      path: task.location.path,
-                      line: task.location.position.start.line,
-                    }),
-                  );
+                  await runWithNoticeOnError(logEntryEditor.clockIn(task));
                 }}
               >
                 {#snippet icon()}
@@ -121,23 +111,16 @@
           {/snippet}
           {#snippet bottomDecoration()}
             <Properties>
-              {#if task.location?.path}
-                <Pill
-                  key={File}
-                  onclick={() => {
-                    isNotVoid(task.location);
-
-                    return workspaceFacade.revealLineInFile(
-                      task.location.path,
-                      task.location.position.start.line,
-                    );
-                  }}
-                  value={task.location.path.replace(/\.md$/, "")}
-                />
-              {/if}
+              <Pill
+                key={File}
+                onclick={async () => {
+                  await workspaceFacade.revealLocation(task);
+                }}
+                value={removeMarkdownExtension(task.path)}
+              />
             </Properties>
           {/snippet}
-        </LocalTimeBlock>
+        </LocalTimeBlockComponent>
       {/snippet}
     </Selectable>
   {/snippet}

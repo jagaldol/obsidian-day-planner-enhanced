@@ -5,17 +5,22 @@ import { derived, type Readable } from "svelte/store";
 import { statusBarTextLimit } from "../../constants";
 import { currentTime } from "../../global-store/current-time";
 import type DayPlanner from "../../main";
-import type { Task, WithTime } from "../../task-types";
+import type { RootState } from "../../redux/store";
+import type { UseSelector } from "../../redux/use-selector";
+import type { LogEntryEditor } from "../../service/log-entry-editor";
+import type { WorkspaceFacade } from "../../service/workspace-facade";
+import type { TimeBlock, WithDuration } from "../../time-block-types";
 import { ellipsis } from "../../util/ellipsis";
 import { getDiffInMinutes } from "../../util/moment";
 import type { Moment } from "../../util/obsidian-moment";
-import { getEndTime, getOneLineSummary } from "../../util/task-utils";
+import { getEndTime, getOneLineSummary } from "../../util/time-block-utils";
 import StatusBarWidget from "../components/status-bar-widget.svelte";
+import type { OpenEditTimeEntryModal } from "../create-edit-time-entry-modal";
 
 import type { DateRanges } from "./use-date-ranges";
 
 interface UseStatusBarWidgetProps {
-  tasksWithTimeForToday: Readable<Array<WithTime<Task>>>;
+  tasksWithTimeForToday: Readable<Array<WithDuration<TimeBlock>>>;
 }
 
 interface Widget {
@@ -40,11 +45,28 @@ export function minutesToTimestamp(minutes: number) {
 export function mountStatusBarWidget(props: {
   plugin: DayPlanner;
   dateRanges: DateRanges;
-  tasksWithTimeForToday: Readable<Array<WithTime<Task>>>;
+  tasksWithTimeForToday: Readable<Array<WithDuration<TimeBlock>>>;
+  useSelector: UseSelector<RootState>;
+  logEntryEditor: LogEntryEditor;
+  workspaceFacade: WorkspaceFacade;
+  openEditTimeEntryModal: OpenEditTimeEntryModal;
+  openClockInOnAnythingModal: () => void;
 }) {
-  const { plugin, tasksWithTimeForToday, dateRanges } = props;
+  const {
+    plugin,
+    tasksWithTimeForToday,
+    dateRanges,
+    useSelector,
+    logEntryEditor,
+    workspaceFacade,
+    openEditTimeEntryModal,
+    openClockInOnAnythingModal,
+  } = props;
 
   const statusBarWidgetContainer = plugin.addStatusBarItem();
+
+  statusBarWidgetContainer.removeClasses(["status-bar-item"]);
+  statusBarWidgetContainer.addClass("planner-status-bar-widget-root");
 
   const { untrack } = dateRanges.trackRange([window.moment()]);
 
@@ -53,6 +75,11 @@ export function mountStatusBarWidget(props: {
     props: {
       onClick: plugin.initTimelineLeaf,
       tasksWithTimeForToday,
+      useSelector,
+      logEntryEditor,
+      workspaceFacade,
+      openEditTimeEntryModal,
+      openClockInOnAnythingModal,
     },
   });
 

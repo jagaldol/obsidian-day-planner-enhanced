@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
-import { sanitizeHTMLToDom } from "obsidian";
+import { on } from "svelte/events";
 
 import {
   scrollOnHoverZoneHeightPercent,
@@ -71,18 +71,6 @@ export function isEventOutside(
     event.target instanceof Node &&
     !container.contains(event.target)
   );
-}
-
-export function mountSanitized(el: HTMLElement, html: string) {
-  if (!html) {
-    return;
-  }
-
-  el.empty();
-
-  const fragment = sanitizeHTMLToDom(html);
-
-  el.appendChild(fragment);
 }
 
 export function offsetYToMinutes(
@@ -289,5 +277,44 @@ export async function readCheckboxLineData(
   event.stopPropagation();
 
   await checkFn(Number(line));
+}
+function stopPropagationForElWithLineData(event: Event) {
+  if (isHTMLElement(event.target) && event.target.dataset.line) {
+    event.stopPropagation();
+  }
+}
+
+export function createRenderMarkdownAttachment({
+  renderMarkdown,
+  markdown,
+  taskLines,
+  onCheckboxLineClick,
+}: {
+  renderMarkdown: (el: HTMLElement, markdown: string) => () => void;
+  markdown: string;
+  taskLines: Array<number | undefined>;
+  onCheckboxLineClick?: (line: number) => Promise<void>;
+}) {
+  return (el: HTMLElement) => {
+    const destroyMarkdown = renderMarkdown(el, markdown);
+
+    addLineDataToCheckboxes(el, taskLines);
+
+    const offPointerUp = on(el, "pointerup", (event: PointerEvent) => {
+      if (onCheckboxLineClick) {
+        readCheckboxLineData(event, onCheckboxLineClick);
+      }
+    });
+    const offMouseUp = on(el, "mouseup", stopPropagationForElWithLineData);
+    // todo: fix checkboxes
+    const offTouchEnd = on(el, "touchend", stopPropagationForElWithLineData);
+
+    return () => {
+      destroyMarkdown();
+      offPointerUp();
+      offMouseUp();
+      offTouchEnd();
+    };
+  };
 }
 /* eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. */

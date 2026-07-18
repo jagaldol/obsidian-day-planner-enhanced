@@ -1,28 +1,24 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
-import { produce } from "immer";
+import { pipe } from "effect";
 import { get } from "svelte/store";
-import { isNotVoid } from "typed-assert";
 
 import { bullet, defaultDayFormat, emDash } from "../constants";
 import { settings } from "../global-store/settings";
 import { replaceOrPrependTimeRange } from "../parser/parser";
-import {
-  obsidianBlockIdRegExp,
-  scheduledPropRegExps,
-  timeRangeAtStartOfLineRegExp,
-} from "../regexp";
+import { obsidianBlockIdRegExp, timeRangeAtStartOfLineRegExp } from "../regexp";
 import type { DayPlannerSettings } from "../settings";
 import {
-  type BaseTask,
-  isLocal,
+  isListItemSourced,
   isRemote,
-  type LocalTask,
-  type RemoteTask,
-  type Task,
-  type TaskLocation,
+  type EditableTimeBlock,
+  type PlanTimeBlock,
+  type RemoteTimeBlock,
+  type TimeBlock,
   type TimelineSegment,
-  type WithTime,
-} from "../task-types";
+  type UnwrittenTimeBlock,
+  type WithDuration,
+  type WriteDestination,
+} from "../time-block-types";
 
 import { getId } from "./id";
 import {
@@ -44,27 +40,29 @@ import {
 import type { Moment } from "./obsidian-moment";
 import { deleteProps, updateScheduledPropInText } from "./props";
 
-export function getEndMinutes(task: {
+export function getEndMinutes(timeBlock: {
   startTime: Moment;
   durationMinutes: number;
 }) {
-  return getMinutesSinceMidnight(task.startTime) + task.durationMinutes;
+  return (
+    getMinutesSinceMidnight(timeBlock.startTime) + timeBlock.durationMinutes
+  );
 }
 
-export function getEndTime(task: {
+export function getEndTime(timeBlock: {
   startTime: Moment;
   durationMinutes: number;
 }) {
-  return task.startTime.clone().add(task.durationMinutes, "minutes");
+  return timeBlock.startTime.clone().add(timeBlock.durationMinutes, "minutes");
 }
 
 export function createTimelineSegment(
-  task: WithTime<Task>,
+  timeBlock: WithDuration<TimeBlock>,
   startTime: Moment,
   endTime: Moment,
 ): TimelineSegment | undefined {
-  const sourceEndTime = getEndTime(task);
-  const startsBeforeSegment = startTime.isAfter(task.startTime, "minute");
+  const sourceEndTime = getEndTime(timeBlock);
+  const startsBeforeSegment = startTime.isAfter(timeBlock.startTime, "minute");
   const continuesAfterSegment = endTime.isBefore(sourceEndTime, "minute");
 
   if (!startsBeforeSegment && !continuesAfterSegment) {
@@ -73,116 +71,126 @@ export function createTimelineSegment(
 
   return {
     continuesAfterSegment,
-    sourceDurationMinutes: task.durationMinutes,
-    sourceStartTime: task.startTime.clone(),
+    sourceDurationMinutes: timeBlock.durationMinutes,
+    sourceStartTime: timeBlock.startTime.clone(),
     startsBeforeSegment,
   };
 }
 
-export function getTimelineSegmentSource<T extends WithTime<LocalTask>>(
-  task: T,
-): T {
-  if (!task.timelineSegment) {
-    return task;
+export function getTimelineSegmentSource<
+  T extends WithDuration<EditableTimeBlock>,
+>(timeBlock: T): T {
+  if (!timeBlock.timelineSegment) {
+    return timeBlock;
   }
 
   return {
-    ...task,
-    durationMinutes: task.timelineSegment.sourceDurationMinutes,
-    startTime: task.timelineSegment.sourceStartTime.clone(),
+    ...timeBlock,
+    durationMinutes: timeBlock.timelineSegment.sourceDurationMinutes,
+    startTime: timeBlock.timelineSegment.sourceStartTime.clone(),
     timelineSegment: undefined,
   };
 }
 
-// todo: remove this inconsistency
-export function isWithTime<T extends Task>(task: T): task is WithTime<T> {
-  return Object.hasOwn(task, "startTime") || !task.isAllDayEvent;
+export function isWithDuration<T extends TimeBlock>(
+  timeBlock: T,
+): timeBlock is WithDuration<T> {
+  return Object.hasOwn(timeBlock, "durationMinutes");
 }
 
 const keySeparator = ":";
 
-function getRemoteTaskIdentity(task: RemoteTask) {
+function getRemoteTimeBlockIdentity(timeBlock: RemoteTimeBlock) {
   const key: string[] = [];
 
-  key.push(task.calendar.name, task.startTime.toISOString(false), task.summary);
+  key.push(
+    timeBlock.calendar.name,
+    timeBlock.startTime.toISOString(false),
+    timeBlock.summary,
+  );
 
   return key.join(keySeparator);
 }
 
 // todo: should remove?
-export function getRenderKey(task: WithTime<Task> | Task) {
-  if (isRemote(task)) {
-    return getRemoteTaskIdentity(task);
+export function getRenderKey(timeBlock: WithDuration<TimeBlock> | TimeBlock) {
+  if (isRemote(timeBlock)) {
+    return getRemoteTimeBlockIdentity(timeBlock);
   }
 
   const key: string[] = [];
 
-  if (isWithTime(task)) {
+  if (isWithDuration(timeBlock)) {
     key.push(
-      String(getMinutesSinceMidnight(task.startTime)),
-      String(getEndMinutes(task)),
+      String(getMinutesSinceMidnight(timeBlock.startTime)),
+      String(getEndMinutes(timeBlock)),
     );
   }
 
-  if (task.location) {
+  if (isListItemSourced(timeBlock)) {
     const {
       path,
       position: {
         start: { line },
       },
-    } = task.location;
+    } = timeBlock;
 
     key.push(path, String(line));
   }
 
-  key.push(task.text);
+  key.push(timeBlock.text);
 
   return key.join(keySeparator);
 }
 
-export function getNotificationKey(task: WithTime<Task>) {
-  if (isRemote(task)) {
-    return getRemoteTaskIdentity(task);
-  }
-
+export function getNotificationKey(timeBlock: WithDuration<PlanTimeBlock>) {
   const key: string[] = [];
 
   key.push(
-    task.location?.path ?? "blank",
-    String(getMinutesSinceMidnight(task.startTime)),
-    String(task.durationMinutes),
-    task.text,
+    timeBlock.path,
+    String(getMinutesSinceMidnight(timeBlock.startTime)),
+    String(timeBlock.durationMinutes),
+    timeBlock.text,
   );
 
   return key.join(keySeparator);
 }
 
 /**
- * Tasks with date prop are copied under the original task, tasks from daily
- * notes get sent under a heading based on the new date.
+ * Copies of tasks-plugin blocks go right under the original block, copies of
+ * daily-note blocks get sent under the planner heading of the note matching
+ * their start time.
  */
-export function copy(original: WithTime<LocalTask>): WithTime<LocalTask> {
+export function copy(
+  original: WithDuration<EditableTimeBlock>,
+): WithDuration<UnwrittenTimeBlock> {
   const source = getTimelineSegmentSource(original);
-  let location: TaskLocation | undefined;
 
-  if (hasDateFromProp(source)) {
-    const originalLocation = source.location;
-
-    isNotVoid(
-      originalLocation,
-      `Did not find location on task$ ${getOneLineSummary(original)}`,
-    );
-
-    location = produce(originalLocation, (draft) => {
-      draft.position.start.line = draft.position.end.line + 1;
-    });
+  if (source.source === "unwritten") {
+    throw new Error("Cannot copy unwritten time blocks");
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { path, position, ...withoutFileLocation } = source;
+
   return {
-    ...source,
-    location,
+    ...withoutFileLocation,
+    source: "unwritten",
+    destination: getCopyDestination(source),
     id: getId(),
   };
+}
+
+function getCopyDestination(original: PlanTimeBlock): WriteDestination {
+  if (original.source === "tasksPluginProp") {
+    return {
+      type: "line",
+      path: original.path,
+      line: original.position.end.line + 1,
+    };
+  }
+
+  return { type: "plannerHeading" };
 }
 
 export function createTimestamp(
@@ -226,10 +234,6 @@ function formatTimestampEnd(minutesSinceMidnight: number, format: string) {
     return addMinutes(minutesToMoment(0), minutesSinceMidnight).format(format);
   }
 
-  return formatEndOfDayAs24(format);
-}
-
-function formatEndOfDayAs24(format: string) {
   const midnight = minutesToMoment(0).format(format);
   const hourToken = /^(?:HH?|kk?)/.exec(format)?.[0];
 
@@ -240,7 +244,7 @@ function formatEndOfDayAs24(format: string) {
   return `24${midnight.slice(minutesToMoment(0).format(hourToken).length)}`;
 }
 
-export function getEmptyTasksForDay() {
+export function getEmptyTimeBlocksForDay() {
   return { withTime: [], noTime: [] };
 }
 
@@ -248,24 +252,24 @@ export function getDayKey(day: Moment) {
   return day.format(defaultDayFormat);
 }
 
-export function toString(task: WithTime<LocalTask>) {
+export function toString(timeBlock: WithDuration<EditableTimeBlock>) {
   const updatedTimestamp = createTimestamp(
-    getMinutesSinceMidnight(task.startTime),
-    task.durationMinutes,
+    getMinutesSinceMidnight(timeBlock.startTime),
+    timeBlock.durationMinutes,
     get(settings).timestampFormat,
   );
-  const listTokens = createMarkdownListTokens(task);
+  const listTokens = createMarkdownListTokens(timeBlock);
 
-  const withUpdatedOrDeletedTimeRange = task.isAllDayEvent
-    ? removeTimeRange(getFirstLine(task.text))
-    : replaceOrPrependTimeRange(getFirstLine(task.text), updatedTimestamp);
+  const withUpdatedOrDeletedTimeRange = timeBlock.isAllDayEvent
+    ? removeTimeRange(getFirstLine(timeBlock.text))
+    : replaceOrPrependTimeRange(getFirstLine(timeBlock.text), updatedTimestamp);
 
   const updatedFirstLineText = updateScheduledPropInText(
     withUpdatedOrDeletedTimeRange,
-    getDayKey(task.startTime),
+    getDayKey(timeBlock.startTime),
   );
 
-  const paragraphs = task.text
+  const paragraphs = timeBlock.text
     .split("\n")
     .slice(1)
     .map((line) => getIndentationForListParagraph() + line)
@@ -278,9 +282,9 @@ export function toString(task: WithTime<LocalTask>) {
     result += paragraphs;
   }
 
-  if (task.children && task.children.length > 0) {
+  if (timeBlock.children && timeBlock.children.length > 0) {
     result += "\n";
-    result += task.children
+    result += timeBlock.children
       .map((child) => getIndentedText(child, "\t"))
       .join("\n");
   }
@@ -304,55 +308,47 @@ export function create(props: {
   day: Moment;
   startMinutes: number;
   settings: DayPlannerSettings;
-  text?: string;
-  location?: TaskLocation;
-  status?: string;
-  isAllDayEvent?: boolean;
-}): WithTime<LocalTask> {
-  const {
-    day,
-    startMinutes,
-    settings,
-    location,
-    text = "New item",
-    status,
-    isAllDayEvent = false,
-  } = props;
+}): WithDuration<UnwrittenTimeBlock> {
+  const { day, startMinutes, settings } = props;
 
   return {
-    location,
     id: getId(),
+    source: "unwritten",
+    destination: { type: "plannerHeading" },
     durationMinutes: settings.defaultDurationMinutes,
-    text,
+    text: "New item",
     startTime: minutesToMomentOfDay(startMinutes, day),
-    isAllDayEvent,
+    isAllDayEvent: false,
     symbol: "-",
     status:
-      status || settings.eventFormatOnCreation === "task"
+      settings.eventFormatOnCreation === "task"
         ? settings.taskStatusOnCreation
         : undefined,
   };
 }
 
-export function getOneLineSummary(task: Task) {
-  if (isRemote(task)) {
-    return task.summary;
+export function getOneLineSummary(timeBlock: TimeBlock) {
+  if (isRemote(timeBlock)) {
+    return timeBlock.summary;
   }
 
-  return removeTimeRangeFromStartOfLine(task.text);
+  return removeTimeRangeFromStartOfLine(timeBlock.text);
 }
 
-export function truncateToRange(task: WithTime<Task>, range: m.Range) {
-  const start = task.startTime.clone().startOf("day");
-  const end = getEndTime(task).clone().endOf("day");
+export function truncateToRange<T extends WithDuration<TimeBlock>>(
+  timeBlock: T,
+  range: m.Range,
+): T {
+  const start = timeBlock.startTime.clone().startOf("day");
+  const end = getEndTime(timeBlock).clone().endOf("day");
 
   const startOfRange = range.start.clone().startOf("day");
   const endOfRange = range.end.clone().add(1, "day").startOf("day");
 
-  const truncatedBase = { ...task };
+  const truncatedBase = { ...timeBlock };
 
   if (start.isBefore(startOfRange)) {
-    truncatedBase.durationMinutes = getEndTime(task).diff(
+    truncatedBase.durationMinutes = getEndTime(timeBlock).diff(
       startOfRange,
       "minutes",
     );
@@ -381,10 +377,7 @@ function splitMarkdownListPrefix(text: string) {
   const match = text.match(/^(\s*(?:\d+[.)]|[-*+])\s+(?:\[[^\]]\]\s+)?)(.*)$/u);
 
   if (match) {
-    return {
-      prefix: match[1],
-      text: match[2],
-    };
+    return { prefix: match[1], text: match[2] };
   }
 
   const checkboxMatch = text.match(/^(\s*\[[^\]]\]\s+)(.*)$/u);
@@ -393,10 +386,7 @@ function splitMarkdownListPrefix(text: string) {
     return undefined;
   }
 
-  return {
-    prefix: checkboxMatch[1],
-    text: checkboxMatch[2],
-  };
+  return { prefix: checkboxMatch[1], text: checkboxMatch[2] };
 }
 
 export function removeTimeRange(text: string) {
@@ -409,7 +399,7 @@ export function removeTimeRange(text: string) {
     .replace(/\s+/g, " ")}`;
 }
 
-export function isTimeEqual(a: LocalTask, b: LocalTask) {
+export function isTimeEqual(a: EditableTimeBlock, b: EditableTimeBlock) {
   return (
     a.startTime.isSame(b.startTime) &&
     a.durationMinutes === b.durationMinutes &&
@@ -417,11 +407,7 @@ export function isTimeEqual(a: LocalTask, b: LocalTask) {
   );
 }
 
-export function hasDateFromProp(task: LocalTask) {
-  return scheduledPropRegExps.some((regexp) => regexp.test(task.text));
-}
-
-export function clamp<T extends WithTime<BaseTask>>(
+export function clamp<T extends WithDuration<TimeBlock>>(
   timeBlock: T,
   start: Moment,
   end: Moment,
@@ -443,14 +429,18 @@ export function clamp<T extends WithTime<BaseTask>>(
   };
 }
 
-export function getBlockProps(task: Task, settings: DayPlannerSettings) {
+export function getBlockProps(
+  timeBlock: TimeBlock,
+  settings: DayPlannerSettings,
+) {
   const result: string[] = [];
 
-  if (settings.showTimestampInTaskBlock && isWithTime(task)) {
+  if (settings.showTimestampInTaskBlock && isWithDuration(timeBlock)) {
     const sourceStartTime =
-      task.timelineSegment?.sourceStartTime ?? task.startTime;
+      timeBlock.timelineSegment?.sourceStartTime ?? timeBlock.startTime;
     const sourceDurationMinutes =
-      task.timelineSegment?.sourceDurationMinutes ?? task.durationMinutes;
+      timeBlock.timelineSegment?.sourceDurationMinutes ??
+      timeBlock.durationMinutes;
 
     result.push(
       createTimestamp(
@@ -462,78 +452,97 @@ export function getBlockProps(task: Task, settings: DayPlannerSettings) {
     );
   }
 
-  if (isRemote(task)) {
-    result.push(task.calendar.name);
+  if (isRemote(timeBlock)) {
+    result.push(timeBlock.calendar.name);
   }
 
   return result.join(` ${bullet} `);
 }
 
-function isTimedLocalTimelineTask(task: Task): task is WithTime<LocalTask> {
-  return isLocal(task) && isWithTime(task) && !task.isAllDayEvent;
-}
-
-function getSourceLine(task: LocalTask) {
-  return task.location?.position.start.line;
-}
-
-type LocalTaskChild = NonNullable<LocalTask["children"]>[number];
-
-function isSameChildSourceLine(child: LocalTaskChild, task: LocalTask) {
+function isTimedLocalTimelineTask(
+  timeBlock: TimeBlock,
+): timeBlock is WithDuration<PlanTimeBlock> {
   return (
-    child.path === task.location?.path &&
-    child.position.start.line === getSourceLine(task)
+    (timeBlock.source === "dailyNoteDate" ||
+      timeBlock.source === "tasksPluginProp") &&
+    isWithDuration(timeBlock) &&
+    !timeBlock.isAllDayEvent
   );
 }
 
-function containsTaskSourceLine(
-  children: LocalTaskChild[] | undefined,
-  task: LocalTask,
+function getSourceLine(timeBlock: PlanTimeBlock) {
+  return timeBlock.position.start.line;
+}
+
+type LocalTimeBlockChild = NonNullable<PlanTimeBlock["children"]>[number];
+
+function isSameChildSourceLine(
+  child: LocalTimeBlockChild,
+  timeBlock: PlanTimeBlock,
+) {
+  return (
+    child.path === timeBlock.path &&
+    child.position.start.line === getSourceLine(timeBlock)
+  );
+}
+
+function containsTimeBlockSourceLine(
+  children: LocalTimeBlockChild[] | undefined,
+  timeBlock: PlanTimeBlock,
 ): boolean {
   return (
     children?.some(
       (child) =>
-        isSameChildSourceLine(child, task) ||
-        containsTaskSourceLine(child.children, task),
+        isSameChildSourceLine(child, timeBlock) ||
+        containsTimeBlockSourceLine(child.children, timeBlock),
     ) ?? false
   );
 }
 
 function isNestedTimedLocalTask(
-  task: Task,
-  possibleParents: Task[],
-): task is WithTime<LocalTask> {
-  if (!isTimedLocalTimelineTask(task) || !task.location) {
+  timeBlock: TimeBlock,
+  possibleParents: TimeBlock[],
+): timeBlock is WithDuration<PlanTimeBlock> {
+  if (!isTimedLocalTimelineTask(timeBlock)) {
     return false;
   }
 
   return possibleParents.some((possibleParent) => {
     if (
-      possibleParent === task ||
-      !isLocal(possibleParent) ||
-      !possibleParent.location
+      possibleParent === timeBlock ||
+      !isTimedLocalTimelineTask(possibleParent) ||
+      possibleParent.path !== timeBlock.path
     ) {
       return false;
     }
 
     return (
-      getSourceLine(possibleParent)! < getSourceLine(task)! &&
-      containsTaskSourceLine(possibleParent.children, task)
+      getSourceLine(possibleParent) < getSourceLine(timeBlock) &&
+      containsTimeBlockSourceLine(possibleParent.children, timeBlock)
     );
   });
 }
 
-export function hideNestedTimedLocalTasks(tasks: Task[]) {
-  return tasks.filter((task) => !isNestedTimedLocalTask(task, tasks));
+/**
+ * Nested scheduled list items are rendered inside their timed parent block.
+ * Only local plan blocks participate: iCal events and log/frontmatter blocks
+ * are independent timeline records and must never be filtered here.
+ */
+export function hideNestedTimedLocalTasks<T extends TimeBlock>(
+  timeBlocks: T[],
+): T[] {
+  return timeBlocks.filter(
+    (timeBlock) => !isNestedTimedLocalTask(timeBlock, timeBlocks),
+  );
 }
 
 export function toRenderableMarkdown(timeBlock: Node) {
-  const firstLineAsMarkdown = getFirstLineAsMarkdown(timeBlock);
-  const withOptionalListTokensRemoved = timeBlock.status
-    ? firstLineAsMarkdown
-    : removeListTokens(firstLineAsMarkdown);
-  const formattedFirstLine = removeTimeRange(
-    deleteProps(withOptionalListTokensRemoved),
+  const formattedFirstLine = pipe(
+    timeBlock,
+    getFirstLineAsMarkdown,
+    (node) => (timeBlock.status ? node : removeListTokens(node)),
+    deleteProps,
+    removeTimeRange,
   );
 
   const [, ...linesAfterFirst] = timeBlock.text.split("\n");
@@ -563,7 +572,6 @@ function getNestedListItems(children: Node[] | undefined) {
       }
 
       previousChildHasTimeRange = childHasTimeRange;
-
       result.push(getIndentedText(child, "", { formatTimeRanges: true }));
 
       return result;
