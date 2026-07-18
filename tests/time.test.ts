@@ -1,21 +1,26 @@
 import moment from "moment";
-import { it, expect } from "vitest";
+import { afterEach, it, expect } from "vitest";
 
 import {
   getTimeFromLine,
   replaceOrPrependTimeRange,
 } from "../src/parser/parser";
 import { parseTime } from "../src/parser/time";
+import { configureTimestampRegExps } from "../src/regexp";
 import {
   createTimestamp,
   createTimestampParts,
   removeTimeRange,
 } from "../src/util/time-block-utils";
 
+afterEach(() => configureTimestampRegExps("HH:mm"));
+
 it.each([
   ["13:00", { hours: 13, minutes: 0 }],
+  ["1300", { hours: 13, minutes: 0 }],
   ["13.00", { hours: 13, minutes: 0 }],
   ["3:00", { hours: 3, minutes: 0 }],
+  ["0700", { hours: 7, minutes: 0 }],
   ["3.00", { hours: 3, minutes: 0 }],
   ["3.00am", { hours: 3, minutes: 0 }],
   ["12:30am", { hours: 0, minutes: 30 }],
@@ -35,14 +40,21 @@ it("Parses 24:00 as the next midnight", () => {
   ).toBe(true);
 });
 
+it("Parses 2400 as the next midnight", () => {
+  expect(
+    parseTime("2400", moment("2023-01-01")).isSame("2023-01-02 00:00"),
+  ).toBe(true);
+});
+
 it.each([
   ["1:71"],
   ["19pm"],
   ["24:01"],
+  ["2401"],
   ["29:00"],
+  ["2900"],
+  ["2360"],
   ["0301  pm"],
-  ["0301"],
-  ["1300"],
   ["13 00"],
   ["13"],
   ["3"],
@@ -54,6 +66,60 @@ it.each([
 ])("Does not parse %s", (asText) => {
   expect(() => parseTime(asText, moment())).toThrow();
 });
+
+it.each([
+  {
+    line: "- [x] 0700 - 0840 Watched a video",
+    start: "2023-01-01 07:00",
+    durationMinutes: 100,
+  },
+  {
+    line: "- [ ] 00:30 - 0700 Sleep",
+    start: "2023-01-01 00:30",
+    durationMinutes: 390,
+  },
+  {
+    line: "- [ ] 0700 - 08:40 Mixed range",
+    start: "2023-01-01 07:00",
+    durationMinutes: 100,
+  },
+  {
+    line: "- [ ] 2300 - 2400 Day end",
+    start: "2023-01-01 23:00",
+    durationMinutes: 60,
+  },
+])(
+  "Reads compact 24-hour range from $line",
+  ({ line, start, durationMinutes }) => {
+    configureTimestampRegExps("HHmm");
+
+    expect(
+      getTimeFromLine({
+        day: moment("2023-01-01"),
+        line,
+      }),
+    ).toMatchObject({
+      durationMinutes,
+      startTime: moment(start),
+    });
+  },
+);
+
+it.each(["0700 exercise", "0700 - 0840 exercise", "2026 goals"])(
+  "Does not read %s as a timestamp with HH:mm",
+  (line) => {
+    expect(getTimeFromLine({ day: moment("2023-01-01"), line })).toBeNull();
+  },
+);
+
+it.each(["0700 exercise", "2026 goals"])(
+  "Does not read ambiguous compact text %s with HHmm",
+  (line) => {
+    configureTimestampRegExps("HHmm");
+
+    expect(getTimeFromLine({ day: moment("2023-01-01"), line })).toBeNull();
+  },
+);
 
 it.each([
   {
@@ -144,6 +210,9 @@ it("Only replaces a leading time range", () => {
   expect(
     replaceOrPrependTimeRange("[ ] SRT 371(15:36 출발)", "10:00 - 10:30"),
   ).toBe("[ ] 10:00 - 10:30 SRT 371(15:36 출발)");
+  expect(replaceOrPrependTimeRange("2026 goals", "10:00 - 10:30")).toBe(
+    "10:00 - 10:30 2026 goals",
+  );
 });
 
 it("Only removes a leading time range", () => {
@@ -160,4 +229,11 @@ it("Only removes a leading time range", () => {
   expect(removeTimeRange("[ ] 09:00 - 10:00 SRT 371(15:36 출발)")).toBe(
     "[ ] SRT 371(15:36 출발)",
   );
+  expect(removeTimeRange("- [ ] 2026 goals")).toBe("- [ ] 2026 goals");
+});
+
+it("Removes compact ranges with HHmm", () => {
+  configureTimestampRegExps("HHmm");
+
+  expect(removeTimeRange("- [ ] 0700 - 0840 Exercise")).toBe("- [ ] Exercise");
 });

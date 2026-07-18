@@ -1,5 +1,5 @@
 import { isNotVoid } from "typed-assert";
-import { test, expect } from "vitest";
+import { afterEach, test, expect } from "vitest";
 
 import {
   findHeadingWithChildren,
@@ -10,6 +10,9 @@ import {
   sortListsRecursivelyInMarkdown,
   toMarkdown,
 } from "../src/mdast/mdast";
+import { configureTimestampRegExps } from "../src/regexp";
+
+afterEach(() => configureTimestampRegExps("HH:mm"));
 
 test("roundtripping doesn't mess up Obsidian-styled markdown", () => {
   const input = `# [[Heading]]
@@ -132,6 +135,42 @@ test("Sorts timed groups while preserving attached untimed items", () => {
   const actual = toMarkdown(sortListsRecursivelyByTimestamp(list));
 
   expect(actual).toBe(expected);
+});
+
+test("Keeps numeric-leading text untimed when sorting with HH:mm", () => {
+  const input = `- 2026 goals
+- 10:00 b
+- 09:00 a
+`;
+  const expected = `- 2026 goals
+- 09:00 a
+- 10:00 b
+`;
+  const tree = fromMarkdown(input);
+  const list = tree.children[0];
+
+  isList(list);
+
+  expect(toMarkdown(sortListsRecursivelyByTimestamp(list))).toBe(expected);
+});
+
+test("Sorts compact timed ranges with HHmm", () => {
+  configureTimestampRegExps("HHmm");
+
+  const input = `- 1000 - 1100 b
+- Notes for b
+- 0900 - 1000 a
+`;
+  const expected = `- 0900 - 1000 a
+- 1000 - 1100 b
+- Notes for b
+`;
+  const tree = fromMarkdown(input);
+  const list = tree.children[0];
+
+  isList(list);
+
+  expect(toMarkdown(sortListsRecursivelyByTimestamp(list))).toBe(expected);
 });
 
 test("Sorts timed groups recursively at each nested level", () => {

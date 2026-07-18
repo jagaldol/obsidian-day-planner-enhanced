@@ -1,13 +1,16 @@
 import { get } from "svelte/store";
 import { isNotVoid } from "typed-assert";
-import { describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test } from "vitest";
 
 import { selectPlanEntriesForDays } from "../../src/redux";
+import { configureTimestampRegExps } from "../../src/regexp";
 import { defaultSettingsForTests } from "../../src/settings";
 import { isLocal } from "../../src/time-block-types";
 import { toRenderableMarkdown } from "../../src/util/time-block-utils";
 
 import { setUp } from "./util/setup";
+
+afterEach(() => configureTimestampRegExps("HH:mm"));
 
 describe("Task views", () => {
   test("Shows list item with checkbox, nested list items (tasks & plain list items) with their paragraphs and checkboxes", async () => {
@@ -83,6 +86,42 @@ describe("Task views", () => {
 
 - Session notes
 - [x] Workshop notes`);
+  });
+
+  test("Preserves numeric-leading text when rendering with HH:mm", () => {
+    const { listItem, nestedListItems } = toRenderableMarkdown({
+      text: "2026 goals",
+      symbol: "-",
+      children: [{ text: "2026 milestones", symbol: "-" }],
+    });
+
+    expect(listItem).toBe("2026 goals");
+    expect(nestedListItems).toBe("- 2026 milestones");
+  });
+
+  test("Formats compact ranges when rendering with HHmm", () => {
+    configureTimestampRegExps("HHmm");
+
+    const { listItem, nestedListItems } = toRenderableMarkdown({
+      text: "0700 - 0840 Exercise",
+      symbol: "-",
+      children: [{ text: "0710 - 0720 Warm-up", symbol: "-" }],
+    });
+
+    expect(listItem).toBe("Exercise");
+    expect(nestedListItems).toBe("- `0710 - 0720` Warm-up");
+  });
+
+  test("Preserves a completed task title starting with 0700 after an HHmm range", () => {
+    configureTimestampRegExps("HHmm");
+
+    const { listItem } = toRenderableMarkdown({
+      text: "0700 - 0840 0700 tasks completed",
+      symbol: "-",
+      status: "x",
+    });
+
+    expect(listItem).toBe("- [x] 0700 tasks completed");
   });
 
   test("Adds dividers at every timed and untimed child boundary without reordering", () => {

@@ -46,6 +46,7 @@ import {
   type RootState,
 } from "./redux/store";
 import { type UseSelector } from "./redux/use-selector";
+import { configureTimestampRegExps } from "./regexp";
 import { TransactionWriter } from "./service/diff-writer";
 import { createYamlEditTargets } from "./service/edit-yaml";
 import { createIndexServices } from "./service/index/create-index-services";
@@ -517,6 +518,7 @@ export default class DayPlanner extends Plugin {
 
     this.register(
       settings.subscribe(async (newValue) => {
+        configureTimestampRegExps(newValue.timestampFormat);
         dispatch(settingsUpdated(newValue));
 
         await this.saveData(newValue);
