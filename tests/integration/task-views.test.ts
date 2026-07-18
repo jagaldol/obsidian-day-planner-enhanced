@@ -112,6 +112,18 @@ describe("Task views", () => {
     expect(nestedListItems).toBe("- `0710 - 0720` Warm-up");
   });
 
+  test("Preserves a completed task title starting with 0700 after an HHmm range", () => {
+    configureTimestampRegExps("HHmm");
+
+    const { listItem } = toRenderableMarkdown({
+      text: "0700 - 0840 0700 tasks completed",
+      symbol: "-",
+      status: "x",
+    });
+
+    expect(listItem).toBe("- [x] 0700 tasks completed");
+  });
+
   test("Adds dividers at every timed and untimed child boundary without reordering", () => {
     const { nestedListItems } = toRenderableMarkdown({
       text: "10:00 - 13:00 Deep work",
