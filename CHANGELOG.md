@@ -4,6 +4,17 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.33.0**, and follows its own versioning.
 
+## 0.4.1
+
+### ✨ New features
+
+- Added compact 24-hour timestamp ranges such as `0700 - 0840` when **Default timestamp format** is set to `HHmm`. Compact start times require an explicit range, so numeric-leading text such as `2026 goals` remains untimed.
+
+### ✨ Other improvements
+
+- Kept colon- and dot-separated timestamps compatible with compact ranges, including mixed ranges such as `0700 - 08:40`.
+- Clarified the **Default timestamp format** setting to recommend the unambiguous 24-hour `HH:mm` format, document `:` and `.` input separators, and explain that Obsidian must be restarted after a format change to reindex existing tasks.
+
 ## 0.4.0
 
 ### ✨ New features

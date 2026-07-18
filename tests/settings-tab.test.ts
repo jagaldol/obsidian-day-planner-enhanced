@@ -17,7 +17,10 @@ vi.mock("obsidian", () => ({
 
 import type DayPlanner from "../src/main";
 import { defaultSettings, type DayPlannerSettings } from "../src/settings";
-import { DayPlannerSettingsTab } from "../src/ui/settings-tab";
+import {
+  DayPlannerSettingsTab,
+  timestampFormatDescription,
+} from "../src/ui/settings-tab";
 
 function createSettingsTab(settings: DayPlannerSettings) {
   const settingsStore = writable(settings);
@@ -77,5 +80,14 @@ describe("DayPlannerSettingsTab declarative settings", () => {
     tab.setControlValue("eventFormatOnCreation", "bullet");
 
     expect(get(settingsStore).eventFormatOnCreation).toBe("bullet");
+  });
+
+  test("documents the supported 24-hour timestamp syntax", () => {
+    expect(timestampFormatDescription).toContain("HH:mm");
+    expect(timestampFormatDescription).toContain("':'");
+    expect(timestampFormatDescription).toContain("'.'");
+    expect(timestampFormatDescription).toContain("require an end time");
+    expect(timestampFormatDescription).toContain("Restart Obsidian");
+    expect(timestampFormatDescription).not.toContain("hh:mm");
   });
 });

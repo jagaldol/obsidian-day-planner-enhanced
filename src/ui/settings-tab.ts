@@ -18,6 +18,9 @@ import {
 } from "../settings";
 import Callout from "../ui/components/callout.svelte";
 
+export const timestampFormatDescription =
+  "Use HH:mm for 24-hour timestamps; ':' and '.' are accepted separators. Separator-free timestamps require an end time. Restart Obsidian after changing this setting to reindex existing tasks. Current sample: ";
+
 export class DayPlannerSettingsTab extends PluginSettingTab {
   private warningComponent?: Component;
 
@@ -304,9 +307,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
           render: (setting) => {
             setting.setDesc(
               createFragment((fragment) => {
-                fragment.appendText(
-                  "Use HH:mm for 24 hours or hh:mm for 12 hours. Current sample: ",
-                );
+                fragment.appendText(timestampFormatDescription);
                 setting.addMomentFormat((format) =>
                   format
                     .setValue(this.plugin.settings().timestampFormat)
@@ -939,9 +940,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
         setting.setName("Default timestamp format").then((component) => {
           component.setDesc(
             createFragment((fragment) => {
-              fragment.appendText(
-                "When you create or edit tasks with drag-and-drop, the plugin use this format. Use 'HH:mm' for 24 hours; use 'hh:mm' for 12 hours. Your current syntax looks like this: ",
-              );
+              fragment.appendText(timestampFormatDescription);
               component.addMomentFormat((momentFormat) =>
                 momentFormat
                   .setValue(this.plugin.settings().timestampFormat)
