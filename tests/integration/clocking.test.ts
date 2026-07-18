@@ -135,6 +135,7 @@ describe("Clocking out", () => {
 describe("Editing clocks", () => {
   test("Edits the active clock start while keeping it open", async () => {
     const path = "fixtures/fixture-vault/one-task-two-log-records.md";
+
     const { logEntryEditor, vault } = await setUp({
       loadedFixtures: ["one-task-two-log-records.md"],
     });
@@ -156,6 +157,136 @@ describe("Editing clocks", () => {
 
     expect(diff).toContain("+       - start: '2025-01-01 16:30:00'");
     expect(diff).not.toContain("+         end:");
+  });
+});
+
+describe("Deleting log entries", () => {
+  test("Deletes the entry matching the original start", async () => {
+    const { logEntryEditor, vault } = await setUp({
+      loadedFixtures: ["one-task-two-log-records.md"],
+    });
+
+    await Effect.runPromise(
+      logEntryEditor.deleteClock(
+        {
+          path: "fixtures/fixture-vault/one-task-two-log-records.md",
+          position: {
+            start: { line: 0, col: 0, offset: 0 },
+            end: { line: 0, col: 10, offset: 10 },
+          },
+        },
+        { logIndex: 0, originalStart: "2025-01-01 13:00" },
+      ),
+    );
+
+    expect(getPathToDiff(vault.initialState, vault.state)).toMatchSnapshot();
+  });
+
+  test("Does not touch a file when no entry matches", async () => {
+    const { logEntryEditor } = await setUp({
+      loadedFixtures: ["one-task-two-log-records.md"],
+    });
+
+    await expect(
+      Effect.runPromise(
+        logEntryEditor.deleteClock(
+          {
+            path: "fixtures/fixture-vault/one-task-two-log-records.md",
+            position: {
+              start: { line: 0, col: 0, offset: 0 },
+              end: { line: 0, col: 10, offset: 10 },
+            },
+          },
+          { logIndex: 0, originalStart: "2020-01-01 00:00" },
+        ),
+      ),
+    ).rejects.toThrow("Log entry not found: 2020-01-01 00:00");
+  });
+});
+
+describe("Editing a specific log entry", () => {
+  test("Patches the entry matching the original start, not the last one", async () => {
+    const { logEntryEditor, vault } = await setUp({
+      loadedFixtures: ["one-task-two-log-records.md"],
+    });
+
+    await Effect.runPromise(
+      logEntryEditor.editClock(
+        {
+          path: "fixtures/fixture-vault/one-task-two-log-records.md",
+          position: {
+            start: { line: 0, col: 0, offset: 0 },
+            end: { line: 0, col: 10, offset: 10 },
+          },
+        },
+        {
+          logIndex: 0,
+          originalStart: "2025-01-01 13:00",
+          patch: { start: "2025-01-01 12:30", end: "2025-01-01 14:00" },
+        },
+      ),
+    );
+
+    expect(getPathToDiff(vault.initialState, vault.state)).toMatchSnapshot();
+  });
+});
+
+describe("Duplicate log entry start times", () => {
+  const path = "fixtures/fixture-vault/one-task-two-log-records.md";
+  const location = {
+    path,
+    position: {
+      start: { line: 0, col: 0, offset: 0 },
+      end: { line: 0, col: 10, offset: 10 },
+    },
+  };
+
+  async function setUpWithDuplicateStarts() {
+    const setup = await setUp({
+      loadedFixtures: ["one-task-two-log-records.md"],
+    });
+    const file = setup.vault.getFileByPath(path);
+
+    file.contents = file.contents.replace(
+      "start: 2025-01-01 17:00",
+      "start: 2025-01-01 13:00",
+    );
+
+    return setup;
+  }
+
+  test("Edits the selected duplicate by its indexed position", async () => {
+    const { logEntryEditor, vault } = await setUpWithDuplicateStarts();
+
+    await Effect.runPromise(
+      logEntryEditor.editClock(location, {
+        logIndex: 1,
+        originalStart: "2025-01-01 13:00",
+        patch: { end: "2025-01-01 18:00" },
+      }),
+    );
+
+    const edited = vault.getFileByPath(path).contents;
+
+    expect(edited.match(/start: '?2025-01-01 13:00'?/g)).toHaveLength(2);
+    expect(edited).toMatch(/end: '?2025-01-01 15:00'?/);
+    expect(edited).toMatch(/end: '?2025-01-01 18:00'?/);
+  });
+
+  test("Deletes the selected duplicate by its indexed position", async () => {
+    const { logEntryEditor, vault } = await setUpWithDuplicateStarts();
+
+    await Effect.runPromise(
+      logEntryEditor.deleteClock(location, {
+        logIndex: 1,
+        originalStart: "2025-01-01 13:00",
+      }),
+    );
+
+    const afterDelete = vault.getFileByPath(path).contents;
+
+    expect(afterDelete.match(/start: '?2025-01-01 13:00'?/g)).toHaveLength(1);
+    expect(afterDelete).toMatch(/end: '?2025-01-01 15:00'?/);
   });
 });
 

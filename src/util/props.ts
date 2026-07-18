@@ -39,6 +39,11 @@ export const propsSchema = z.looseObject({
 
 export type Props = z.infer<typeof propsSchema>;
 
+export interface LogEntryLocator {
+  logIndex: number;
+  originalStart: string;
+}
+
 export function isWithOpenClock(props?: Props) {
   return Boolean(props?.planner?.log?.find((it) => !it.end));
 }
@@ -126,9 +131,10 @@ export function clockOut(props: Props): Props {
 export function editLogEntry(
   props: Props,
   {
+    logIndex,
     originalStart,
     patch,
-  }: { originalStart: string; patch: { start?: string; end?: string } },
+  }: LogEntryLocator & { patch: { start?: string; end?: string } },
 ): Props {
   const log = props.planner?.log;
 
@@ -136,13 +142,11 @@ export function editLogEntry(
     throw new Error("No log entries");
   }
 
-  const index = log.findIndex((it) => it.start === originalStart);
-
-  if (index === -1) {
+  if (log[logIndex]?.start !== originalStart) {
     throw new Error(`Log entry not found: ${originalStart}`);
   }
 
-  const updatedEntry = { ...log[index] };
+  const updatedEntry = { ...log[logIndex] };
 
   if (patch.start !== undefined) {
     updatedEntry.start = patch.start;
@@ -156,7 +160,30 @@ export function editLogEntry(
     ...props,
     planner: {
       ...props.planner,
-      log: log.with(index, updatedEntry),
+      log: log.with(logIndex, updatedEntry),
+    },
+  };
+}
+
+export function deleteLogEntry(
+  props: Props,
+  { logIndex, originalStart }: LogEntryLocator,
+): Props {
+  const log = props.planner?.log;
+
+  if (!log) {
+    throw new Error("No log entries");
+  }
+
+  if (log[logIndex]?.start !== originalStart) {
+    throw new Error(`Log entry not found: ${originalStart}`);
+  }
+
+  return {
+    ...props,
+    planner: {
+      ...props.planner,
+      log: log.toSpliced(logIndex, 1),
     },
   };
 }
@@ -173,7 +200,11 @@ export function editLastLogEntry(
 
   const last = log[log.length - 1];
 
-  return editLogEntry(props, { originalStart: last.start, patch });
+  return editLogEntry(props, {
+    logIndex: log.length - 1,
+    originalStart: last.start,
+    patch,
+  });
 }
 
 export function createProp(

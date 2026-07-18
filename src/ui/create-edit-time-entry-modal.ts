@@ -3,6 +3,7 @@ import { App, Modal } from "obsidian";
 import { mount, unmount } from "svelte";
 
 import { clockFormat } from "../constants";
+import type { LogEntry } from "../redux/index/index-slice";
 import type { LogEntryEditor } from "../service/log-entry-editor";
 import type { LogTimeBlock } from "../time-block-types";
 import { runWithNoticeOnError } from "../util/effect";
@@ -15,14 +16,19 @@ export function createEditTimeEntryModalCreator(
   app: App,
   logEntryEditor: LogEntryEditor,
 ) {
-  return (task: LogTimeBlock) => {
-    const initialStart = task.startTime.format(clockFormat);
-    const initialEnd = task.durationMinutes
-      ? getEndTime(task).format(clockFormat)
-      : window.moment().format(clockFormat);
+  // todo: separate LogTimeBlockView (clamped) & LogTimeBlock
+  return (timeBlock: LogTimeBlock, logEntry?: LogEntry) => {
+    const initialStart = logEntry
+      ? logEntry.start
+      : timeBlock.startTime.format(clockFormat);
+    const initialEnd = logEntry
+      ? (logEntry.end ?? window.moment().format(clockFormat))
+      : timeBlock.durationMinutes
+        ? getEndTime(timeBlock).format(clockFormat)
+        : window.moment().format(clockFormat);
 
     const modal = new Modal(app).setTitle(
-      `Edit time entry: ${getFirstLine(task.text)}`,
+      `Edit time entry: ${getFirstLine(timeBlock.text)}`,
     );
 
     const component = mount(TimeEntryEditModal, {
@@ -32,7 +38,13 @@ export function createEditTimeEntryModalCreator(
         initialEnd,
         onConfirm: async ({ start, end }: { start: string; end?: string }) => {
           await runWithNoticeOnError(
-            logEntryEditor.editLastClock(task, { start, end }),
+            logEntry
+              ? logEntryEditor.editClock(timeBlock, {
+                  logIndex: logEntry.logIndex,
+                  originalStart: logEntry.start,
+                  patch: { start, end },
+                })
+              : logEntryEditor.editLastClock(timeBlock, { start, end }),
           );
 
           modal.close();

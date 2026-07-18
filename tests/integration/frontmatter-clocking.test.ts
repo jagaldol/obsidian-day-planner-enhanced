@@ -2,12 +2,7 @@ import { Effect } from "effect";
 import { describe, expect, test, vi } from "vitest";
 
 import { editYaml, requireProps } from "../../src/service/edit-yaml";
-import {
-  addOpenClock,
-  cancelOpenClock,
-  clockOut,
-  editLastLogEntry,
-} from "../../src/util/props";
+import { addOpenClock, cancelOpenClock, clockOut } from "../../src/util/props";
 import { getPathToDiff } from "../util/diff";
 
 import { setUp } from "./util/setup";
@@ -146,23 +141,61 @@ describe("Frontmatter canceling clocks", () => {
   });
 });
 
-describe("Editing the last frontmatter log entry", () => {
-  test("Patches start and end of the last log entry", async () => {
-    const { yamlEditTargets, vault } = await setUp({
+describe("Deleting frontmatter log entries", () => {
+  test("Deletes the entry matching the original start", async () => {
+    const { logEntryEditor, vault } = await setUp({
       loadedFixtures: ["frontmatter-1-closed-log-entry.md"],
     });
 
     await Effect.runPromise(
-      editYaml(
-        yamlEditTargets.inFrontmatter(
-          "fixtures/fixture-vault/frontmatter-1-closed-log-entry.md",
+      logEntryEditor.deleteClock(
+        {
+          path: "fixtures/fixture-vault/frontmatter-1-closed-log-entry.md",
+        },
+        { logIndex: 0, originalStart: "2025-07-19 12:00" },
+      ),
+    );
+
+    expect(getPathToDiff(vault.initialState, vault.state)).toMatchSnapshot();
+  });
+
+  test("Does not touch a file when no entry matches", async () => {
+    const { logEntryEditor } = await setUp({
+      loadedFixtures: ["frontmatter-1-closed-log-entry.md"],
+    });
+
+    await expect(
+      Effect.runPromise(
+        logEntryEditor.deleteClock(
+          {
+            path: "fixtures/fixture-vault/frontmatter-1-closed-log-entry.md",
+          },
+          { logIndex: 0, originalStart: "2020-01-01 00:00" },
         ),
-        requireProps((props) =>
-          editLastLogEntry(props, {
+      ),
+    ).rejects.toThrow("Log entry not found: 2020-01-01 00:00");
+  });
+});
+
+describe("Editing a specific frontmatter log entry", () => {
+  test("Patches the entry matching the original start", async () => {
+    const { logEntryEditor, vault } = await setUp({
+      loadedFixtures: ["frontmatter-1-closed-log-entry.md"],
+    });
+
+    await Effect.runPromise(
+      logEntryEditor.editClock(
+        {
+          path: "fixtures/fixture-vault/frontmatter-1-closed-log-entry.md",
+        },
+        {
+          logIndex: 0,
+          originalStart: "2025-07-19 12:00",
+          patch: {
             start: "2025-07-19 13:00",
             end: "2025-07-19 15:00",
-          }),
-        ),
+          },
+        },
       ),
     );
 

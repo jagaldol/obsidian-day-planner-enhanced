@@ -47,3 +47,23 @@ exports[`Clocking out > Clocks out on tasks 1`] = `
 ",
 }
 `;
+
+exports[`Deleting log entries > Deletes the entry matching the original start 1`] = `
+{
+  "fixtures/fixture-vault/one-task-two-log-records.md": "
+-       - start: 2025-01-01 13:00
+-         end: 2025-01-01 15:00
+",
+}
+`;
+
+exports[`Editing a specific log entry > Patches the entry matching the original start, not the last one 1`] = `
+{
+  "fixtures/fixture-vault/one-task-two-log-records.md": "
+-       - start: 2025-01-01 13:00
+-         end: 2025-01-01 15:00
++       - start: 2025-01-01 12:30
++         end: 2025-01-01 14:00
+",
+}
+`;

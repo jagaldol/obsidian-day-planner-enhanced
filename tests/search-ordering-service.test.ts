@@ -30,7 +30,15 @@ function logEntry(props: {
 }): LogEntry {
   const { id, parentId, start, end } = props;
 
-  return { id, parentId, start, end, dayKeys: [], source: "listItemLog" };
+  return {
+    id,
+    parentId,
+    start,
+    end,
+    dayKeys: [],
+    logIndex: 0,
+    source: "listItemLog",
+  };
 }
 
 function fakeState(logEntries: LogEntry[]): RootState {

@@ -44,6 +44,7 @@ export type DenormalizedListItemEntry = Omit<
 export interface LogEntry {
   id: string;
   parentId: string;
+  logIndex: number;
   start: string;
   end?: string;
   dayKeys: string[];

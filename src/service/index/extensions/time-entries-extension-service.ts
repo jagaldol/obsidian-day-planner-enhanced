@@ -38,6 +38,7 @@ export class TimeEntriesExtensionService
               end,
               parentId: rawListItemEntry.id,
               id: createId(rawListItemEntry.id, index),
+              logIndex: index,
               source: "listItemLog",
             }),
           ) ?? [],
