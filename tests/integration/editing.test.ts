@@ -4,6 +4,7 @@ import { describe, expect, test } from "vitest";
 
 import type { EditableNestedListItem } from "../../src/service/list-item-entry-editor";
 import { defaultSettingsForTests } from "../../src/settings";
+import type { EditableTimeBlock } from "../../src/time-block-types";
 import { EditMode } from "../../src/ui/hooks/use-edit/types";
 import { getPathToDiff } from "../util/diff";
 
@@ -25,6 +26,14 @@ function replaceFirstLine(text: string, firstLine: string) {
   const [, ...rest] = text.split("\n");
 
   return [firstLine, ...rest].join("\n");
+}
+
+function toListItemLocation(task: EditableTimeBlock) {
+  if (task.source === "unwritten") {
+    throw new Error("Expected a persisted list item");
+  }
+
+  return { path: task.path, line: task.position.start.line };
 }
 
 describe("Editing", () => {
@@ -153,16 +162,9 @@ describe("Editing", () => {
         loadedFixtures: ["2025-07-28.md"],
       });
 
-      const { location } = findByText("Parent");
+      const location = toListItemLocation(findByText("Parent"));
 
-      isNotVoid(location);
-
-      await Effect.runPromise(
-        taskEntryEditor.removeAtLocation({
-          path: location.path,
-          line: location.position.start.line,
-        }),
-      );
+      await Effect.runPromise(taskEntryEditor.removeAtLocation(location));
 
       expect(getPathToDiff(vault.initialState, vault.state)).toEqual({
         "fixtures/fixture-vault/2025-07-28.md": `
@@ -182,9 +184,7 @@ describe("Editing", () => {
       });
 
       const task = findByText("Parent");
-      const { location } = task;
-
-      isNotVoid(location);
+      const location = toListItemLocation(task);
 
       const children = cloneNestedItems(task.children);
       const child = children[0];
@@ -194,13 +194,7 @@ describe("Editing", () => {
       child.text = replaceFirstLine(child.text, "Edited child task");
 
       await Effect.runPromise(
-        taskEntryEditor.replaceNestedItemsAtLocation(
-          {
-            path: location.path,
-            line: location.position.start.line,
-          },
-          children,
-        ),
+        taskEntryEditor.replaceNestedItemsAtLocation(location, children),
       );
 
       expect(getPathToDiff(vault.initialState, vault.state)).toEqual({
@@ -218,22 +212,14 @@ describe("Editing", () => {
       });
 
       const task = findByText("Parent");
-      const { location } = task;
-
-      isNotVoid(location);
+      const location = toListItemLocation(task);
 
       const children = cloneNestedItems(task.children);
 
       children.push({ text: "Root child", symbol: "-" });
 
       await Effect.runPromise(
-        taskEntryEditor.replaceNestedItemsAtLocation(
-          {
-            path: location.path,
-            line: location.position.start.line,
-          },
-          children,
-        ),
+        taskEntryEditor.replaceNestedItemsAtLocation(location, children),
       );
 
       expect(getPathToDiff(vault.initialState, vault.state)).toEqual({
@@ -250,9 +236,7 @@ describe("Editing", () => {
       });
 
       const task = findByText("Parent");
-      const { location } = task;
-
-      isNotVoid(location);
+      const location = toListItemLocation(task);
 
       const children = cloneNestedItems(task.children);
       const child = children[0];
@@ -263,13 +247,7 @@ describe("Editing", () => {
       child.children.push({ text: "Grandchild", symbol: "-" });
 
       await Effect.runPromise(
-        taskEntryEditor.replaceNestedItemsAtLocation(
-          {
-            path: location.path,
-            line: location.position.start.line,
-          },
-          children,
-        ),
+        taskEntryEditor.replaceNestedItemsAtLocation(location, children),
       );
 
       expect(getPathToDiff(vault.initialState, vault.state)).toEqual({
@@ -286,18 +264,10 @@ describe("Editing", () => {
       });
 
       const task = findByText("Parent");
-      const { location } = task;
-
-      isNotVoid(location);
+      const location = toListItemLocation(task);
 
       await Effect.runPromise(
-        taskEntryEditor.replaceNestedItemsAtLocation(
-          {
-            path: location.path,
-            line: location.position.start.line,
-          },
-          [],
-        ),
+        taskEntryEditor.replaceNestedItemsAtLocation(location, []),
       );
 
       expect(getPathToDiff(vault.initialState, vault.state)).toEqual({
@@ -316,9 +286,7 @@ describe("Editing", () => {
       });
 
       const task = findByText("Parent");
-      const { location } = task;
-
-      isNotVoid(location);
+      const location = toListItemLocation(task);
 
       const children = cloneNestedItems(task.children);
       const child = children[0];
@@ -336,10 +304,7 @@ describe("Editing", () => {
 
       await Effect.runPromise(
         taskEntryEditor.replaceNestedItemsAtLocation(
-          {
-            path: location.path,
-            line: location.position.start.line,
-          },
+          location,
           reorderedChildren,
         ),
       );
@@ -358,9 +323,7 @@ describe("Editing", () => {
       });
 
       const task = findByText("Parent");
-      const { location } = task;
-
-      isNotVoid(location);
+      const location = toListItemLocation(task);
 
       const children = cloneNestedItems(task.children);
       const child = children[0];
@@ -371,13 +334,7 @@ describe("Editing", () => {
       grandchild.task = " ";
 
       await Effect.runPromise(
-        taskEntryEditor.replaceNestedItemsAtLocation(
-          {
-            path: location.path,
-            line: location.position.start.line,
-          },
-          children,
-        ),
+        taskEntryEditor.replaceNestedItemsAtLocation(location, children),
       );
 
       expect(getPathToDiff(vault.initialState, vault.state)).toEqual({
@@ -395,18 +352,12 @@ describe("Editing", () => {
       });
 
       const task = findByText("List item under planner heading");
-      const { location } = task;
-
-      isNotVoid(location);
+      const location = toListItemLocation(task);
 
       await Effect.runPromise(
-        taskEntryEditor.replaceNestedItemsAtLocation(
-          {
-            path: location.path,
-            line: location.position.start.line,
-          },
-          [{ text: "First child", symbol: "-" }],
-        ),
+        taskEntryEditor.replaceNestedItemsAtLocation(location, [
+          { text: "First child", symbol: "-" },
+        ]),
       );
 
       expect(getPathToDiff(vault.initialState, vault.state)).toEqual({

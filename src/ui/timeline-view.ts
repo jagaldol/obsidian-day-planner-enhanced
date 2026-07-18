@@ -7,7 +7,10 @@ import { dateRangeContextKey, viewTypeTimeline } from "../constants";
 import type { PeriodicNotes } from "../service/periodic-notes";
 import type { DayPlannerSettings } from "../settings";
 import type { ComponentContext, DateRange } from "../types";
-import { handleActiveLeafChange } from "../util/handle-active-leaf-change";
+import {
+  handleActiveFileChange,
+  handleActiveLeafChange,
+} from "../util/handle-active-leaf-change";
 
 import TimelineWithControls from "./components/timeline-with-controls.svelte";
 import { useDateRanges } from "./hooks/use-date-ranges";
@@ -41,9 +44,14 @@ export default class TimelineView extends ItemView {
   async onOpen() {
     const contentEl = this.containerEl.children[1];
 
-    contentEl.addClass("planner-flex-container");
+    contentEl.addClass("planner-timeline-layout");
 
     this.dateRange = this.dateRanges.trackRange([window.moment()]);
+    handleActiveFileChange(
+      this.app.workspace.getActiveFile(),
+      this.dateRange,
+      this.periodicNotes,
+    );
     this.registerEvent(
       this.app.workspace.on("active-leaf-change", (leaf) => {
         if (!this.dateRange) {

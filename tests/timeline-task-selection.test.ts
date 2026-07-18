@@ -6,15 +6,26 @@ import {
   isLocatedTimelineTaskSelectionMatch,
   isTimelineTaskSelectionMatch,
 } from "../src/global-store/timeline-task-selection";
-import type { LocalTask } from "../src/task-types";
+import type {
+  DailyNoteDateTimeBlock,
+  UnwrittenTimeBlock,
+} from "../src/time-block-types";
 
-function createTask(overrides: Partial<LocalTask> = {}): LocalTask {
+const baseTask = {
+  durationMinutes: 30,
+  id: "temporary-id",
+  startTime: moment("2023-01-01 09:00"),
+  symbol: "-",
+  text: "Created task",
+};
+
+function createTask(
+  overrides: Partial<UnwrittenTimeBlock> = {},
+): UnwrittenTimeBlock {
   return {
-    durationMinutes: 30,
-    id: "temporary-id",
-    startTime: moment("2023-01-01 09:00"),
-    symbol: "-",
-    text: "Created task",
+    ...baseTask,
+    source: "unwritten",
+    destination: { type: "plannerHeading" },
     ...overrides,
   };
 }
@@ -38,25 +49,25 @@ describe("timeline task auto-selection", () => {
       createTask(),
       "2023-01-01.md",
     );
-    const indexedTask = createTask({
+    const indexedTask: DailyNoteDateTimeBlock = {
+      ...baseTask,
+      source: "dailyNoteDate",
       id: "2023-01-01.md:3",
-      location: {
-        path: "2023-01-01.md",
-        position: {
-          start: {
-            line: 3,
-            col: 0,
-            offset: 42,
-          },
-          end: {
-            line: 3,
-            col: 0,
-            offset: 42,
-          },
+      path: "2023-01-01.md",
+      position: {
+        start: {
+          line: 3,
+          col: 0,
+          offset: 42,
+        },
+        end: {
+          line: 3,
+          col: 0,
+          offset: 42,
         },
       },
       text: "09:00 - 09:30 Created task",
-    });
+    };
 
     expect(isTimelineTaskSelectionMatch(indexedTask, target)).toBe(true);
     expect(isLocatedTimelineTaskSelectionMatch(indexedTask, target)).toBe(true);

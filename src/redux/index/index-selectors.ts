@@ -2,37 +2,41 @@
 import { isNotVoid } from "typed-assert";
 
 import { addHorizontalPlacing } from "../../overlap/overlap";
-import type { LocalTask } from "../../task-types";
+import type { LogTimeBlock } from "../../time-block-types";
 import { strictParse } from "../../util/moment";
 import type { Moment } from "../../util/obsidian-moment";
-import { clamp, getDayKey } from "../../util/task-utils";
+import { clamp, getDayKey } from "../../util/time-block-utils";
 import { createAppSelector } from "../create-app-selector";
 import { selectVisibleDays } from "../global-slice";
 
 import {
+  isListItemEntry,
+  type FileSystemEntry,
   type ListItemEntry,
   type ListItemEntryWithChildren,
-  planEntryToLocalTask,
+  entryToTimeBlock,
+  selectFileEntriesById,
   selectLogEntriesByDay,
   selectLogEntriesById,
   selectPlanEntriesByDay,
   selectPlanEntriesById,
   selectTaskEntriesById,
+  type ClosedLogEntry,
 } from "./index-slice";
-import type { LogEntry } from "./index-slice";
 
 export const selectLogEntriesForDay = createAppSelector(
   [
     selectLogEntriesByDay,
     selectLogEntriesById,
     selectTaskEntriesById,
+    selectFileEntriesById,
     (state, dayKey: string) => dayKey,
     (state, dayKey, currentTime: Moment) => currentTime,
   ],
-  (byDay, byId, taskEntriesById, dayKey, currentTime) => {
+  (byDay, byId, taskEntriesById, fileEntriesById, dayKey, currentTime) => {
     const parsedDay = strictParse(dayKey);
     const startOfDay = parsedDay.clone().startOf("day");
-    const endOfDay = parsedDay.clone().endOf("day");
+    const endOfDay = startOfDay.clone().add(1, "day");
     const isDayKeyForToday = parsedDay.isSame(currentTime, "day");
 
     const uniqueLogEntryIds = Object.keys(byDay[dayKey] || {});
@@ -46,10 +50,15 @@ export const selectLogEntriesForDay = createAppSelector(
           `Inconsistent store state: expected to find log entry by id ${logEntryId}`,
         );
 
-        const taskEntry = taskEntriesById[logEntry.parent];
+        // todo: remove once we have noUncheckedIndexedAccess
+        //  the state types are imprecise: lookups by id may return
+        //  undefined, so the union has to be spelled out for narrowing to work
+        const entry: ListItemEntry | FileSystemEntry | undefined =
+          taskEntriesById[logEntry.parentId] ??
+          fileEntriesById[logEntry.parentId];
 
         isNotVoid(
-          taskEntry,
+          entry,
           `Inconsistent store state: task entry not found for ID: ${logEntryId}`,
         );
 
@@ -60,17 +69,46 @@ export const selectLogEntriesForDay = createAppSelector(
         const isActiveLogRecordForToday = isDayKeyForToday && !logEntry.end;
 
         // todo: use adapter: logEntryToLocalTask
-        const timeBlock: LocalTask = {
+        const base = {
           id: logEntry.id,
-          text: taskEntry.text,
+          text: entry.text,
           startTime: parsedStart,
-          status: taskEntry.task,
           symbol: "-",
           durationMinutes: parsedEnd.diff(parsedStart, "minutes"),
           ...(isActiveLogRecordForToday
             ? { truncated: ["bottom" as const] }
             : {}),
         };
+
+        let timeBlock: LogTimeBlock;
+
+        if (isListItemEntry(entry)) {
+          if (logEntry.source === "frontmatterLog") {
+            throw new Error(
+              "Inconsistent store state: a frontmatter log entry cannot be attached to a list item",
+            );
+          }
+
+          timeBlock = {
+            ...base,
+            source: logEntry.source,
+            status: entry.task,
+            path: entry.path,
+            position: entry.position,
+          };
+        } else {
+          if (logEntry.source !== "frontmatterLog") {
+            throw new Error(
+              "Inconsistent store state: only frontmatter log entries can be attached to file entries",
+            );
+          }
+
+          timeBlock = {
+            ...base,
+            source: logEntry.source,
+            path: entry.path,
+          };
+        }
 
         return clamp(timeBlock, startOfDay, endOfDay);
       },
@@ -80,28 +118,50 @@ export const selectLogEntriesForDay = createAppSelector(
   },
 );
 
-export const selectRecentLogEntries = createAppSelector(
-  [selectLogEntriesById, selectTaskEntriesById],
-  (logEntriesById, taskEntriesById) => {
-    const taskEntryIdToLatestLogRecord = Object.values(logEntriesById)
-      .flat()
-      .filter((it): it is LogEntry & { end: string } => it.end !== undefined)
+const selectLatestClosedLogEntryByParentId = createAppSelector(
+  [selectLogEntriesById],
+  (logEntriesById) => {
+    return Object.values(logEntriesById)
+      .filter((it): it is ClosedLogEntry => it.end !== undefined)
       .toSorted((a, b) => Date.parse(b.end) - Date.parse(a.end))
-      .reduce<Map<string, LogEntry>>((result, logEntry) => {
-        if (result.has(logEntry.parent)) {
+      .reduce<Map<string, ClosedLogEntry>>((result, logEntry) => {
+        if (result.has(logEntry.parentId)) {
           return result;
         }
 
-        return result.set(logEntry.parent, logEntry);
+        return result.set(logEntry.parentId, logEntry);
       }, new Map());
+  },
+);
 
-    return [...taskEntryIdToLatestLogRecord].map(([taskEntryId, logEntry]) => {
-      const taskEntry = taskEntriesById[taskEntryId];
+export const selectRecentLogEntries = createAppSelector(
+  [
+    selectLatestClosedLogEntryByParentId,
+    selectTaskEntriesById,
+    selectFileEntriesById,
+  ],
+  (latestClosedLogEntryByParentId, taskEntriesById, fileEntriesById) => {
+    return [...latestClosedLogEntryByParentId].map(
+      ([taskEntryId, logEntry]) => {
+        const entry =
+          taskEntriesById[taskEntryId] ?? fileEntriesById[taskEntryId];
 
-      isNotVoid(taskEntry, "Inconsistent store state");
+        isNotVoid(entry, "Inconsistent store state");
 
-      return planEntryToLocalTask(logEntry, taskEntry);
-    });
+        return entryToTimeBlock(logEntry, entry);
+      },
+    );
+  },
+);
+
+export const selectLatestClosedLogEndByParentId = createAppSelector(
+  [selectLatestClosedLogEntryByParentId],
+  (latestClosedLogEntryByParentId) => {
+    return [...latestClosedLogEntryByParentId].reduce<Map<string, number>>(
+      (result, [parentId, logEntry]) =>
+        result.set(parentId, Date.parse(logEntry.end)),
+      new Map(),
+    );
   },
 );
 
@@ -127,7 +187,7 @@ export const selectPlanEntriesForVisibleDays = createAppSelector(
 
         isNotVoid(planEntry, "Inconsistent index state");
 
-        const listItemEntry = listItemEntriesById[planEntry.parent];
+        const listItemEntry = listItemEntriesById[planEntry.parentId];
 
         isNotVoid(listItemEntry, "Inconsistent index state");
 
@@ -136,7 +196,7 @@ export const selectPlanEntriesForVisibleDays = createAppSelector(
           listItemEntriesById,
         );
 
-        return planEntryToLocalTask(planEntry, listItemEntry, withChildren);
+        return entryToTimeBlock(planEntry, listItemEntry, withChildren);
       }) || []
     );
   },
@@ -160,7 +220,7 @@ export const selectPlanEntriesForDays = createAppSelector(
 
         isNotVoid(planEntry, "Inconsistent index state");
 
-        const listItemEntry = listItemEntriesById[planEntry.parent];
+        const listItemEntry = listItemEntriesById[planEntry.parentId];
 
         isNotVoid(listItemEntry, "Inconsistent index state");
 
@@ -169,7 +229,7 @@ export const selectPlanEntriesForDays = createAppSelector(
           listItemEntriesById,
         );
 
-        return planEntryToLocalTask(planEntry, listItemEntry, withChildren);
+        return entryToTimeBlock(planEntry, listItemEntry, withChildren);
       }) || []
     );
   },
@@ -180,14 +240,14 @@ function inflateChildren(
   listItemEntry: ListItemEntry,
   listItemEntriesById: Record<string, ListItemEntry>,
 ): ListItemEntryWithChildren {
-  const { children = [], ...rest } = listItemEntry;
+  const { childIds = [], ...rest } = listItemEntry;
 
   return {
     ...rest,
     // todo: not needed here
     logEntries: [],
     planEntries: [],
-    children: children.map((id) => {
+    children: childIds.map((id) => {
       const child = listItemEntriesById[id];
 
       isNotVoid(child, "Inconsistent index state");

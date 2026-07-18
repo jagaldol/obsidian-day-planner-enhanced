@@ -3,7 +3,7 @@ import { tz } from "moment-timezone";
 import ical, { type AttendeePartStat } from "node-ical";
 
 import { fallbackPartStat, icalDayKeyFormat } from "../constants";
-import type { RemoteTask, WithTime } from "../task-types";
+import type { RemoteTimeBlock, WithDuration } from "../time-block-types";
 import type { WithIcalConfig } from "../types";
 
 import { getId } from "./id";
@@ -67,7 +67,7 @@ export function icalEventToTasksForRange(
 
   const tasksFromRecurrenceOverrides = Object.values(
     icalEvent?.recurrences || {},
-  ).reduce<RemoteTask[]>((result, override) => {
+  ).reduce<RemoteTimeBlock[]>((result, override) => {
     const task = onceOffIcalEventToTaskForRange(
       { ...override, calendar: icalEvent.calendar },
       start,
@@ -120,7 +120,7 @@ function onceOffIcalEventToTaskForRange(
 export function icalEventToTask(
   icalEvent: WithIcalConfig<ical.VEvent>,
   date: Date,
-): RemoteTask | WithTime<RemoteTask> {
+): RemoteTimeBlock | WithDuration<RemoteTimeBlock> {
   let startTimeAdjusted = window.moment(date);
   const tzid = icalEvent.rrule?.origOptions?.tzid;
 
@@ -134,6 +134,7 @@ export function icalEventToTask(
 
   return {
     id: getId(),
+    source: "ical",
     calendar: icalEvent.calendar,
     summary: icalEvent.summary || "(No title)",
     description: icalEvent.description,

@@ -2,7 +2,7 @@
   /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
   import type { Snippet } from "svelte";
 
-  import { isRemote, type Task } from "../../task-types";
+  import { isRemote, type TimelineTimeBlock } from "../../time-block-types";
 
   import LocalTimeBlock from "./local-time-block.svelte";
   import RemoteTimeBlockContent from "./remote-time-block-content.svelte";
@@ -12,7 +12,11 @@
   const {
     task,
     bottomDecoration,
-  }: { task: Task; class?: string; bottomDecoration?: Snippet } = $props();
+  }: {
+    task: TimelineTimeBlock;
+    class?: string;
+    bottomDecoration?: Snippet;
+  } = $props();
 </script>
 
 {#if isRemote(task)}

@@ -7,14 +7,14 @@
     Square,
     EllipsisVertical,
   } from "lucide-svelte";
-  import { isNotVoid } from "typed-assert";
 
   import { getObsidianContext } from "../../context/obsidian-context";
   import { currentTimeSignal } from "../../global-store/current-time";
   import { settings } from "../../global-store/settings";
   import { selectActiveLogEntries } from "../../redux/index/index-slice";
-  import { runWithNoticeOnError } from "../../service/list-item-entry-editor";
-  import type { LocalTask } from "../../task-types";
+  import type { LogTimeBlock } from "../../time-block-types";
+  import { runWithNoticeOnError } from "../../util/effect";
+  import { removeMarkdownExtension } from "../../util/markdown";
   import * as m from "../../util/moment";
   import { getDiffInMinutes } from "../../util/moment";
   import { createActiveClockMenu } from "../active-clock-menu";
@@ -22,14 +22,14 @@
   import BlockControls from "./block-controls.svelte";
   import BlockList from "./block-list.svelte";
   import ControlButton from "./control-button.svelte";
-  import LocalTimeBlock from "./local-time-block.svelte";
+  import LocalTimeBlockComponent from "./local-time-block.svelte";
   import Pill from "./pill.svelte";
   import Properties from "./properties.svelte";
   import Selectable from "./selectable.svelte";
 
   const {
     workspaceFacade,
-    taskEntryEditor,
+    logEntryEditor,
     openEditTimeEntryModal,
     useSelector,
   } = getObsidianContext();
@@ -48,19 +48,19 @@
 </script>
 
 <BlockList list={activeLogRecordsCompat}>
-  {#snippet match(task: LocalTask)}
+  {#snippet match(task: LogTimeBlock)}
     <Selectable
       onSecondarySelect={(event) =>
         createActiveClockMenu({
           event,
           task,
-          taskEntryEditor,
+          logEntryEditor,
           workspaceFacade,
           openEditTimeEntryModal,
         })}
     >
       {#snippet children({ use, onpointerup, state })}
-        <LocalTimeBlock
+        <LocalTimeBlockComponent
           --time-block-border-color-override="var(--color-accent)"
           isActive={state === "secondary"}
           {onpointerup}
@@ -71,14 +71,7 @@
             <BlockControls>
               <ControlButton
                 onclick={async () => {
-                  isNotVoid(task.location);
-
-                  await runWithNoticeOnError(
-                    taskEntryEditor.clockOutAtLocation({
-                      path: task.location.path,
-                      line: task.location.position.start.line,
-                    }),
-                  );
+                  await runWithNoticeOnError(logEntryEditor.clockOut(task));
                 }}
               >
                 {#snippet icon()}
@@ -91,7 +84,7 @@
                   createActiveClockMenu({
                     task,
                     event,
-                    taskEntryEditor,
+                    logEntryEditor,
                     workspaceFacade,
                     openEditTimeEntryModal,
                   });
@@ -105,20 +98,13 @@
           {/snippet}
           {#snippet bottomDecoration()}
             <Properties>
-              {#if task.location?.path}
-                <Pill
-                  key={File}
-                  onclick={() => {
-                    isNotVoid(task.location);
-
-                    return workspaceFacade.revealLineInFile(
-                      task.location.path,
-                      task.location.position.start.line,
-                    );
-                  }}
-                  value={task.location.path.replace(/\.md$/, "")}
-                />
-              {/if}
+              <Pill
+                key={File}
+                onclick={async () => {
+                  await workspaceFacade.revealLocation(task);
+                }}
+                value={removeMarkdownExtension(task.path)}
+              />
               <Pill
                 key={Play}
                 value={task.startTime.format($settings.timestampFormat)}
@@ -131,7 +117,7 @@
               />
             </Properties>
           {/snippet}
-        </LocalTimeBlock>
+        </LocalTimeBlockComponent>
       {/snippet}
     </Selectable>
   {/snippet}

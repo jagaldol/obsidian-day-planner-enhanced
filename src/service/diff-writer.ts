@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
+import { Array } from "effect";
 import type { Root } from "mdast";
 import { isNotVoid } from "typed-assert";
 
@@ -11,10 +12,13 @@ import {
   toMarkdown,
 } from "../mdast/mdast";
 import type { DayPlannerSettings } from "../settings";
-import type { LocalTask } from "../task-types";
-import { groupBy } from "../util/collection";
+import type {
+  EditableTimeBlock,
+  PlanTimeBlock,
+  UnwrittenTimeBlock,
+} from "../time-block-types";
 import { applyScopedUpdates, getFirstLine } from "../util/markdown";
-import * as t from "../util/task-utils";
+import * as t from "../util/time-block-utils";
 
 import type { PeriodicNotes } from "./periodic-notes";
 import type { VaultFacade } from "./vault-facade";
@@ -115,7 +119,7 @@ export function createTransaction(props: {
   afterEach?: (contents: string) => string;
 }) {
   const { updates, afterEach, settings } = props;
-  const pathToUpdates = groupBy((entry) => entry.path, updates);
+  const pathToUpdates = Array.groupBy(updates, (entry) => entry.path);
 
   return Object.entries(pathToUpdates).map(([path, updates]) => ({
     path,
@@ -201,25 +205,42 @@ export class TransactionWriter {
  * Describes what changed visually in a view after an edit.
  */
 export type ViewDiff = {
-  deleted?: Array<LocalTask>;
-  updated?: Array<LocalTask>;
-  added?: Array<LocalTask>;
+  deleted?: Array<PlanTimeBlock>;
+  updated?: Array<PlanTimeBlock>;
+  added?: Array<UnwrittenTimeBlock>;
 };
 
-export function getTaskDiffFromEditState(base: LocalTask[], next: LocalTask[]) {
+export function getTaskDiffFromEditState(
+  base: EditableTimeBlock[],
+  next: EditableTimeBlock[],
+) {
   return {
     deleted: base.filter(
-      (baseTask) => !next.some((nextTask) => nextTask.id === baseTask.id),
+      (baseTask): baseTask is PlanTimeBlock =>
+        baseTask.source !== "unwritten" &&
+        !next.some((nextTask) => nextTask.id === baseTask.id),
     ),
     ...next.reduce<Omit<Required<ViewDiff>, "deleted">>(
       (result, task) => {
         const thisTaskInBase = base.find((baseTask) => baseTask.id === task.id);
 
         if (!thisTaskInBase) {
+          if (task.source !== "unwritten") {
+            throw new Error(
+              "Only unwritten time blocks can be added during an edit",
+            );
+          }
+
           result.added.push(task);
         }
 
         if (thisTaskInBase && !t.isTimeEqual(thisTaskInBase, task)) {
+          if (task.source === "unwritten") {
+            throw new Error(
+              "An unwritten time block cannot be updated during an edit",
+            );
+          }
+
           result.updated.push(task);
         }
 
@@ -233,53 +254,75 @@ export function getTaskDiffFromEditState(base: LocalTask[], next: LocalTask[]) {
   };
 }
 
-function mapTaskDiffToUpdate(props: {
-  type: string;
-  task: LocalTask;
+function createInsertUnderHeadingUpdate(props: {
+  task: EditableTimeBlock;
+  contents: string;
+  settings: DayPlannerSettings;
+  periodicNotes: PeriodicNotes;
+}): Update {
+  const { task, contents, settings, periodicNotes } = props;
+
+  return {
+    type: "mdast",
+    path: periodicNotes.createDailyNotePath(task.startTime),
+    updateFn: (root: Root) => {
+      const taskRoot = fromMarkdown(contents);
+      const listItemToInsert = findFirst(taskRoot, checkListItem);
+
+      isNotVoid(listItemToInsert);
+      isListItem(listItemToInsert);
+
+      return insertListItemUnderHeading(
+        root,
+        settings.plannerHeading,
+        listItemToInsert,
+      );
+    },
+  };
+}
+
+function mapAddedToUpdate(props: {
+  task: UnwrittenTimeBlock;
+  settings: DayPlannerSettings;
+  periodicNotes: PeriodicNotes;
+}): Update {
+  const { task, settings, periodicNotes } = props;
+  const taskTextWithUpdatedProps = t.toString(task);
+  const { destination } = task;
+
+  if (destination.type === "line") {
+    return {
+      type: "created",
+      contents: taskTextWithUpdatedProps,
+      path: destination.path,
+      target: destination.line,
+    };
+  }
+
+  return createInsertUnderHeadingUpdate({
+    task,
+    contents: taskTextWithUpdatedProps,
+    settings,
+    periodicNotes,
+  });
+}
+
+function mapPersistedToUpdates(props: {
+  type: "deleted" | "updated";
+  task: PlanTimeBlock;
   settings: DayPlannerSettings;
   periodicNotes: PeriodicNotes;
 }): Update | Update[] {
   const { type, task, settings, periodicNotes } = props;
   const taskTextWithUpdatedProps = t.toString(task);
 
-  if (type === "added") {
-    if (task.location) {
-      return {
-        type: "created",
-        contents: taskTextWithUpdatedProps,
-        path: task.location.path,
-        target: task.location.position?.start?.line,
-      };
-    }
-
-    return {
-      type: "mdast",
-      path: periodicNotes.createDailyNotePath(task.startTime),
-      updateFn: (root: Root) => {
-        const taskRoot = fromMarkdown(taskTextWithUpdatedProps);
-        const listItemToInsert = findFirst(taskRoot, checkListItem);
-
-        isNotVoid(listItemToInsert);
-        isListItem(listItemToInsert);
-
-        return insertListItemUnderHeading(
-          root,
-          settings.plannerHeading,
-          listItemToInsert,
-        );
-      },
-    };
-  }
-
-  isNotVoid(task.location);
-
-  const { path } = task.location;
-  const firstLine = task.location.position.start.line;
+  const { path } = task;
+  const firstLine = task.position.start.line;
   const lineSpan = taskTextWithUpdatedProps.trim().split("\n").length - 1;
   const lastLine = firstLine + lineSpan;
 
   const position = {
-    start: task.location.position.start,
+    start: task.position.start,
     end: { line: lastLine, col: 0 },
   };
 
@@ -310,23 +353,12 @@ function mapTaskDiffToUpdate(props: {
       path,
       range: position,
     },
-    {
-      type: "mdast",
-      path: periodicNotes.createDailyNotePath(task.startTime),
-      updateFn: (root: Root) => {
-        const taskRoot = fromMarkdown(taskTextWithUpdatedProps);
-        const listItemToInsert = findFirst(taskRoot, checkListItem);
-
-        isNotVoid(listItemToInsert);
-        isListItem(listItemToInsert);
-
-        return insertListItemUnderHeading(
-          root,
-          settings.plannerHeading,
-          listItemToInsert,
-        );
-      },
-    },
+    createInsertUnderHeadingUpdate({
+      task,
+      contents: taskTextWithUpdatedProps,
+      settings,
+      periodicNotes,
+    }),
   ];
 }
 
@@ -338,17 +370,16 @@ export function mapTaskDiffToUpdates(
   settings: DayPlannerSettings,
   periodicNotes: PeriodicNotes,
 ): Update[] {
-  return Object.entries(diff)
-    .flatMap(([type, tasks]) => tasks.map((task) => ({ type, task })))
-    .reduce<Update[]>((result, { type, task }) => {
-      const updates = mapTaskDiffToUpdate({
-        type,
-        task,
-        settings,
-        periodicNotes,
-      });
+  const { deleted = [], updated = [], added = [] } = diff;
 
-      return result.concat(updates);
-    }, []);
+  return [
+    ...updated.flatMap((task) =>
+      mapPersistedToUpdates({ type: "updated", task, settings, periodicNotes }),
+    ),
+    ...added.map((task) => mapAddedToUpdate({ task, settings, periodicNotes })),
+    ...deleted.flatMap((task) =>
+      mapPersistedToUpdates({ type: "deleted", task, settings, periodicNotes }),
+    ),
+  ];
 }
 /* eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. */

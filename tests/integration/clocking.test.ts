@@ -1,25 +1,28 @@
 import { Effect } from "effect";
 import { describe, expect, test, vi } from "vitest";
 
-import { addOpenClock, createPropsWithOpenClock } from "../../src/util/props";
+import { editYaml, requireProps } from "../../src/service/edit-yaml";
+import { addOpenClock, cancelOpenClock, clockOut } from "../../src/util/props";
 import { getPathToDiff } from "../util/diff";
 
 import { setUp } from "./util/setup";
 
 describe("Clocking in", () => {
-  test("Clocks in on tasks without clocks", async () => {
+  test("Creates a new props block when clocking in on a task without log entries", async () => {
     vi.useFakeTimers({ now: new Date("2026-01-01 17:00") });
 
-    const { taskEntryEditor, vault } = await setUp({
+    const { logEntryEditor, vault } = await setUp({
       loadedFixtures: ["2025-07-19.md"],
     });
 
     await Effect.runPromise(
-      taskEntryEditor.editProps({
+      // todo: all the tests should be wired through this abstraction
+      logEntryEditor.clockIn({
         path: "fixtures/fixture-vault/2025-07-19.md",
-        line: 12,
-        editFn: (props) =>
-          props ? addOpenClock(props) : createPropsWithOpenClock(),
+        position: {
+          start: { line: 12, col: 0, offset: 153 },
+          end: { line: 12, col: 10, offset: 163 },
+        },
       }),
     );
 
@@ -29,46 +32,52 @@ describe("Clocking in", () => {
   test("Clocks in on tasks with existing clocks", async () => {
     vi.useFakeTimers({ now: new Date("2026-01-01 17:00") });
 
-    const { taskEntryEditor, vault } = await setUp({
+    const { yamlEditTargets, vault } = await setUp({
       loadedFixtures: ["test.md"],
     });
 
     await Effect.runPromise(
-      taskEntryEditor.clockInAtLocation({
-        path: "fixtures/fixture-vault/test.md",
-        line: 7,
-      }),
+      editYaml(
+        yamlEditTargets.inListItemProps("fixtures/fixture-vault/test.md", 7),
+        requireProps(addOpenClock),
+      ),
     );
 
     expect(getPathToDiff(vault.initialState, vault.state)).toMatchSnapshot();
   });
 
   test("Does not clock in on bullet list items", async () => {
-    const { taskEntryEditor } = await setUp({
+    const { yamlEditTargets } = await setUp({
       loadedFixtures: ["2025-07-19.md"],
     });
 
     await expect(
       Effect.runPromise(
-        taskEntryEditor.clockInAtLocation({
-          path: "fixtures/fixture-vault/2025-07-19.md",
-          line: 0,
-        }),
+        editYaml(
+          yamlEditTargets.inListItemProps(
+            "fixtures/fixture-vault/2025-07-19.md",
+            0,
+          ),
+          requireProps(addOpenClock),
+        ),
       ),
     ).rejects.toThrow("Cannot add props to an item that's not a task");
   });
 
   test("Does not clock in on tasks with active clocks", async () => {
-    const { taskEntryEditor } = await setUp({
+    const { yamlEditTargets } = await setUp({
       loadedFixtures: ["one-task-two-log-records.md"],
     });
 
     await expect(
       Effect.runPromise(
-        taskEntryEditor.clockInAtLocation({
-          path: "fixtures/fixture-vault/one-task-two-log-records.md",
-          line: 0,
-        }),
+        editYaml(
+          yamlEditTargets.inListItemProps(
+            "fixtures/fixture-vault/one-task-two-log-records.md",
+            0,
+          ),
+          requireProps(addOpenClock),
+        ),
       ),
     ).rejects.toThrow("There is already an open clock");
   });
@@ -90,31 +99,34 @@ describe("Clocking out", () => {
   test("Clocks out on tasks", async () => {
     vi.useFakeTimers({ now: new Date("2026-01-01 18:30") });
 
-    const { taskEntryEditor, vault } = await setUp({
+    const { yamlEditTargets, vault } = await setUp({
       loadedFixtures: ["one-task-two-log-records.md"],
     });
 
     await Effect.runPromise(
-      taskEntryEditor.clockOutAtLocation({
-        path: "fixtures/fixture-vault/one-task-two-log-records.md",
-        line: 0,
-      }),
+      editYaml(
+        yamlEditTargets.inListItemProps(
+          "fixtures/fixture-vault/one-task-two-log-records.md",
+          0,
+        ),
+        requireProps(clockOut),
+      ),
     );
 
     expect(getPathToDiff(vault.initialState, vault.state)).toMatchSnapshot();
   });
 
   test("Does not clock out on tasks without a clock", async () => {
-    const { taskEntryEditor } = await setUp({
+    const { yamlEditTargets } = await setUp({
       loadedFixtures: ["test.md"],
     });
 
     await expect(
       Effect.runPromise(
-        taskEntryEditor.clockOutAtLocation({
-          path: "fixtures/fixture-vault/test.md",
-          line: 7,
-        }),
+        editYaml(
+          yamlEditTargets.inListItemProps("fixtures/fixture-vault/test.md", 7),
+          requireProps(clockOut),
+        ),
       ),
     ).rejects.toThrow("There is no open clock");
   });
@@ -123,13 +135,20 @@ describe("Clocking out", () => {
 describe("Editing clocks", () => {
   test("Edits the active clock start while keeping it open", async () => {
     const path = "fixtures/fixture-vault/one-task-two-log-records.md";
-    const { taskEntryEditor, vault } = await setUp({
+
+    const { logEntryEditor, vault } = await setUp({
       loadedFixtures: ["one-task-two-log-records.md"],
     });
 
     await Effect.runPromise(
-      taskEntryEditor.editLastClockAtLocation(
-        { path, line: 0 },
+      logEntryEditor.editLastClock(
+        {
+          path,
+          position: {
+            start: { line: 0, col: 0, offset: 0 },
+            end: { line: 0, col: 10, offset: 10 },
+          },
+        },
         { start: "2025-01-01 16:30:00" },
       ),
     );
@@ -141,33 +160,166 @@ describe("Editing clocks", () => {
   });
 });
 
-describe("Canceling clocks", () => {
-  test("Cancels clocks", async () => {
-    const { taskEntryEditor, vault } = await setUp({
+describe("Deleting log entries", () => {
+  test("Deletes the entry matching the original start", async () => {
+    const { logEntryEditor, vault } = await setUp({
       loadedFixtures: ["one-task-two-log-records.md"],
     });
 
     await Effect.runPromise(
-      taskEntryEditor.cancelClockAtLocation({
-        path: "fixtures/fixture-vault/one-task-two-log-records.md",
-        line: 0,
+      logEntryEditor.deleteClock(
+        {
+          path: "fixtures/fixture-vault/one-task-two-log-records.md",
+          position: {
+            start: { line: 0, col: 0, offset: 0 },
+            end: { line: 0, col: 10, offset: 10 },
+          },
+        },
+        { logIndex: 0, originalStart: "2025-01-01 13:00" },
+      ),
+    );
+
+    expect(getPathToDiff(vault.initialState, vault.state)).toMatchSnapshot();
+  });
+
+  test("Does not touch a file when no entry matches", async () => {
+    const { logEntryEditor } = await setUp({
+      loadedFixtures: ["one-task-two-log-records.md"],
+    });
+
+    await expect(
+      Effect.runPromise(
+        logEntryEditor.deleteClock(
+          {
+            path: "fixtures/fixture-vault/one-task-two-log-records.md",
+            position: {
+              start: { line: 0, col: 0, offset: 0 },
+              end: { line: 0, col: 10, offset: 10 },
+            },
+          },
+          { logIndex: 0, originalStart: "2020-01-01 00:00" },
+        ),
+      ),
+    ).rejects.toThrow("Log entry not found: 2020-01-01 00:00");
+  });
+});
+
+describe("Editing a specific log entry", () => {
+  test("Patches the entry matching the original start, not the last one", async () => {
+    const { logEntryEditor, vault } = await setUp({
+      loadedFixtures: ["one-task-two-log-records.md"],
+    });
+
+    await Effect.runPromise(
+      logEntryEditor.editClock(
+        {
+          path: "fixtures/fixture-vault/one-task-two-log-records.md",
+          position: {
+            start: { line: 0, col: 0, offset: 0 },
+            end: { line: 0, col: 10, offset: 10 },
+          },
+        },
+        {
+          logIndex: 0,
+          originalStart: "2025-01-01 13:00",
+          patch: { start: "2025-01-01 12:30", end: "2025-01-01 14:00" },
+        },
+      ),
+    );
+
+    expect(getPathToDiff(vault.initialState, vault.state)).toMatchSnapshot();
+  });
+});
+
+describe("Duplicate log entry start times", () => {
+  const path = "fixtures/fixture-vault/one-task-two-log-records.md";
+  const location = {
+    path,
+    position: {
+      start: { line: 0, col: 0, offset: 0 },
+      end: { line: 0, col: 10, offset: 10 },
+    },
+  };
+
+  async function setUpWithDuplicateStarts() {
+    const setup = await setUp({
+      loadedFixtures: ["one-task-two-log-records.md"],
+    });
+    const file = setup.vault.getFileByPath(path);
+
+    file.contents = file.contents.replace(
+      "start: 2025-01-01 17:00",
+      "start: 2025-01-01 13:00",
+    );
+
+    return setup;
+  }
+
+  test("Edits the selected duplicate by its indexed position", async () => {
+    const { logEntryEditor, vault } = await setUpWithDuplicateStarts();
+
+    await Effect.runPromise(
+      logEntryEditor.editClock(location, {
+        logIndex: 1,
+        originalStart: "2025-01-01 13:00",
+        patch: { end: "2025-01-01 18:00" },
       }),
+    );
+
+    const edited = vault.getFileByPath(path).contents;
+
+    expect(edited.match(/start: '?2025-01-01 13:00'?/g)).toHaveLength(2);
+    expect(edited).toMatch(/end: '?2025-01-01 15:00'?/);
+    expect(edited).toMatch(/end: '?2025-01-01 18:00'?/);
+  });
+
+  test("Deletes the selected duplicate by its indexed position", async () => {
+    const { logEntryEditor, vault } = await setUpWithDuplicateStarts();
+
+    await Effect.runPromise(
+      logEntryEditor.deleteClock(location, {
+        logIndex: 1,
+        originalStart: "2025-01-01 13:00",
+      }),
+    );
+
+    const afterDelete = vault.getFileByPath(path).contents;
+
+    expect(afterDelete.match(/start: '?2025-01-01 13:00'?/g)).toHaveLength(1);
+    expect(afterDelete).toMatch(/end: '?2025-01-01 15:00'?/);
+  });
+});
+
+describe("Canceling clocks", () => {
+  test("Cancels clocks", async () => {
+    const { yamlEditTargets, vault } = await setUp({
+      loadedFixtures: ["one-task-two-log-records.md"],
+    });
+
+    await Effect.runPromise(
+      editYaml(
+        yamlEditTargets.inListItemProps(
+          "fixtures/fixture-vault/one-task-two-log-records.md",
+          0,
+        ),
+        requireProps(cancelOpenClock),
+      ),
     );
 
     expect(getPathToDiff(vault.initialState, vault.state)).toMatchSnapshot();
   });
 
   test("Does not touch a file without an active clock", async () => {
-    const { taskEntryEditor } = await setUp({
+    const { yamlEditTargets } = await setUp({
       loadedFixtures: ["test.md"],
     });
 
     await expect(
       Effect.runPromise(
-        taskEntryEditor.cancelClockAtLocation({
-          path: "fixtures/fixture-vault/test.md",
-          line: 7,
-        }),
+        editYaml(
+          yamlEditTargets.inListItemProps("fixtures/fixture-vault/test.md", 7),
+          requireProps(cancelOpenClock),
+        ),
       ),
     ).rejects.toThrow("There is no open clock");
   });

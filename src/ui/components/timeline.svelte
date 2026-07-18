@@ -11,7 +11,13 @@
     snap,
   } from "../../global-store/derived-settings";
   import { selectLogEntriesForDay } from "../../redux";
-  import type { Task, WithPlacing, WithTime } from "../../task-types";
+  import { selectLogEntriesById } from "../../redux/index/index-slice";
+  import type {
+    LogTimeBlock,
+    TimeBlock,
+    WithDuration,
+    WithPlacing,
+  } from "../../time-block-types";
   import {
     getClientOffsetY,
     getIsomorphicClientY,
@@ -30,8 +36,10 @@
     getDayKey,
     getEndMinutes,
     getRenderKey,
-  } from "../../util/task-utils";
+  } from "../../util/time-block-utils";
   import { createGestures } from "../actions/gestures";
+  import { createActiveClockMenu } from "../active-clock-menu";
+  import { createCompletedClockMenu } from "../completed-clock-menu";
   import {
     getDragPointerDateTime,
     shouldUpdateDateTimePointer,
@@ -43,6 +51,7 @@
   import LocalTimeBlock from "./local-time-block.svelte";
   import Needle from "./needle.svelte";
   import PositionedTimeBlock from "./positioned-time-block.svelte";
+  import Selectable from "./selectable.svelte";
   import UnscheduledTimeBlock from "./unscheduled-time-block.svelte";
 
   const {
@@ -61,6 +70,9 @@
     pointerDateTime,
     settingsSignal,
     useSelector,
+    logEntryEditor,
+    workspaceFacade,
+    openEditTimeEntryModal,
   } = getObsidianContext();
 
   const displayedTasksForTimeline = $derived(getDisplayedTasksForTimeline(day));
@@ -70,6 +82,40 @@
   const logEntriesForDay = useSelector((state) =>
     selectLogEntriesForDay(state, dayKey, currentTimeSignal.current),
   );
+  const logEntriesById = useSelector(selectLogEntriesById);
+
+  // todo: separate LogTimeBlockView (clamped) & LogTimeBlock
+  function showLogBlockMenu(
+    event: MouseEvent | PointerEvent | TouchEvent,
+    timeBlockView: LogTimeBlock,
+  ) {
+    const logEntry = logEntriesById.current[timeBlockView.id];
+
+    isNotVoid(logEntry, `No log entry found for block id ${timeBlockView.id}`);
+
+    const isCompleted = logEntry.end;
+
+    if (isCompleted) {
+      createCompletedClockMenu({
+        event,
+        task: timeBlockView,
+        logEntry: logEntry,
+        logEntryEditor,
+        workspaceFacade,
+        openEditTimeEntryModal,
+      });
+    } else {
+      createActiveClockMenu({
+        event,
+        task: timeBlockView,
+        logEntryEditor,
+        workspaceFacade,
+        // pass the raw entry so "Edit..." targets the real (unclamped) entry
+        openEditTimeEntryModal: (timeBlock) =>
+          openEditTimeEntryModal(timeBlock, logEntry),
+      });
+    }
+  }
 
   interface SeparatorVisibility {
     showBottomSeparator: boolean;
@@ -77,7 +123,7 @@
   }
 
   function createSeparatorVisibilityLookup(
-    tasks: Array<WithPlacing<WithTime<Task>>>,
+    tasks: Array<WithPlacing<WithDuration<TimeBlock>>>,
   ) {
     const separatorVisibilityByRenderKey = new Map<
       string,
@@ -85,7 +131,7 @@
     >();
     const tasksByStartMinute = new Map<
       number,
-      Array<WithPlacing<WithTime<Task>>>
+      Array<WithPlacing<WithDuration<TimeBlock>>>
     >();
 
     tasks.forEach((task) => {
@@ -126,8 +172,8 @@
   }
 
   function coversHorizontalRange(
-    candidate: WithPlacing<WithTime<Task>>,
-    task: WithPlacing<WithTime<Task>>,
+    candidate: WithPlacing<WithDuration<TimeBlock>>,
+    task: WithPlacing<WithDuration<TimeBlock>>,
   ) {
     const epsilon = 0.0001;
     const candidateStart = candidate.placing.offsetPercent;
@@ -140,7 +186,7 @@
     );
   }
 
-  function startsOnTimelineGridLine(task: WithTime<Task>) {
+  function startsOnTimelineGridLine(task: WithDuration<TimeBlock>) {
     return getMinutesSinceMidnight(task.startTime) % 30 === 0;
   }
 
@@ -312,11 +358,22 @@
           showTopSeparator={separatorVisibility?.showTopSeparator}
           {task}
         >
-          <LocalTimeBlock {task}>
-            {#snippet bottomDecoration()}
-              {getBlockProps(task, settingsSignal.current)}
+          <Selectable
+            onSecondarySelect={(event) => showLogBlockMenu(event, task)}
+          >
+            {#snippet children({ use, onpointerup, state })}
+              <LocalTimeBlock
+                isActive={state === "secondary"}
+                {onpointerup}
+                {task}
+                {use}
+              >
+                {#snippet bottomDecoration()}
+                  {getBlockProps(task, settingsSignal.current)}
+                {/snippet}
+              </LocalTimeBlock>
             {/snippet}
-          </LocalTimeBlock>
+          </Selectable>
         </PositionedTimeBlock>
       {/each}
     </div>

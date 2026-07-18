@@ -9,7 +9,7 @@
     getVisibleHours,
   } from "../../global-store/derived-settings";
   import { settings } from "../../global-store/settings";
-  import type { Task } from "../../task-types";
+  import type { TimelineTimeBlock } from "../../time-block-types";
   import { createColumnSelectionMenu } from "../column-selection-menu";
 
   import BlockList from "./block-list.svelte";
@@ -58,6 +58,7 @@
 
   {#if $settings.showUncheduledTasks}
     <Tree
+      class="planner-timeline-all-day"
       onpointermove={handleResizeableBoxPointerMove}
       onpointerup={editContext.confirmEdit}
       title="All day events"
@@ -73,7 +74,7 @@
         <ResizeableBox class="unscheduled-task-container">
           {#snippet children(startEdit)}
             <BlockList list={displayedAllDayTasks}>
-              {#snippet match(task: Task)}
+              {#snippet match(task: TimelineTimeBlock)}
                 <UnscheduledTimeBlock
                   --time-block-padding="var(--size-2-1) 0"
                   {task}
@@ -88,7 +89,7 @@
   {/if}
 
   {#if $settings.showTimelineInSidebar}
-    <Tree title="Timeline">
+    <Tree class="planner-timeline-fill" title="Timeline">
       {#snippet controls()}
         <ControlButton
           --border-radius="0"
@@ -109,7 +110,7 @@
         </ControlButton>
       {/snippet}
       <Scroller
-        class={["planner-timeline-scroller", "planner-flex-scrollable"]}
+        class={["planner-timeline-scroller", "planner-timeline-scrollable"]}
       >
         {#snippet children(autoScrollBlocked)}
           <Ruler visibleHours={getVisibleHours($settings)} />

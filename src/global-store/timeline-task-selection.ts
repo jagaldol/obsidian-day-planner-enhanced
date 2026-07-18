@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
 import { writable } from "svelte/store";
 
-import type { LocalTask } from "../task-types";
+import type { EditableTimeBlock } from "../time-block-types";
 import { getFirstLine } from "../util/markdown";
-import { removeTimeRange } from "../util/task-utils";
+import { removeTimeRange } from "../util/time-block-utils";
 
 export interface TimelineTaskSelectionTarget {
   durationMinutes: number;
@@ -21,7 +21,7 @@ function normalizeSummary(text: string) {
   return text.trim().replace(/\s+/g, " ");
 }
 
-function getTaskSummary(task: LocalTask) {
+function getTaskSummary(task: EditableTimeBlock) {
   return normalizeSummary(removeTimeRange(getFirstLine(task.text)));
 }
 
@@ -40,7 +40,7 @@ export function clearTimelineTaskSelection() {
 }
 
 export function createTimelineTaskSelectionTarget(
-  task: LocalTask,
+  task: EditableTimeBlock,
   path: string,
 ): TimelineTaskSelectionTarget {
   return {
@@ -53,7 +53,7 @@ export function createTimelineTaskSelectionTarget(
 }
 
 export function isTimelineTaskSelectionMatch(
-  task: LocalTask,
+  task: EditableTimeBlock,
   target: TimelineTaskSelectionTarget,
 ) {
   if (task.id === target.id) {
@@ -61,7 +61,8 @@ export function isTimelineTaskSelectionMatch(
   }
 
   return (
-    task.location?.path === target.path &&
+    task.source !== "unwritten" &&
+    task.path === target.path &&
     task.startTime.valueOf() === target.startTimeMillis &&
     task.durationMinutes === target.durationMinutes &&
     getTaskSummary(task) === target.summary
@@ -69,11 +70,11 @@ export function isTimelineTaskSelectionMatch(
 }
 
 export function isLocatedTimelineTaskSelectionMatch(
-  task: LocalTask,
+  task: EditableTimeBlock,
   target: TimelineTaskSelectionTarget,
 ) {
   return (
-    task.location !== undefined && isTimelineTaskSelectionMatch(task, target)
+    task.source !== "unwritten" && isTimelineTaskSelectionMatch(task, target)
   );
 }
 /* eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. */

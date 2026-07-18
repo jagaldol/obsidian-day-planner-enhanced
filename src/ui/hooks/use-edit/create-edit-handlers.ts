@@ -6,10 +6,13 @@ import { isNotVoid } from "typed-assert";
 import type { PeriodicNotes } from "../../../service/periodic-notes";
 import { WorkspaceFacade } from "../../../service/workspace-facade";
 import type { DayPlannerSettings } from "../../../settings";
-import type { LocalTask, WithTime } from "../../../task-types";
+import type {
+  EditableTimeBlock,
+  WithDuration,
+} from "../../../time-block-types";
 import type { PointerDateTime } from "../../../types";
 import { getMinutesSinceMidnight } from "../../../util/moment";
-import * as t from "../../../util/task-utils";
+import * as t from "../../../util/time-block-utils";
 
 import type { EditOperation } from "./types";
 import { EditMode } from "./types";
@@ -54,7 +57,10 @@ export function createEditHandlers({
     });
   }
 
-  function handleResizerMouseDown(task: WithTime<LocalTask>, mode: EditMode) {
+  function handleResizerMouseDown(
+    task: WithDuration<EditableTimeBlock>,
+    mode: EditMode,
+  ) {
     const pointerDay = get(pointerDateTime).dateTime;
 
     isNotVoid(pointerDay, "Day cannot be undefined on edit");
@@ -63,7 +69,7 @@ export function createEditHandlers({
   }
 
   function handleGripMouseDown(
-    task: WithTime<LocalTask>,
+    task: WithDuration<EditableTimeBlock>,
     mode: EditMode,
     dragOriginClientY?: number,
   ) {
@@ -84,17 +90,22 @@ export function createEditHandlers({
     });
   }
 
-  async function handleTaskMouseUp(task: LocalTask) {
-    if (get(editOperation) || !task.location) {
+  async function handleTaskMouseUp(task: EditableTimeBlock) {
+    if (get(editOperation) || task.source === "unwritten") {
       return;
     }
 
-    const { path, position } = task.location;
-    await workspaceFacade.revealLineInFile(path, position?.start?.line);
+    await workspaceFacade.revealLocation(task);
   }
 
   // todo: fix (should probably use "day")
-  function handleUnscheduledTaskGripMouseDown(task: LocalTask) {
+  function handleUnscheduledTaskGripMouseDown(task: EditableTimeBlock) {
+    if (task.source === "unwritten") {
+      throw new Error(
+        "Invariant violation: an unwritten time block cannot be unscheduled",
+      );
+    }
+
     let pointerDay = get(pointerDateTime).dateTime;
 
     if (!pointerDay) {
@@ -104,12 +115,8 @@ export function createEditHandlers({
 
     const withAddedTime = {
       ...task,
-      // todo: add a proper fix
-      //  in what case does a task not have a location?
-      startTime: task.location
-        ? periodicNotes.getDateFromPath(task.location.path, "day") ||
-          window.moment()
-        : window.moment(),
+      startTime:
+        periodicNotes.getDateFromPath(task.path, "day") || window.moment(),
     };
 
     startEdit({ task: withAddedTime, mode: EditMode.DRAG });

@@ -94,19 +94,36 @@
         ),
       );
 
-    new SettingGroup(el).setHeading("Time tracking").addSetting((setting) =>
-      setting
-        .setName("Enable time tracker")
-        .setDesc("Existing time records are kept unchanged")
-        .addToggle((toggle) =>
-          toggle.setValue($settings.enableTimeTracker).onChange((value) => {
-            $settings = {
-              ...$settings,
-              enableTimeTracker: value,
-            };
-          }),
-        ),
-    );
+    new SettingGroup(el)
+      .setHeading("Time tracking")
+      .addSetting((setting) =>
+        setting
+          .setName("Enable time tracker")
+          .setDesc("Existing time records are kept unchanged")
+          .addToggle((toggle) =>
+            toggle.setValue($settings.enableTimeTracker).onChange((value) => {
+              $settings = {
+                ...$settings,
+                enableTimeTracker: value,
+              };
+            }),
+          ),
+      )
+      .addSetting((setting) =>
+        setting
+          .setName("Show active clock and 'Clock in' button")
+          .setDesc("Show clock controls in the status bar")
+          .addToggle((toggle) =>
+            toggle
+              .setValue($settings.showActiveClockInStatusBar)
+              .onChange((value) => {
+                $settings = {
+                  ...$settings,
+                  showActiveClockInStatusBar: value,
+                };
+              }),
+          ),
+      );
 
     const allDayEventsGroup = new SettingGroup(el)
       .setHeading("All day events")

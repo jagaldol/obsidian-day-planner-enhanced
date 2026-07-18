@@ -1,13 +1,12 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
 import { Menu } from "obsidian";
-import { isNotVoid } from "typed-assert";
 
 import type { WorkspaceFacade } from "../service/workspace-facade";
-import { type LocalTask } from "../task-types";
+import { type EditableTimeBlock } from "../time-block-types";
 
 export function createTimeBlockMenu(props: {
   event: MouseEvent | TouchEvent;
-  task: LocalTask;
+  task: EditableTimeBlock;
   workspaceFacade: WorkspaceFacade;
   onEdit: () => void;
   onEditNestedItems: () => void;
@@ -15,17 +14,10 @@ export function createTimeBlockMenu(props: {
 }) {
   const { event, task, workspaceFacade, onEdit, onEditNestedItems, onRemove } =
     props;
-  const { location } = task;
 
-  // todo: remove when types are fixed
-  isNotVoid(location);
-
-  const {
-    path,
-    position: {
-      start: { line },
-    },
-  } = location;
+  if (task.source === "unwritten") {
+    throw new Error("Cannot show a menu for an unwritten time block");
+  }
 
   const menu = new Menu();
 
@@ -38,7 +30,7 @@ export function createTimeBlockMenu(props: {
       .setTitle("Reveal task in file")
       .setIcon("file-input")
       .onClick(async () => {
-        await workspaceFacade.revealLineInFile(path, line);
+        await workspaceFacade.revealLocation(task);
       });
   });
 

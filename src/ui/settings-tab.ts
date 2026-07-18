@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
 import { produce } from "immer";
-import { PluginSettingTab, SettingGroup } from "obsidian";
+import {
+  PluginSettingTab,
+  type SettingDefinitionItem,
+  SettingGroup,
+} from "obsidian";
 import { type Component, mount, unmount } from "svelte";
 import type { Writable } from "svelte/store";
 import { isOneOf } from "typed-assert";
@@ -24,7 +28,582 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
     super(plugin.app, plugin);
   }
 
+  getSettingDefinitions(): SettingDefinitionItem[] {
+    const settings = this.plugin.settings();
+    const definitions: SettingDefinitionItem[] = [
+      {
+        name: "Restart Obsidian after changing settings",
+        desc: "Any change to the settings requires a restart of Obsidian.",
+        searchable: false,
+      },
+      {
+        type: "group",
+        items: [
+          {
+            name: "Show release notes after update",
+            control: { type: "toggle", key: "releaseNotes" },
+          },
+          {
+            name: "Task notification",
+            desc: "Display a notification when a new task is started",
+            control: { type: "toggle", key: "showTaskNotification" },
+          },
+          {
+            name: "Center the pointer in the timeline view",
+            desc: "Continuously scroll the pointer to the center of the view",
+            control: { type: "toggle", key: "centerNeedle" },
+          },
+          {
+            name: "Sort tasks in planner chronologically after edits",
+            control: {
+              type: "toggle",
+              key: "sortTasksInPlanAfterEdit",
+            },
+          },
+          {
+            name: "Event format on creation",
+            control: {
+              type: "dropdown",
+              key: "eventFormatOnCreation",
+              options: {
+                bullet: "Bullet (- New item)",
+                task: "Task (- [ ] New item)",
+              },
+            },
+          },
+          {
+            name: "Timeline zoom level",
+            desc: "Higher values give each task more vertical space.",
+            control: {
+              type: "slider",
+              key: "zoomLevel",
+              min: 1,
+              max: 5,
+              step: 1,
+            },
+          },
+          {
+            name: "Default task status on creation",
+            desc: "Use a custom one-character task status, such as >.",
+            visible: () =>
+              this.plugin.settings().eventFormatOnCreation === "task",
+            render: (setting) => {
+              setting.addText((text) =>
+                text
+                  .setPlaceholder("Empty")
+                  .setValue(this.plugin.settings().taskStatusOnCreation)
+                  .onChange((value) => {
+                    this.updateSettings({
+                      taskStatusOnCreation:
+                        value.length > 0 ? value.substring(0, 1) : " ",
+                    });
+                  }),
+              );
+            },
+          },
+          {
+            name: "Timeline icon",
+            desc: "Reopen the timeline pane or restart Obsidian after changing it.",
+            control: {
+              type: "dropdown",
+              key: "timelineIcon",
+              defaultValue: "calendar-with-checkmark",
+              options: Object.fromEntries(icons.map((icon) => [icon, icon])),
+            },
+          },
+          {
+            name: "Start hour",
+            desc: "The hour at which the planner starts each day",
+            render: (setting) => {
+              setting.addDropdown((dropdown) =>
+                dropdown
+                  .addOptions(
+                    Object.fromEntries(
+                      Array.from({ length: 13 }, (_, hour) => [
+                        String(hour),
+                        String(hour),
+                      ]),
+                    ),
+                  )
+                  .setValue(String(this.plugin.settings().startHour))
+                  .onChange((value) => {
+                    this.updateSettings({ startHour: Number(value) });
+                  }),
+              );
+            },
+          },
+          {
+            name: "First day of week",
+            control: {
+              type: "dropdown",
+              key: "firstDayOfWeek",
+              options: {
+                monday: "Monday",
+                sunday: "Sunday",
+                saturday: "Saturday",
+                friday: "Friday",
+              },
+            },
+          },
+        ],
+      },
+      {
+        type: "group",
+        heading: "Remote calendars",
+        extraButtons: [
+          (button) =>
+            button
+              .setIcon("plus")
+              .setTooltip("Add remote calendar")
+              .onClick(() => {
+                this.settingsStore.update((previous) => ({
+                  ...previous,
+                  icals: [
+                    ...previous.icals,
+                    { name: "", email: "", url: "", color: "#ffffff" },
+                  ],
+                }));
+                this.refreshSettings();
+              }),
+        ],
+      },
+    ];
+
+    settings.icals.forEach((ical, index) => {
+      definitions.push({
+        type: "group",
+        heading: "Calendar " + (index + 1),
+        items: [
+          {
+            name: "Mark calendar with color",
+            render: (setting) => {
+              setting.addColorPicker((picker) =>
+                picker.setValue(ical.color).onChange((value) => {
+                  this.settingsStore.update(
+                    produce((draft) => {
+                      draft.icals[index].color = value;
+                    }),
+                  );
+                }),
+              );
+            },
+          },
+          {
+            name: "Prepend this text to events from this calendar",
+            render: (setting) => {
+              setting.addText((text) =>
+                text
+                  .setPlaceholder("Displayed name")
+                  .setValue(ical.name)
+                  .onChange((value) => {
+                    this.settingsStore.update(
+                      produce((draft) => {
+                        draft.icals[index].name = value;
+                      }),
+                    );
+                  }),
+              );
+            },
+          },
+          {
+            name: "Your email address",
+            desc: "Used to show tentative, needs action, and declined markers",
+            render: (setting) => {
+              setting.addText((text) =>
+                text
+                  .setPlaceholder("Your email address")
+                  .setValue(ical.email ?? "")
+                  .onChange((value) => {
+                    this.settingsStore.update(
+                      produce((draft) => {
+                        draft.icals[index].email = value.trim();
+                      }),
+                    );
+                  }),
+              );
+            },
+          },
+          {
+            name: "Remote calendar URL",
+            render: (setting) => {
+              setting.addText((text) =>
+                text
+                  .setPlaceholder("URL")
+                  .setValue(ical.url)
+                  .onChange((value) => {
+                    this.settingsStore.update(
+                      produce((draft) => {
+                        draft.icals[index].url = value.replace(
+                          "webcal://",
+                          "https://",
+                        );
+                      }),
+                    );
+                  }),
+              );
+            },
+          },
+          {
+            name: "Delete calendar " + (index + 1),
+            searchable: false,
+            render: (setting) => {
+              setting.addButton((button) =>
+                button
+                  .setIcon("trash")
+                  .setButtonText("Delete calendar " + (index + 1))
+                  .onClick(() => {
+                    this.settingsStore.update((previous) => ({
+                      ...previous,
+                      icals: previous.icals.filter(
+                        (_calendar, calendarIndex) => calendarIndex !== index,
+                      ),
+                    }));
+                    this.refreshSettings();
+                  }),
+              );
+            },
+          },
+        ],
+      });
+    });
+
+    definitions.push({
+      type: "group",
+      heading: "Date & time formats",
+      items: [
+        {
+          name: "Hour format",
+          desc: "Format used in the time ruler",
+          render: (setting) => {
+            setting.setDesc(
+              createFragment((fragment) => {
+                fragment.appendText(
+                  "Use H for 24 hours or h for 12 hours. Current sample: ",
+                );
+                setting.addMomentFormat((format) =>
+                  format
+                    .setValue(this.plugin.settings().hourFormat)
+                    .setSampleEl(fragment.createSpan())
+                    .onChange((value) => {
+                      this.updateSettings({ hourFormat: value.trim() });
+                    }),
+                );
+                fragment.createEl("br");
+                fragment.createEl("a", {
+                  text: "Format reference",
+                  href: "https://momentjs.com/docs/#/displaying/format/",
+                  attr: { target: "_blank" },
+                });
+              }),
+            );
+          },
+        },
+        {
+          name: "Default timestamp format",
+          desc: "Format used when creating or editing tasks",
+          render: (setting) => {
+            setting.setDesc(
+              createFragment((fragment) => {
+                fragment.appendText(
+                  "Use HH:mm for 24 hours or hh:mm for 12 hours. Current sample: ",
+                );
+                setting.addMomentFormat((format) =>
+                  format
+                    .setValue(this.plugin.settings().timestampFormat)
+                    .setSampleEl(fragment.createSpan())
+                    .onChange((value) => {
+                      this.updateSettings({ timestampFormat: value.trim() });
+                    }),
+                );
+                fragment.createEl("br");
+                fragment.createEl("a", {
+                  text: "Format reference",
+                  href: "https://momentjs.com/docs/#/displaying/format/",
+                  attr: { target: "_blank" },
+                });
+              }),
+            );
+          },
+        },
+        {
+          name: "Date format in timeline header",
+          desc: "Date format shown above the timeline",
+          render: (setting) => {
+            setting.setDesc(
+              createFragment((fragment) => {
+                fragment.appendText("Current sample: ");
+                setting.addMomentFormat((format) =>
+                  format
+                    .setValue(this.plugin.settings().timelineDateFormat)
+                    .setSampleEl(fragment.createSpan())
+                    .onChange((value) => {
+                      this.updateSettings({ timelineDateFormat: value });
+                    }),
+                );
+                fragment.createEl("br");
+                fragment.createEl("a", {
+                  text: "Format reference",
+                  href: "https://momentjs.com/docs/#/displaying/format/",
+                  attr: { target: "_blank" },
+                });
+              }),
+            );
+          },
+        },
+      ],
+    });
+
+    definitions.push(
+      {
+        type: "group",
+        heading: "Planner heading",
+        items: [
+          {
+            name: "Planner heading text",
+            desc: "Only items under this heading are pulled from daily notes. Leave it empty to pull all items.",
+            control: { type: "text", key: "plannerHeading" },
+          },
+          {
+            name: "Planner heading level",
+            desc: "Heading level used when creating a planner in a file",
+            control: {
+              type: "slider",
+              key: "plannerHeadingLevel",
+              min: 1,
+              max: 6,
+              step: 1,
+            },
+          },
+        ],
+      },
+      {
+        type: "group",
+        heading: "Time tracking",
+        items: [
+          {
+            name: "Enable time tracker",
+            desc: "Show time-tracking views, timeline columns, and clock actions. Existing records remain unchanged.",
+            control: { type: "toggle", key: "enableTimeTracker" },
+          },
+        ],
+      },
+      {
+        type: "group",
+        heading: "Status bar widget",
+        items: [
+          {
+            name: "Show active clock and Clock in button",
+            control: {
+              type: "toggle",
+              key: "showActiveClockInStatusBar",
+            },
+          },
+          {
+            name: "Show active task",
+            control: { type: "toggle", key: "showNow" },
+          },
+          {
+            name: "Show upcoming task",
+            control: { type: "toggle", key: "showNext" },
+          },
+          {
+            name: "Task progress indicator",
+            control: {
+              type: "dropdown",
+              key: "progressIndicator",
+              options: {
+                "mini-timeline": "Mini-timeline",
+                bar: "Bar",
+                pie: "Pie",
+                none: "None",
+              },
+            },
+          },
+        ],
+      },
+      {
+        type: "group",
+        heading: "Task decoration",
+        items: [
+          {
+            name: "Show a timestamp next to task text in timeline",
+            control: {
+              type: "toggle",
+              key: "showTimestampInTaskBlock",
+            },
+          },
+        ],
+      },
+      {
+        type: "group",
+        heading: "Duration",
+        items: [
+          {
+            name: "Stretch task until next one if it has no end time",
+            desc: "Applies to entries with a start time but no explicit end time.",
+            control: {
+              type: "toggle",
+              key: "extendDurationUntilNext",
+            },
+          },
+          {
+            name: "Round time to minutes",
+            desc: "Round edited tasks to this interval",
+            control: {
+              type: "slider",
+              key: "snapStepMinutes",
+              min: 5,
+              max: 20,
+              step: 5,
+            },
+          },
+          {
+            name: "Default task duration",
+            desc: "Used for drag-and-drop creation and tasks without an end time",
+            control: {
+              type: "slider",
+              key: "defaultDurationMinutes",
+              min: 20,
+              max: 120,
+              step: 10,
+            },
+          },
+          {
+            name: "Minimal task duration",
+            desc: "Used when creating a task with drag-and-drop",
+            control: {
+              type: "slider",
+              key: "minimalDurationMinutes",
+              min: 5,
+              max: 15,
+              step: 5,
+            },
+          },
+        ],
+      },
+      {
+        type: "group",
+        heading: "Color overrides",
+        extraButtons: [
+          (button) =>
+            button
+              .setIcon("plus")
+              .setTooltip("Add color override")
+              .onClick(() => {
+                this.settingsStore.update((previous) => ({
+                  ...previous,
+                  colorOverrides: [
+                    ...previous.colorOverrides,
+                    {
+                      text: "#important",
+                      darkModeColor: "#6e3737",
+                      color: "#ffa1a1",
+                    },
+                  ],
+                }));
+                this.refreshSettings();
+              }),
+        ],
+        items: settings.colorOverrides.map((colorOverride, index) => ({
+          name: "Color " + (index + 1),
+          desc:
+            index === 0
+              ? "Set light and dark background colors for blocks containing matching text."
+              : "",
+          render: (setting) => {
+            setting
+              .addColorPicker((picker) =>
+                picker.setValue(colorOverride.color).onChange((value) => {
+                  this.settingsStore.update(
+                    produce((draft) => {
+                      draft.colorOverrides[index].color = value;
+                    }),
+                  );
+                }),
+              )
+              .addColorPicker((picker) =>
+                picker
+                  .setValue(colorOverride.darkModeColor)
+                  .onChange((value) => {
+                    this.settingsStore.update(
+                      produce((draft) => {
+                        draft.colorOverrides[index].darkModeColor = value;
+                      }),
+                    );
+                  }),
+              )
+              .addText((text) =>
+                text
+                  .setPlaceholder("Text")
+                  .setValue(colorOverride.text)
+                  .onChange((value) => {
+                    this.settingsStore.update(
+                      produce((draft) => {
+                        draft.colorOverrides[index].text = value;
+                      }),
+                    );
+                  }),
+              )
+              .addExtraButton((button) =>
+                button
+                  .setIcon("trash")
+                  .setTooltip("Delete color override")
+                  .onClick(() => {
+                    this.settingsStore.update((previous) => ({
+                      ...previous,
+                      colorOverrides: previous.colorOverrides.filter(
+                        (_override, overrideIndex) => overrideIndex !== index,
+                      ),
+                    }));
+                    this.refreshSettings();
+                  }),
+              );
+          },
+        })),
+      },
+      {
+        type: "group",
+        heading: "Colorful timeline",
+        items: [
+          {
+            name: "Enable colorful timeline",
+            desc: "Color tasks based on time of day instead of using a monochrome timeline",
+            control: { type: "toggle", key: "timelineColored" },
+          },
+          {
+            name: "Colorful timeline start color",
+            control: { type: "color", key: "timelineStartColor" },
+          },
+          {
+            name: "Colorful timeline end color",
+            control: { type: "color", key: "timelineEndColor" },
+          },
+        ],
+      },
+    );
+
+    return definitions;
+  }
+
+  getControlValue(key: string): unknown {
+    return this.plugin.settings()[key as keyof DayPlannerSettings];
+  }
+
+  setControlValue(key: string, value: unknown): void {
+    this.updateSettings({
+      [key]: value,
+    });
+
+    if (key === "eventFormatOnCreation") {
+      this.refreshSettings();
+    }
+  }
+
   display(): void {
+    this.renderSettings();
+  }
+
+  private renderSettings(): void {
     const { containerEl, warningComponent } = this;
 
     if (warningComponent) {
@@ -49,7 +628,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
           toggle
             .setValue(this.plugin.settings().releaseNotes)
             .onChange((value: boolean) => {
-              this.update({ releaseNotes: value });
+              this.updateSettings({ releaseNotes: value });
             }),
         ),
       )
@@ -61,7 +640,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
             toggle
               .setValue(this.plugin.settings().showTaskNotification)
               .onChange((value: boolean) => {
-                this.update({ showTaskNotification: value });
+                this.updateSettings({ showTaskNotification: value });
               }),
           ),
       )
@@ -75,7 +654,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
             component
               .setValue(this.plugin.settings().centerNeedle)
               .onChange((value) => {
-                this.update({ centerNeedle: value });
+                this.updateSettings({ centerNeedle: value });
               });
           }),
       )
@@ -86,7 +665,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
             component
               .setValue(this.plugin.settings().sortTasksInPlanAfterEdit)
               .onChange((value) => {
-                this.update({ sortTasksInPlanAfterEdit: value });
+                this.updateSettings({ sortTasksInPlanAfterEdit: value });
               });
           }),
       )
@@ -100,8 +679,8 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
             .setValue(this.plugin.settings().eventFormatOnCreation)
             .onChange((value) => {
               isOneOf(value, eventFormats);
-              this.update({ eventFormatOnCreation: value });
-              this.display();
+              this.updateSettings({ eventFormatOnCreation: value });
+              this.renderSettings();
             });
         }),
       )
@@ -115,9 +694,8 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
             slider
               .setLimits(1, 5, 1)
               .setValue(Number(this.plugin.settings().zoomLevel ?? 4))
-              .setDynamicTooltip()
               .onChange((value: number) => {
-                this.update({ zoomLevel: value });
+                this.updateSettings({ zoomLevel: value });
               }),
           ),
       );
@@ -163,7 +741,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
                   "calendar-with-checkmark",
               )
               .onChange((value: string) => {
-                this.update({ timelineIcon: value });
+                this.updateSettings({ timelineIcon: value });
               });
           }),
       )
@@ -192,7 +770,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
               .onChange((value: string) => {
                 const asNumber = Number(value);
 
-                this.update({ startHour: asNumber });
+                this.updateSettings({ startHour: asNumber });
               }),
           ),
       )
@@ -209,7 +787,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
             .onChange((value: string) => {
               isOneOf(value, firstDaysOfWeek);
 
-              this.update({ firstDayOfWeek: value });
+              this.updateSettings({ firstDayOfWeek: value });
             }),
         ),
       );
@@ -233,7 +811,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
               icals: [...previous.icals, newIcal],
             }));
 
-            this.display();
+            this.renderSettings();
           }),
       );
 
@@ -317,7 +895,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
                   ),
                 }));
 
-                this.display();
+                this.renderSettings();
               }),
           ),
         );
@@ -337,7 +915,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
                   .setValue(this.plugin.settings().hourFormat)
                   .setSampleEl(fragment.createSpan())
                   .onChange((value: string) => {
-                    this.update({ hourFormat: value.trim() });
+                    this.updateSettings({ hourFormat: value.trim() });
                   }),
               );
               fragment.append(
@@ -369,7 +947,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
                   .setValue(this.plugin.settings().timestampFormat)
                   .setSampleEl(fragment.createSpan())
                   .onChange((value: string) => {
-                    this.update({ timestampFormat: value.trim() });
+                    this.updateSettings({ timestampFormat: value.trim() });
                   }),
               );
               fragment.append(
@@ -399,7 +977,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
                   .setValue(this.plugin.settings().timelineDateFormat)
                   .setSampleEl(fragment.createSpan())
                   .onChange((value: string) => {
-                    this.update({ timelineDateFormat: value });
+                    this.updateSettings({ timelineDateFormat: value });
                   }),
               );
               fragment.append(
@@ -444,7 +1022,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
             component
               .setValue(this.plugin.settings().plannerHeading)
               .onChange((value) => {
-                this.update({ plannerHeading: value });
+                this.updateSettings({ plannerHeading: value });
               }),
           ),
       )
@@ -457,10 +1035,9 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
           .addSlider((component) =>
             component
               .setLimits(1, 6, 1)
-              .setDynamicTooltip()
               .setValue(this.plugin.settings().plannerHeadingLevel)
               .onChange((value) => {
-                this.update({ plannerHeadingLevel: value });
+                this.updateSettings({ plannerHeadingLevel: value });
               }),
           ),
       );
@@ -477,7 +1054,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
             toggle
               .setValue(this.plugin.settings().enableTimeTracker)
               .onChange((value: boolean) => {
-                this.update({ enableTimeTracker: value });
+                this.updateSettings({ enableTimeTracker: value });
               }),
           ),
       );
@@ -485,11 +1062,22 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
     new SettingGroup(containerEl)
       .setHeading("Status bar widget")
       .addSetting((setting) =>
+        setting
+          .setName("Show active clock and 'Clock in' button")
+          .addToggle((toggle) =>
+            toggle
+              .setValue(this.plugin.settings().showActiveClockInStatusBar)
+              .onChange((value: boolean) => {
+                this.updateSettings({ showActiveClockInStatusBar: value });
+              }),
+          ),
+      )
+      .addSetting((setting) =>
         setting.setName("Show active task").addToggle((toggle) =>
           toggle
             .setValue(this.plugin.settings().showNow)
             .onChange((value: boolean) => {
-              this.update({ showNow: value });
+              this.updateSettings({ showNow: value });
             }),
         ),
       )
@@ -498,7 +1086,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
           toggle
             .setValue(this.plugin.settings().showNext)
             .onChange((value: boolean) => {
-              this.update({ showNext: value });
+              this.updateSettings({ showNext: value });
             }),
         ),
       )
@@ -513,7 +1101,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
             })
             .setValue(String(this.plugin.settings().progressIndicator))
             .onChange((value) => {
-              this.update({
+              this.updateSettings({
                 progressIndicator:
                   value as DayPlannerSettings["progressIndicator"],
               });
@@ -530,7 +1118,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
             component
               .setValue(this.plugin.settings().showTimestampInTaskBlock)
               .onChange((value) => {
-                this.update({ showTimestampInTaskBlock: value });
+                this.updateSettings({ showTimestampInTaskBlock: value });
               });
           }),
       );
@@ -549,7 +1137,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
             component
               .setValue(this.plugin.settings().extendDurationUntilNext)
               .onChange((value) => {
-                this.update({ extendDurationUntilNext: value });
+                this.updateSettings({ extendDurationUntilNext: value });
               });
           }),
       )
@@ -563,9 +1151,8 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
             slider
               .setLimits(5, 20, 5)
               .setValue(this.plugin.settings().snapStepMinutes)
-              .setDynamicTooltip()
               .onChange((value: number) => {
-                this.update({ snapStepMinutes: value });
+                this.updateSettings({ snapStepMinutes: value });
               }),
           ),
       )
@@ -579,9 +1166,8 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
             slider
               .setLimits(20, 120, 10)
               .setValue(Number(this.plugin.settings().defaultDurationMinutes))
-              .setDynamicTooltip()
               .onChange((value: number) => {
-                this.update({ defaultDurationMinutes: value });
+                this.updateSettings({ defaultDurationMinutes: value });
               }),
           ),
       )
@@ -593,9 +1179,8 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
             slider
               .setLimits(5, 15, 5)
               .setValue(Number(this.plugin.settings().minimalDurationMinutes))
-              .setDynamicTooltip()
               .onChange((value: number) => {
-                this.update({ minimalDurationMinutes: value });
+                this.updateSettings({ minimalDurationMinutes: value });
               }),
           ),
       );
@@ -618,7 +1203,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
               colorOverrides: [...previous.colorOverrides, newOverride],
             }));
 
-            this.display();
+            this.renderSettings();
           }),
       );
 
@@ -679,7 +1264,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
                   ),
                 }));
 
-                this.display();
+                this.renderSettings();
               }),
           ),
       );
@@ -697,7 +1282,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
             component
               .setValue(this.plugin.settings().timelineColored)
               .onChange((value) => {
-                this.update({ timelineColored: value });
+                this.updateSettings({ timelineColored: value });
               });
           }),
       )
@@ -708,7 +1293,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
             component
               .setValue(this.plugin.settings().timelineStartColor)
               .onChange((value) => {
-                this.update({ timelineStartColor: value });
+                this.updateSettings({ timelineStartColor: value });
               });
           }),
       )
@@ -719,14 +1304,26 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
             component
               .setValue(this.plugin.settings().timelineEndColor)
               .onChange((value) => {
-                this.update({ timelineEndColor: value });
+                this.updateSettings({ timelineEndColor: value });
               });
           }),
       );
   }
 
-  private update(patch: Partial<DayPlannerSettings>) {
+  private updateSettings(patch: Partial<DayPlannerSettings>) {
     this.settingsStore.update((previous) => ({ ...previous, ...patch }));
+  }
+
+  private refreshSettings(): void {
+    const update = Reflect.get(PluginSettingTab.prototype, "update") as
+      | ((this: DayPlannerSettingsTab) => void)
+      | undefined;
+
+    if (update) {
+      update.call(this);
+    } else {
+      this.renderSettings();
+    }
   }
 }
 /* eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. */

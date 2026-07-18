@@ -2,7 +2,7 @@ import { get } from "svelte/store";
 import { describe, expect, test } from "vitest";
 
 import { defaultSettingsForTests } from "../../src/settings";
-import { isCompleted } from "../../src/util/task-utils";
+import { isCompleted } from "../../src/util/time-block-utils";
 
 import { baseTask, day } from "./util/fixtures";
 import { setUp } from "./util/setup";

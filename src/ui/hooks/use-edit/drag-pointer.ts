@@ -1,6 +1,9 @@
 import { snap } from "../../../global-store/derived-settings";
 import type { DayPlannerSettings } from "../../../settings";
-import type { LocalTask, WithTime } from "../../../task-types";
+import type {
+  EditableTimeBlock,
+  WithDuration,
+} from "../../../time-block-types";
 import type { PointerDateTime } from "../../../types";
 import { offsetYToMinutes } from "../../../util/dom";
 import {
@@ -12,7 +15,7 @@ import type { Moment } from "../../../util/obsidian-moment";
 import type { EditOperation } from "./types";
 
 export function getDragStartState(
-  task: WithTime<LocalTask>,
+  task: WithDuration<EditableTimeBlock>,
   clientY: number,
 ): {
   dragOriginClientY?: number;

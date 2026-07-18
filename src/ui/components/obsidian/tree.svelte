@@ -9,13 +9,17 @@
     title,
     flair,
     controls,
+    alwaysShowControls = false,
     onpointermove,
     onpointerup,
+    ...rest
   }: {
     title: string;
     children: Snippet;
+    class?: string;
     flair?: Snippet;
     controls?: Snippet;
+    alwaysShowControls?: boolean;
     onpointermove?: (event: PointerEvent) => void;
     onpointerup?: (event: PointerEvent) => void;
   } = $props();
@@ -32,7 +36,7 @@
 </script>
 
 <!--Partially uses Obsidian's classes for search result matches-->
-<div class="tree-container" {onpointermove} {onpointerup}>
+<div class={["tree-container", rest.class]} {onpointermove} {onpointerup}>
   <div class="tree-header-container">
     <div class="tree-item-self is-clickable" onclick={toggleTree}>
       <div
@@ -51,7 +55,7 @@
         </div>
       {/if}
     </div>
-    {#if controls && isTreeVisible}
+    {#if controls && (isTreeVisible || alwaysShowControls)}
       {@render controls()}
     {/if}
   </div>

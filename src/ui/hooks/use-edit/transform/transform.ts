@@ -2,9 +2,9 @@
 import { isNotVoid } from "typed-assert";
 
 import type { DayPlannerSettings } from "../../../../settings";
-import { type LocalTask } from "../../../../task-types";
+import { type EditableTimeBlock } from "../../../../time-block-types";
 import type { PointerDateTime } from "../../../../types";
-import * as t from "../../../../util/task-utils";
+import * as t from "../../../../util/time-block-utils";
 import { EditMode, type EditOperation } from "../types";
 
 import { editBlocks } from "./edit-blocks";
@@ -51,14 +51,14 @@ function getEditInteraction(mode: EditMode) {
 }
 
 export function transform(
-  baseline: LocalTask[],
+  baseline: EditableTimeBlock[],
   operation: EditOperation,
   settings: DayPlannerSettings,
   pointerDateTime: PointerDateTime,
 ) {
   const result = baseline.slice();
 
-  const isInBaseline = baseline.find((task) => task.id === operation.task.id);
+  const isInBaseline = baseline.some((task) => task.id === operation.task.id);
 
   if (!isInBaseline) {
     result.push({

@@ -1,14 +1,13 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
 import { App, Modal, type KeymapEventHandler } from "obsidian";
 import { mount, unmount } from "svelte";
-import { isNotVoid } from "typed-assert";
 
 import {
   type EditableNestedListItem,
   ListItemEntryEditor,
   runWithNoticeOnError,
 } from "../service/list-item-entry-editor";
-import type { LocalTask } from "../task-types";
+import type { EditableTimeBlock } from "../time-block-types";
 import { getFirstLine } from "../util/markdown";
 
 import NestedItemsEditModal from "./components/nested-items-edit-modal.svelte";
@@ -109,10 +108,12 @@ export function createNestedItemsEditModalCreator(
   app: App,
   taskEntryEditor: ListItemEntryEditor,
 ) {
-  return (task: LocalTask) => {
-    const { location } = task;
+  return (task: EditableTimeBlock) => {
+    if (task.source === "unwritten") {
+      throw new Error("Cannot edit nested items on an unwritten time block");
+    }
 
-    isNotVoid(location);
+    const { path, position } = task;
 
     const modal = new NestedItemsHostModal(app).setTitle("");
     modal.modalEl.addClass("day-planner-nested-items-modal");
@@ -156,8 +157,8 @@ export function createNestedItemsEditModalCreator(
           await runWithNoticeOnError(
             taskEntryEditor.replaceNestedItemsAtLocation(
               {
-                path: location.path,
-                line: location.position.start.line,
+                path,
+                line: position.start.line,
               },
               children,
             ),

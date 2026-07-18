@@ -32,5 +32,18 @@ export class MetadataCacheFacade {
       Effect.mapError(() => new Error(`No list items in ${path}`)),
     );
   }
+
+  getFrontmatterEffect(path: string) {
+    return pipe(
+      Effect.fromNullable(
+        this.metadataCache.getCache(path)?.frontmatterPosition,
+      ),
+      Effect.mapError(() => new Error(`No frontmatter at ${path}`)),
+      Effect.map((position) => ({
+        raw: this.metadataCache.getCache(path)?.frontmatter,
+        position,
+      })),
+    );
+  }
 }
 /* eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. */

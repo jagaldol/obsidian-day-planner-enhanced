@@ -1,77 +1,39 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
   import { getObsidianContext } from "../../context/obsidian-context";
-  import type { LocalTask } from "../../task-types";
+  import {
+    isListItemSourced,
+    type LocalTimeBlock,
+  } from "../../time-block-types";
+  import { createRenderMarkdownAttachment } from "../../util/dom";
   import { getMinutesSinceMidnight } from "../../util/moment";
   import {
     createTimestampParts,
     isCompleted,
     toRenderableMarkdown,
-  } from "../../util/task-utils";
-  import { addLineDataToCheckboxes, isHTMLElement } from "../../util/dom";
-  import { on } from "svelte/events";
-  import type { Snippet } from "svelte";
+  } from "../../util/time-block-utils";
 
-  const { task, children }: { task: LocalTask; children: Snippet } = $props();
+  import TimeBlockContentLayout from "./time-block-content-layout.svelte";
+
+  const {
+    task,
+    bottomDecoration,
+  }: { task: LocalTimeBlock; bottomDecoration?: Snippet } = $props();
 
   const { renderMarkdown, toggleCheckboxInFile, settings } =
     getObsidianContext();
 
-  type NestedListItem = NonNullable<LocalTask["children"]>[number];
+  type NestedListItem = NonNullable<LocalTimeBlock["children"]>[number];
 
-  function stopPropagationForElWithLineData(event: Event) {
-    if (isHTMLElement(event.target) && event.target.dataset.line) {
-      event.stopPropagation();
-    }
-  }
-
-  function getLineNumberFromEvent(event: PointerEvent) {
-    if (!isHTMLElement(event.target)) {
-      return;
-    }
-
-    return Number(event.target.dataset.line);
-  }
-
-  async function handlePointerUp(event: PointerEvent) {
-    if (!task.location) {
-      return;
-    }
-
-    const line = getLineNumberFromEvent(event);
-
-    if (!line) {
-      return;
-    }
-
-    event.stopPropagation();
-
-    await toggleCheckboxInFile(task.location.path, line);
-  }
-
-  function createRenderMarkdownAttachment(
-    markdown: string,
-    taskLines: Array<number | undefined>,
-  ) {
-    return (el: HTMLElement) => {
-      const destroyMarkdown = renderMarkdown(el, markdown);
-
-      addLineDataToCheckboxes(el, taskLines);
-
-      const offPointerUp = on(el, "pointerup", handlePointerUp);
-      const offMouseUp = on(el, "mouseup", stopPropagationForElWithLineData);
-      // todo: fix checkboxes
-      const offTouchEnd = on(el, "touchend", stopPropagationForElWithLineData);
-
-      return () => {
-        destroyMarkdown();
-        offPointerUp();
-        offMouseUp();
-        offTouchEnd();
-      };
-    };
-  }
+  const onCheckboxLineClick = $derived(
+    isListItemSourced(task)
+      ? (line: number) => toggleCheckboxInFile(task.path, line)
+      : undefined,
+  );
 
   const { listItem, nestedListItems } = $derived(toRenderableMarkdown(task));
+
   const timeRange = $derived.by(() => {
     if (task.isAllDayEvent) {
       return undefined;
@@ -94,6 +56,7 @@
       start: timeParts.start,
     };
   });
+
   const compactThresholdMinutes = $derived(
     $settings.zoomLevel <= 2
       ? 80 / 2 ** $settings.zoomLevel
@@ -106,16 +69,20 @@
   );
 
   function flatten(entries: NestedListItem[] = []): NestedListItem[] {
-    return entries.flatMap((child) => [child, ...flatten(child.children)]);
+    return entries.flatMap((child) => [
+      child,
+      ...flatten(child.children ?? []),
+    ]);
   }
 
   const nestedItems = $derived(
-    $settings.showSubtasksInTaskBlocks ? flatten(task.children) : [],
+    $settings.showSubtasksInTaskBlocks ? flatten(task.children ?? []) : [],
   );
   const nestedItemCount = $derived(nestedItems.length);
   const blockHeightPx = $derived(
     task.isAllDayEvent ? 0 : task.durationMinutes * $settings.zoomLevel,
   );
+
   // Keep the header on one line when a stacked header would crowd nested items.
   const stackedHeaderBaseHeightPx = 58;
   const nestedItemEstimatedLineHeightPx = 22;
@@ -127,81 +94,109 @@
     !isCompact && blockHeightPx >= stackedHeaderRequiredHeightPx,
   );
 
-  const listItemLine = $derived(task.location?.position.start.line);
+  const completed = $derived(isCompleted(task.task ?? task.status));
+  const listItemLine = $derived(
+    isListItemSourced(task) ? task.position.start.line : undefined,
+  );
   const nestedListItemLines = $derived(
     nestedItems
-      .filter((task) => task.task !== undefined)
-      .map((item) => item.position.start.line),
+      .filter((nestedItem) => nestedItem.task !== undefined)
+      .map((nestedItem) => nestedItem.position.start.line),
   );
 </script>
 
-<div
-  class={[
-    "rendered-markdown",
-    "planner-sticky-block-content",
-    isCompact && "is-compact",
-    useStackedHeader && "is-stacked-header",
-    isCompleted(task.task ?? task.status) && "is-completed",
-  ]}
+<TimeBlockContentLayout
+  --time-block-content-layout-gap="var(--rendered-markdown-gap)"
+  --time-block-content-layout-padding={isCompact
+    ? "3px 11px"
+    : "var(--rendered-markdown-padding, 9px 11px 7px)"}
+  class="rendered-markdown planner-sticky-block-content"
+  {bottomDecoration}
+  {completed}
 >
-  <div class="time-summary-row">
-    {#if timeRange}
+  {#snippet title()}
+    <div
+      class={[
+        "time-summary-row",
+        isCompact && "is-compact",
+        useStackedHeader && "is-stacked-header",
+      ]}
+    >
+      {#if timeRange}
+        <div
+          class={[
+            "time-block-range",
+            (timeRange.highlightStart || timeRange.highlightEnd) &&
+              "has-other-day-time",
+          ]}
+        >
+          <span
+            class={[
+              "time-block-time",
+              timeRange.highlightStart && "is-other-day",
+            ]}>{timeRange.start}</span
+          >
+          <span class="time-block-separator"> - </span>
+          <span
+            class={[
+              "time-block-time",
+              timeRange.highlightEnd && "is-other-day",
+            ]}>{timeRange.end}</span
+          >
+        </div>
+      {/if}
+
       <div
         class={[
-          "time-block-range",
-          (timeRange.highlightStart || timeRange.highlightEnd) &&
-            "has-other-day-time",
+          "markdown-wrapper",
+          "first-line-wrapper",
+          completed && "is-completed",
+          isCompact && "is-compact",
+          useStackedHeader && "is-stacked-header",
         ]}
-      >
-        <span
-          class={[
-            "time-block-time",
-            timeRange.highlightStart && "is-other-day",
-          ]}>{timeRange.start}</span
-        >
-        <span class="time-block-separator"> - </span>
-        <span
-          class={["time-block-time", timeRange.highlightEnd && "is-other-day"]}
-          >{timeRange.end}</span
-        >
-      </div>
+        {@attach createRenderMarkdownAttachment({
+          renderMarkdown,
+          markdown: listItem,
+          taskLines: [listItemLine],
+          onCheckboxLineClick,
+        })}
+      ></div>
+    </div>
+  {/snippet}
+
+  {#snippet contents()}
+    {#if $settings.showSubtasksInTaskBlocks && nestedListItems}
+      <div
+        class={[
+          "markdown-wrapper",
+          "lines-after-first-wrapper",
+          useStackedHeader && "is-stacked-header",
+        ]}
+        {@attach createRenderMarkdownAttachment({
+          renderMarkdown,
+          markdown: nestedListItems,
+          taskLines: nestedListItemLines,
+          onCheckboxLineClick,
+        })}
+      ></div>
     {/if}
-
-    <div
-      class="first-line-wrapper"
-      {@attach createRenderMarkdownAttachment(listItem, [listItemLine])}
-    ></div>
-  </div>
-
-  {@render children?.()}
-
-  {#if $settings.showSubtasksInTaskBlocks && nestedListItems}
-    <div
-      class="lines-after-first-wrapper"
-      {@attach createRenderMarkdownAttachment(
-        nestedListItems,
-        nestedListItemLines,
-      )}
-    ></div>
-  {/if}
-</div>
+  {/snippet}
+</TimeBlockContentLayout>
 
 <style>
-  .rendered-markdown {
+  .markdown-wrapper {
     --checkbox-size: var(--planner-time-block-font-size, var(--font-ui-small));
-
-    position: relative;
-
-    overflow: hidden;
-    display: flex;
-    flex: 1 0 0;
-    flex-direction: column;
-    gap: var(--rendered-markdown-gap);
+    --checklist-done-color: var(--text-faint);
+    --checkbox-border-color: var(--text-faint);
 
     min-width: 0;
-    padding: var(--rendered-markdown-padding, 9px 11px 7px);
+  }
 
-    color: var(--text-muted);
+  :global(.is-mobile) .markdown-wrapper {
+    --checkbox-size: var(
+      --planner-time-block-font-size,
+      var(--font-ui-smaller)
+    );
   }
 
   .time-summary-row {
@@ -211,44 +206,28 @@
     min-width: 0;
   }
 
-  :global(.is-mobile) .rendered-markdown {
-    --checkbox-size: var(
-      --planner-time-block-font-size,
-      var(--font-ui-smaller)
-    );
-  }
-
-  .rendered-markdown.is-completed {
-    --planner-time-block-summary-color: var(
-      --checklist-done-color,
-      var(--text-faint)
-    );
-
-    color: var(--checklist-done-color, var(--text-faint));
-  }
-
-  .rendered-markdown :global(p),
-  .rendered-markdown :global(ul) {
+  .markdown-wrapper :global(p),
+  .markdown-wrapper :global(ul) {
     margin-block: 0;
   }
 
-  .rendered-markdown :global(ul),
-  .rendered-markdown :global(ol) {
+  .markdown-wrapper :global(ul),
+  .markdown-wrapper :global(ol) {
     padding-inline-start: var(--size-4-5);
   }
 
-  .rendered-markdown :global(input[type="checkbox"]) {
-    top: 2px;
-    margin-inline-end: 4px;
+  .markdown-wrapper :global(input[type="checkbox"]) {
+    top: var(--size-2-1);
+    margin-inline-end: var(--size-4-1);
     border-color: var(--checkbox-border-color);
   }
 
-  .rendered-markdown :global(li) {
+  .markdown-wrapper :global(li) {
     color: var(--text-muted);
   }
 
-  .rendered-markdown :global(li.task-list-item[data-task="x"]),
-  .rendered-markdown :global(li.task-list-item[data-task="X"]) {
+  .markdown-wrapper :global(li.task-list-item[data-task="x"]),
+  .markdown-wrapper :global(li.task-list-item[data-task="X"]) {
     color: var(--checklist-done-color, var(--text-faint));
   }
 
@@ -289,8 +268,6 @@
     overflow: hidden;
     flex: 1 1 auto;
 
-    min-width: 0;
-
     font-weight: var(
       --planner-time-block-summary-font-weight,
       var(--font-semibold)
@@ -305,17 +282,24 @@
     white-space: nowrap;
   }
 
-  .is-stacked-header .time-summary-row {
+  .first-line-wrapper.is-completed {
+    --planner-time-block-summary-color: var(
+      --checklist-done-color,
+      var(--text-faint)
+    );
+  }
+
+  .time-summary-row.is-stacked-header {
     flex-direction: column;
     gap: 2px;
     align-items: flex-start;
   }
 
-  .is-stacked-header .first-line-wrapper {
+  .first-line-wrapper.is-stacked-header {
     width: 100%;
   }
 
-  .is-stacked-header .first-line-wrapper :global(p) {
+  .first-line-wrapper.is-stacked-header :global(p) {
     white-space: normal;
   }
 
@@ -328,7 +312,7 @@
     padding-inline-start: 8px;
   }
 
-  .is-stacked-header .lines-after-first-wrapper {
+  .lines-after-first-wrapper.is-stacked-header {
     margin-block-start: 6px;
   }
 
@@ -496,31 +480,23 @@
     border-color: var(--checkbox-color);
   }
 
-  .is-compact {
-    justify-content: center;
-    padding-block: 3px;
-  }
-
-  .is-compact .time-summary-row {
-    display: flex;
+  .time-summary-row.is-compact {
     gap: 7px;
     align-items: center;
-    min-width: 0;
   }
 
-  .is-compact .time-block-range {
+  .time-summary-row.is-compact .time-block-range {
     flex: 0 0 auto;
     margin-block-end: 0;
     line-height: 1.2;
   }
 
-  .is-compact .first-line-wrapper {
+  .first-line-wrapper.is-compact {
     flex: 1 1 auto;
-    min-width: 0;
     line-height: 1.2;
   }
 
-  .is-compact .first-line-wrapper :global(p) {
+  .first-line-wrapper.is-compact :global(p) {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

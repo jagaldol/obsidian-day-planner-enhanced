@@ -1,7 +1,6 @@
 <script lang="ts">
   /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
   import { type Snippet } from "svelte";
-  import { isNotVoid } from "typed-assert";
 
   import { getObsidianContext } from "../../context/obsidian-context";
   import {
@@ -11,7 +10,7 @@
     pendingTimelineTaskSelection,
   } from "../../global-store/timeline-task-selection";
   import { timeRangeAtStartOfLineRegExp } from "../../regexp";
-  import { type LocalTask } from "../../task-types";
+  import { type EditableTimeBlock } from "../../time-block-types";
   import { createMarkdownListTokens, getFirstLine } from "../../util/markdown";
   import type { HTMLActionArray } from "../actions/use-actions";
   import { createTimeBlockMenu } from "../time-block-menu";
@@ -32,7 +31,7 @@
     task,
     timeBlock,
   }: {
-    task: LocalTask;
+    task: EditableTimeBlock;
     class?: string;
     timeBlock: Snippet<[TimeBlockProps]>;
   } = $props();
@@ -47,7 +46,9 @@
   } = getObsidianContext();
 
   async function editTaskSummary() {
-    isNotVoid(task.location);
+    if (task.source === "unwritten") {
+      throw new Error("Cannot edit the summary of an unwritten time block");
+    }
 
     // todo: replace with getOnelineSummary()
     const firstLine = getFirstLine(task.text);
@@ -72,15 +73,13 @@
     const lineStart = firstLine.slice(0, timestampEnd) + leadingSpace;
 
     await editLine({
-      path: task.location.path,
-      position: task.location.position.start,
+      path: task.path,
+      position: task.position.start,
       contents: `${createMarkdownListTokens(task)} ${lineStart}${next}`,
     });
   }
 
   async function removeTask() {
-    isNotVoid(task.location);
-
     await removeTaskFromPlan(task);
   }
 

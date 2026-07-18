@@ -250,11 +250,20 @@ There is a command for each of the menu items, available in the command palette 
 
 <img src="./assets/clock-commands-demo.png" width="75%">
 
+Use **Clock in on anything...** from the command palette or the status bar to search across tasks and Markdown files. Search terms are matched against task text and file paths in any order, and recently tracked entries are shown first.
+
+You can also track time against an entire Markdown file. Whole-file clocks are stored in the file's `planner.log` frontmatter and appear alongside task clocks in tracker views.
+
 #### Clocks in timelines
 
 You can enable an additional timeline column to see the recorded clocks next to your planner:
 
 <img src="./assets/show-time-tracker-settings.png" width="75%">
+
+Right click (or tap and hold on mobile) a clock block to open its control menu:
+
+- An active clock can be clocked out, edited or canceled
+- A completed clock can be resumed, edited or deleted
 
 #### Active clocks
 
@@ -266,9 +275,11 @@ A right click on an active clock will bring the control menu:
 
 <img src="./assets/active-clocks-menu.png" width="75%">
 
+The optional status bar widget shows the active clock and provides a shortcut to **Clock in on anything...**. It follows the main **Enable time tracker** setting, so disabling Time Tracker also hides the widget and clock commands without changing existing records.
+
 #### Limitations
 
-- For now clock time blocks are read-only. This is going to be addressed in the future.
+- Clock time blocks cannot be edited by dragging yet. Use the context menu to edit clock times.
 
 ## Upstream
 

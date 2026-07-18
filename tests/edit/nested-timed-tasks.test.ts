@@ -2,7 +2,11 @@ import moment from "moment";
 import { get } from "svelte/store";
 import { describe, expect, test } from "vitest";
 
-import type { LocalTask, RemoteTask, WithTime } from "../../src/task-types";
+import type {
+  DailyNoteDateTimeBlock,
+  RemoteTimeBlock,
+  WithDuration,
+} from "../../src/time-block-types";
 
 import { baseTask, dayKey } from "./util/fixtures";
 import { setUp } from "./util/setup";
@@ -14,13 +18,6 @@ function position(line: number, col: number) {
   };
 }
 
-function location(line: number, col: number) {
-  return {
-    path: "nested.md",
-    position: position(line, col),
-  };
-}
-
 function task(
   id: string,
   text: string,
@@ -28,14 +25,16 @@ function task(
   durationMinutes: number,
   line: number,
   col: number,
-): WithTime<LocalTask> {
+): DailyNoteDateTimeBlock {
   return {
     ...baseTask,
+    source: "dailyNoteDate",
     id,
     text,
     startTime: moment(startTime),
     durationMinutes,
-    location: location(line, col),
+    path: "nested.md",
+    position: position(line, col),
   };
 }
 
@@ -87,8 +86,8 @@ describe("nested timed tasks", () => {
         id: "nested-child-entry",
         text: nestedChild.text,
         symbol: "-",
-        path: nestedChild.location!.path,
-        position: nestedChild.location!.position,
+        path: nestedChild.path,
+        position: nestedChild.position,
         children: [],
         logEntries: [],
         planEntries: [],
@@ -97,8 +96,8 @@ describe("nested timed tasks", () => {
         id: "nested-child-outside-parent-time-range-entry",
         text: nestedChildOutsideParentTimeRange.text,
         symbol: "-",
-        path: nestedChildOutsideParentTimeRange.location!.path,
-        position: nestedChildOutsideParentTimeRange.location!.position,
+        path: nestedChildOutsideParentTimeRange.path,
+        position: nestedChildOutsideParentTimeRange.position,
         children: [],
         logEntries: [],
         planEntries: [],
@@ -106,6 +105,7 @@ describe("nested timed tasks", () => {
     ];
 
     const remoteTask = {
+      source: "ical",
       id: "remote",
       summary: "Remote calendar event",
       startTime: moment("2023-01-01 11:00"),
@@ -117,7 +117,7 @@ describe("nested timed tasks", () => {
         color: "#ffffff",
       },
       rsvpStatus: "ACCEPTED",
-    } as RemoteTask;
+    } satisfies WithDuration<RemoteTimeBlock>;
 
     const { dayToDisplayedTasks } = setUp({
       tasks: [

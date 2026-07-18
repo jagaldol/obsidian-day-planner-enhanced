@@ -19,7 +19,7 @@ export class UndoNotice {
               once: true,
             });
           }),
-          createEl("div", { cls: "undo-timeout-bar" }, (el) => {
+          createDiv({ cls: "undo-timeout-bar" }, (el) => {
             el.style.animation = `${undoTimeoutMillis}ms linear forwards shrink`;
           }),
         );

@@ -5,7 +5,7 @@ import type { DayPlannerSettings } from "../settings";
 import type { RelationToNow } from "../types";
 
 import { moment, type Moment } from "./obsidian-moment";
-import { getDayKey } from "./task-utils";
+import { getDayKey } from "./time-block-utils";
 
 const defaultTimestampFormat = "hh:mm";
 
@@ -152,6 +152,19 @@ function getDaysInRange(start: Moment, end: Moment) {
 
 export function getDayKeysInRange(start: Moment, end: Moment) {
   return getDaysInRange(start, end).map(getDayKey);
+}
+
+/**
+ * Returns day buckets touched by a time interval whose end is exclusive.
+ * Subtracting one minute keeps a block ending exactly at midnight out of the
+ * following day while still indexing genuine overnight continuations there.
+ */
+export function getDayKeysInRangeEndExclusive(start: Moment, end: Moment) {
+  const inclusiveEnd = end.isAfter(start, "minute")
+    ? end.clone().subtract(1, "minute")
+    : end;
+
+  return getDayKeysInRange(start, inclusiveEnd);
 }
 
 export function strictParse(value: string) {

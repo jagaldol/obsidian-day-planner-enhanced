@@ -10,12 +10,16 @@ import { initialState } from "../../../src/redux/global-slice";
 import { type IcalParseTaskResult } from "../../../src/redux/ical/init-ical-listeners";
 import {
   indexRequested,
+  selectFileEntriesById,
   selectTaskEntriesById,
 } from "../../../src/redux/index/index-slice";
 import { createReactor, type RootState } from "../../../src/redux/store";
 import { TransactionWriter } from "../../../src/service/diff-writer";
-import { ListItemEntryEditor } from "../../../src/service/list-item-entry-editor";
+import { createYamlEditTargets } from "../../../src/service/edit-yaml";
+import { createIndexServices } from "../../../src/service/index/create-index-services";
 import { ListPropsParser } from "../../../src/service/list-props-parser";
+import { ListItemEntryEditor } from "../../../src/service/list-item-entry-editor";
+import { LogEntryEditor } from "../../../src/service/log-entry-editor";
 import { MetadataCacheFacade } from "../../../src/service/metadata-cache-facade";
 import type { PeriodicNotes } from "../../../src/service/periodic-notes";
 import { VaultFacade } from "../../../src/service/vault-facade";
@@ -24,10 +28,14 @@ import {
   type DayPlannerSettings,
   defaultSettingsForTests,
 } from "../../../src/settings";
-import { isLocal, type Task } from "../../../src/task-types";
+import {
+  isLocal,
+  type EditableTimeBlock,
+  type TimeBlock,
+} from "../../../src/time-block-types";
 import { useTasks } from "../../../src/ui/hooks/use-tasks";
 import { createBackgroundBatchScheduler } from "../../../src/util/scheduler";
-import { getOneLineSummary } from "../../../src/util/task-utils";
+import { getOneLineSummary } from "../../../src/util/time-block-utils";
 import {
   FakeMetadataCache,
   FakePeriodicNotes,
@@ -120,6 +128,12 @@ export async function setUp(props?: {
     cachedMetadata,
   });
 
+  const indexServices = createIndexServices({
+    listPropsParser,
+    periodicNotes,
+    settings,
+  });
+
   const isOnline = writable(true);
   const settingsStore = writable(settings);
   const currentTime = writable(window.moment());
@@ -151,6 +165,7 @@ export async function setUp(props?: {
         },
       },
       listPropsParser,
+      indexServices,
       vault: vault as unknown as Vault,
       metadataCache,
       periodicNotes,
@@ -160,6 +175,14 @@ export async function setUp(props?: {
 
   const { getState, dispatch } = store;
 
+  const yamlEditTargets = createYamlEditTargets({
+    vaultFacade,
+    metadataCacheFacade,
+    listPropsParser,
+    workspaceFacade,
+  });
+
+  const logEntryEditor = new LogEntryEditor(yamlEditTargets);
   const taskEntryEditor = new ListItemEntryEditor(
     workspaceFacade,
     vaultFacade,
@@ -223,10 +246,12 @@ export async function setUp(props?: {
     });
   }
 
-  function findTask(predicate: (task: Task) => boolean) {
-    const found = get(allTasks).filter(isLocal).find(predicate);
+  function findTask(predicate: (task: TimeBlock) => boolean) {
+    const found = get(allTasks).filter(isLocal).find(predicate) as
+      | EditableTimeBlock
+      | undefined;
 
-    isNotVoid(found, `Task not found`);
+    isNotVoid(found, `TimeBlock not found`);
 
     return found;
   }
@@ -235,14 +260,15 @@ export async function setUp(props?: {
     return findTask((it) => getOneLineSummary(it).includes(text));
   }
 
-  const taskEntries = useSelector((state) => selectTaskEntriesById(state));
-
   await vi.waitFor(() => {
-    // todo: just wait for cache to be 'warm'
-    const isAtLeastOneTaskEntryLoaded =
-      Object.keys(taskEntries.current).length > 0;
+    // todo: replace with explicit `index.state === 'warm'`
+    const taskEntries = selectTaskEntriesById(store.getState());
+    const fileEntries = selectFileEntriesById(store.getState());
 
-    expect(isAtLeastOneTaskEntryLoaded).toBeTruthy();
+    const taskEntriesCount = Object.keys(taskEntries).length;
+    const fileEntriesCount = Object.keys(fileEntries).length;
+
+    expect(taskEntriesCount + fileEntriesCount).toBeGreaterThan(0);
   });
 
   return {
@@ -262,6 +288,8 @@ export async function setUp(props?: {
     transactionWriter,
     currentTime,
     metadataCache,
+    yamlEditTargets,
+    logEntryEditor,
     taskEntryEditor,
   };
 }

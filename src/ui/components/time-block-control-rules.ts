@@ -1,4 +1,4 @@
-import type { TimelineSegment } from "../../task-types";
+import type { TimelineSegment } from "../../time-block-types";
 
 export type FloatingTimeBlockControl = "topEnd" | "bottom" | "top";
 

@@ -2,7 +2,30 @@
 
 All notable changes to **Day Planner Enhanced** are documented here.
 
-This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.31.0**, and follows its own versioning.
+This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.33.0**, and follows its own versioning.
+
+## 0.4.0
+
+### ✨ New features
+
+- Added context menus to Time Tracker blocks on the timeline. Active clocks can be stopped, edited, or canceled; completed clocks can be resumed, edited, or deleted with right-click or mobile long-press.
+- Synced the Time Tracker with upstream 0.32.0, including the **Clock in on anything...** command for searching tasks and files, with recently tracked entries ranked first.
+- Added whole-file time tracking, storing clocks in the file's `planner.log` frontmatter and showing them in tracker views.
+- Added an optional status bar widget for viewing the active clock and quickly starting a new clock.
+
+### 🐞 Fixed issues
+
+- Fixed completed-clock editing and deletion when multiple log entries share the same start time, so the selected indexed entry is updated instead of the first matching timestamp.
+- Fixed creating clocks on tasks that do not already have properties.
+- Debounced Time Tracker search and retained the completed-task visibility and edit-layout fixes from the upstream release.
+- Fixed Community plugin preview diagnostics around method binding, modal callbacks, DOM helpers, and lint directives.
+
+### ✨ Other improvements
+
+- Adopted upstream's modular vault indexing, search ordering, and composed clock-editing services while preserving Enhanced's nested schedule, overnight plan, and timeline interaction behavior.
+- Added searchable Obsidian 1.13 settings definitions while retaining the legacy settings renderer for Obsidian 1.11 and 1.12 compatibility.
+- Refreshed production dependency resolutions flagged by the Community plugin preview security scan.
+- Removed unused OverlayScrollbars and `ts-dedent` dependencies.
 
 ## 0.3.1
 

@@ -50,6 +50,7 @@ export interface DayPlannerSettings {
   showUnscheduledNestedTasks: boolean;
   showTimelineInSidebar: boolean;
   enableTimeTracker: boolean;
+  showActiveClockInStatusBar: boolean;
   showNow: boolean;
   showNext: boolean;
   snapStepMinutes: number;
@@ -105,6 +106,7 @@ export const defaultSettings: DayPlannerSettings = {
   multiDayRange: "3-days",
   showTimelineInSidebar: true,
   enableTimeTracker: true,
+  showActiveClockInStatusBar: true,
   timelineColumns: { planner: true, timeTracker: false },
 };
 

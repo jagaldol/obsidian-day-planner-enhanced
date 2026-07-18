@@ -10,7 +10,7 @@ import {
   createTimestamp,
   createTimestampParts,
   removeTimeRange,
-} from "../src/util/task-utils";
+} from "../src/util/time-block-utils";
 
 it.each([
   ["13:00", { hours: 13, minutes: 0 }],

@@ -1,6 +1,10 @@
 import moment from "moment";
 
-import type { LocalTask, WithPlacing, WithTime } from "../../../src/task-types";
+import type {
+  EditableTimeBlock,
+  WithPlacing,
+  WithDuration,
+} from "../../../src/time-block-types";
 
 export const dayKey = "2023-01-01";
 export const day = moment(dayKey);
@@ -9,7 +13,8 @@ export const nextDay = moment(nextDayKey);
 
 export const emptyTasks = [];
 export const baseTaskStartTime = moment("2023-01-01 00:00");
-export const baseTask: WithPlacing<WithTime<LocalTask>> = {
+export const baseTask: WithPlacing<WithDuration<EditableTimeBlock>> = {
+  source: "dailyNoteDate",
   symbol: "-",
   status: " ",
   startTime: baseTaskStartTime,
@@ -19,28 +24,26 @@ export const baseTask: WithPlacing<WithTime<LocalTask>> = {
     offsetPercent: 0,
     spanPercent: 100,
   },
-  location: {
-    path: "path",
-    position: {
-      start: {
-        line: 0,
-        col: 0,
-        offset: 0,
-      },
-      end: {
-        line: 0,
-        col: 0,
-        offset: 0,
-      },
+  path: "path",
+  position: {
+    start: {
+      line: 0,
+      col: 0,
+      offset: 0,
+    },
+    end: {
+      line: 0,
+      col: 0,
+      offset: 0,
     },
   },
   id: "id",
 };
-export const unscheduledTask: LocalTask = {
+export const unscheduledTask: EditableTimeBlock = {
   ...baseTask,
   isAllDayEvent: true,
 };
-export const threeTasks: WithPlacing<WithTime<LocalTask>>[] = [
+export const threeTasks: WithPlacing<WithDuration<EditableTimeBlock>>[] = [
   {
     ...baseTask,
     id: "1",
@@ -57,10 +60,12 @@ export const threeTasks: WithPlacing<WithTime<LocalTask>>[] = [
     startTime: moment("2023-01-01 03:00"),
   },
 ];
-export const threeTasksOverTwoDays: WithTime<LocalTask>[] = [
+export const threeTasksOverTwoDays: WithDuration<EditableTimeBlock>[] = [
   baseTask,
   { ...baseTask, id: "2", startTime: moment("2023-01-01 01:00") },
   { ...baseTask, id: "3", startTime: moment("2023-01-02 02:00") },
 ];
-export const baseTasks: Array<WithTime<LocalTask>> = [baseTask];
-export const tasksWithUnscheduledTask: Array<LocalTask> = [unscheduledTask];
+export const baseTasks: Array<WithDuration<EditableTimeBlock>> = [baseTask];
+export const tasksWithUnscheduledTask: Array<EditableTimeBlock> = [
+  unscheduledTask,
+];

@@ -33,7 +33,7 @@ export default class TimeTrackerView extends ItemView {
   async onOpen() {
     const contentEl = this.containerEl.children[1];
 
-    contentEl.addClass("planner-flex-container");
+    contentEl.addClass("planner-time-tracker-layout");
 
     // @ts-expect-error
     this.component = mount(TimeTrackerWithControls, {
