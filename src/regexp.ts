@@ -12,13 +12,13 @@ const hourMinuteSeparator = "[:.]";
 const ampm = "\\s?[apAP][mM](?!\\w)";
 
 const time12h = `(${hours12h})(?:${hourMinuteSeparator}?(${minutes}))(${ampm})`;
-const time24h = `(${hours24h})(?:${hourMinuteSeparator}(${minutes}))`;
-const time = `(?:${time12h}|${time24h})`;
+const time24h = `(${hours24h})(?:${hourMinuteSeparator}?(${minutes}))`;
+const time = `(?:${time12h}|${time24h})(?!\\d)`;
 
 const timeRangeSeparator = `\\s?-\\s?`;
 const timeRange = `(?<start>${time})(?:${timeRangeSeparator}(?<end>${time}))?`;
 
-export const timeRegExp = new RegExp(time);
+export const timeRegExp = new RegExp(`^${time}$`);
 
 export const timeRangeRegExp = new RegExp(timeRange, "im");
 export const timeRangeAtStartOfLineRegExp = new RegExp(`^${timeRange}`, "im");

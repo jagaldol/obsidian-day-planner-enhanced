@@ -14,8 +14,10 @@ import {
 
 it.each([
   ["13:00", { hours: 13, minutes: 0 }],
+  ["1300", { hours: 13, minutes: 0 }],
   ["13.00", { hours: 13, minutes: 0 }],
   ["3:00", { hours: 3, minutes: 0 }],
+  ["0700", { hours: 7, minutes: 0 }],
   ["3.00", { hours: 3, minutes: 0 }],
   ["3.00am", { hours: 3, minutes: 0 }],
   ["12:30am", { hours: 0, minutes: 30 }],
@@ -35,14 +37,21 @@ it("Parses 24:00 as the next midnight", () => {
   ).toBe(true);
 });
 
+it("Parses 2400 as the next midnight", () => {
+  expect(
+    parseTime("2400", moment("2023-01-01")).isSame("2023-01-02 00:00"),
+  ).toBe(true);
+});
+
 it.each([
   ["1:71"],
   ["19pm"],
   ["24:01"],
+  ["2401"],
   ["29:00"],
+  ["2900"],
+  ["2360"],
   ["0301  pm"],
-  ["0301"],
-  ["1300"],
   ["13 00"],
   ["13"],
   ["3"],
@@ -53,6 +62,33 @@ it.each([
   ["11 PM"],
 ])("Does not parse %s", (asText) => {
   expect(() => parseTime(asText, moment())).toThrow();
+});
+
+it.each([
+  {
+    line: "- [x] 0700 - 0840 Watched a video",
+    start: "2023-01-01 07:00",
+    durationMinutes: 100,
+  },
+  {
+    line: "- [ ] 00:30 - 0700 Sleep",
+    start: "2023-01-01 00:30",
+    durationMinutes: 390,
+  },
+])("Reads compact 24-hour range from $line", ({
+  line,
+  start,
+  durationMinutes,
+}) => {
+  expect(
+    getTimeFromLine({
+      day: moment("2023-01-01"),
+      line,
+    }),
+  ).toMatchObject({
+    durationMinutes,
+    startTime: moment(start),
+  });
 });
 
 it.each([
