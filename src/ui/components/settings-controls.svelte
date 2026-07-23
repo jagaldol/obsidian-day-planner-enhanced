@@ -125,33 +125,16 @@
           ),
       );
 
-    const allDayEventsGroup = new SettingGroup(el)
-      .setHeading("All day events")
-      .addSetting((setting) =>
-        setting.setName("Show all day events").addToggle((toggle) =>
-          toggle.setValue($settings.showUncheduledTasks).onChange((value) => {
-            $settings = {
-              ...$settings,
-              showUncheduledTasks: value,
-            };
-          }),
-        ),
-      );
-
-    if ($settings.showUncheduledTasks) {
-      allDayEventsGroup.addSetting((setting) =>
-        setting.setName("Show sub-tasks as blocks").addToggle((toggle) =>
-          toggle
-            .setValue($settings.showUnscheduledNestedTasks)
-            .onChange((value) => {
-              $settings = {
-                ...$settings,
-                showUnscheduledNestedTasks: value,
-              };
-            }),
-        ),
-      );
-    }
+    new SettingGroup(el).setHeading("All day events").addSetting((setting) =>
+      setting.setName("Show all day events").addToggle((toggle) =>
+        toggle.setValue($settings.showUncheduledTasks).onChange((value) => {
+          $settings = {
+            ...$settings,
+            showUncheduledTasks: value,
+          };
+        }),
+      ),
+    );
 
     return () => {
       el.empty();

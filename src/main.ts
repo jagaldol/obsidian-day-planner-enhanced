@@ -65,7 +65,7 @@ import {
 } from "./service/search-service";
 import { VaultFacade } from "./service/vault-facade";
 import { WorkspaceFacade } from "./service/workspace-facade";
-import { type DayPlannerSettings, defaultSettings } from "./settings";
+import { type DayPlannerSettings, mergeStoredSettings } from "./settings";
 import { createGetTasksApi } from "./tasks-plugin";
 import type { EditableTimeBlock, RemoteTimeBlock } from "./time-block-types";
 import type { ObsidianContext, OnUpdateFn, PointerDateTime } from "./types";
@@ -131,12 +131,7 @@ export default class DayPlanner extends Plugin {
   async onload() {
     const { vault, metadataCache } = this.app;
 
-    const storedSettings =
-      (await this.loadData()) as Partial<DayPlannerSettings> | null;
-    const initialSettings: DayPlannerSettings = {
-      ...defaultSettings,
-      ...storedSettings,
-    };
+    const initialSettings = mergeStoredSettings(await this.loadData());
 
     const getTasksApi = createGetTasksApi(this.app);
     const listPropsParser = new ListPropsParser(vault, metadataCache);

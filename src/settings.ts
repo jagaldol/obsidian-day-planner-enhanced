@@ -47,7 +47,6 @@ export interface DayPlannerSettings {
   minimalDurationMinutes: number;
   showTimestampInTaskBlock: boolean;
   showUncheduledTasks: boolean;
-  showUnscheduledNestedTasks: boolean;
   showTimelineInSidebar: boolean;
   enableTimeTracker: boolean;
   showActiveClockInStatusBar: boolean;
@@ -90,7 +89,6 @@ export const defaultSettings: DayPlannerSettings = {
   minimalDurationMinutes: 10,
   showTimestampInTaskBlock: false,
   showUncheduledTasks: true,
-  showUnscheduledNestedTasks: true,
   showNow: true,
   showNext: true,
   pluginVersion: "",
@@ -109,6 +107,22 @@ export const defaultSettings: DayPlannerSettings = {
   showActiveClockInStatusBar: true,
   timelineColumns: { planner: true, timeTracker: false },
 };
+
+type StoredDayPlannerSettings = Partial<DayPlannerSettings> & {
+  showUnscheduledNestedTasks?: boolean;
+};
+
+export function mergeStoredSettings(
+  storedSettings: StoredDayPlannerSettings | null,
+): DayPlannerSettings {
+  const currentSettings = { ...storedSettings };
+  delete currentSettings.showUnscheduledNestedTasks;
+
+  return {
+    ...defaultSettings,
+    ...currentSettings,
+  };
+}
 
 export const defaultSettingsForTests = {
   ...defaultSettings,
