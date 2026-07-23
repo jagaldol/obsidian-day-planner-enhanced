@@ -28,7 +28,7 @@ The task-editing engine. Manages an edit operation (drag, resize, create, schedu
 ### Working In This Directory
 
 - Keep the move/commit split: `transform/` computes new task state purely; committing writes via `src/service/diff-writer.ts`.
-- Nested/multi-container edits are sensitive — see `tests/edit/nested-timed-tasks.test.ts` and `multiple-containers.test.ts`.
+- Nested/multi-container edits are sensitive — see `tests/edit/nested-tasks.test.ts` and `multiple-containers.test.ts`.
 
 ### Testing Requirements
 

@@ -4,7 +4,7 @@
 # edit
 
 ## Purpose
-Tests for the task-editing engine (`src/ui/hooks/use-edit/` and `transform/`). Verifies that drag, resize, create, scheduling, all-day handling, nested timed tasks, and multi-container edits produce correct task state and file edits.
+Tests for the task-editing engine (`src/ui/hooks/use-edit/` and `transform/`). Verifies that drag, resize, create, scheduling, all-day handling, nested local plan tasks, and multi-container edits produce correct task state and file edits.
 
 ## Key Files
 | File | Description |
@@ -12,7 +12,7 @@ Tests for the task-editing engine (`src/ui/hooks/use-edit/` and `transform/`). V
 | `create.test.ts` | Creating new tasks via the timeline. |
 | `drag.test.ts` | Dragging/moving blocks. |
 | `resize.test.ts` | Resizing block durations. |
-| `nested-timed-tasks.test.ts` | Timed children nested under timed parents. |
+| `nested-tasks.test.ts` | Local plan descendants nested under timed or all-day parent blocks. |
 | `multiple-containers.test.ts` | Edits spanning multiple notes/containers. |
 | `all-day-tasks.test.ts` | All-day/unscheduled task behavior. |
 | `common.test.ts` | Shared editing behavior. |
