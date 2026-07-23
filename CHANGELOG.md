@@ -13,6 +13,7 @@ This plugin is an independent fork of [Obsidian Day Planner](https://github.com/
 ### ✨ Other improvements
 
 - Removed the non-functional **Show sub-tasks as blocks** setting; its legacy stored value is now cleaned up when settings are loaded.
+- Updated the transitive Axios dependency to `1.18.0` to address published security advisories.
 
 ## 0.4.1
 
