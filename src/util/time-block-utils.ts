@@ -458,14 +458,12 @@ export function getBlockProps(
   return result.join(` ${bullet} `);
 }
 
-function isTimedLocalTimelineTask(
+function isLocalPlanTimeBlock(
   timeBlock: TimeBlock,
-): timeBlock is WithDuration<PlanTimeBlock> {
+): timeBlock is PlanTimeBlock {
   return (
-    (timeBlock.source === "dailyNoteDate" ||
-      timeBlock.source === "tasksPluginProp") &&
-    isWithDuration(timeBlock) &&
-    !timeBlock.isAllDayEvent
+    timeBlock.source === "dailyNoteDate" ||
+    timeBlock.source === "tasksPluginProp"
   );
 }
 
@@ -498,18 +496,18 @@ function containsTimeBlockSourceLine(
   );
 }
 
-function isNestedTimedLocalTask(
+function isNestedLocalPlanTimeBlock(
   timeBlock: TimeBlock,
   possibleParents: TimeBlock[],
-): timeBlock is WithDuration<PlanTimeBlock> {
-  if (!isTimedLocalTimelineTask(timeBlock)) {
+): timeBlock is PlanTimeBlock {
+  if (!isLocalPlanTimeBlock(timeBlock)) {
     return false;
   }
 
   return possibleParents.some((possibleParent) => {
     if (
       possibleParent === timeBlock ||
-      !isTimedLocalTimelineTask(possibleParent) ||
+      !isLocalPlanTimeBlock(possibleParent) ||
       possibleParent.path !== timeBlock.path
     ) {
       return false;
@@ -523,15 +521,15 @@ function isNestedTimedLocalTask(
 }
 
 /**
- * Nested scheduled list items are rendered inside their timed parent block.
+ * Nested local plan items are rendered inside their parent plan block.
  * Only local plan blocks participate: iCal events and log/frontmatter blocks
  * are independent timeline records and must never be filtered here.
  */
-export function hideNestedTimedLocalTasks<T extends TimeBlock>(
+export function hideNestedLocalPlanTimeBlocks<T extends TimeBlock>(
   timeBlocks: T[],
 ): T[] {
   return timeBlocks.filter(
-    (timeBlock) => !isNestedTimedLocalTask(timeBlock, timeBlocks),
+    (timeBlock) => !isNestedLocalPlanTimeBlock(timeBlock, timeBlocks),
   );
 }
 

@@ -367,39 +367,21 @@ describe("Editing", () => {
       });
     });
 
-    test(`* Moves a nested task with text between notes
-* Does not touch invalid markdown
-* Undoes the move`, async () => {
-      const {
-        editContext,
-        moveCursorTo,
-        vault,
-        findByText,
-        transactionWriter,
-      } = await setUp({
+    test("Does not expose nested tasks as independent editable blocks", async () => {
+      const { findByText } = await setUp({
         visibleDays: ["2025-07-28"],
-        settings: {
-          ...defaultSettingsForTests,
-          sortTasksInPlanAfterEdit: true,
-        },
       });
 
-      editContext.handlers.handleGripMouseDown(
-        findByText("Child"),
-        EditMode.DRAG,
+      expect(() => findByText("Child task")).toThrow("TimeBlock not found");
+      expect(findByText("Parent")).toEqual(
+        expect.objectContaining({
+          children: [
+            expect.objectContaining({
+              text: expect.stringContaining("Child task"),
+            }),
+          ],
+        }),
       );
-
-      moveCursorTo(window.moment("2025-07-20 17:00"));
-
-      await editContext.confirmEdit();
-
-      expect(getPathToDiff(vault.initialState, vault.state)).toMatchSnapshot();
-
-      await transactionWriter.undo();
-
-      expect(
-        Object.keys(getPathToDiff(vault.initialState, vault.state)).length,
-      ).toBe(0);
     });
   });
 

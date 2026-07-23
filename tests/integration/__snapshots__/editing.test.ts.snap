@@ -1,27 +1,5 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Editing > Daily notes > * Moves a nested task with text between notes
-* Does not touch invalid markdown
-* Undoes the move 1`] = `
-{
-  "fixtures/fixture-vault/2025-07-20.md": "
-+ # Day planner
-+ 
-+ - [ ] 17:00 - 17:30 Child task
-+   Child text
-+     - Child list item without time
-",
-  "fixtures/fixture-vault/2025-07-28.md": "
-+ - [ ] 12:00 - 13:00 After
-...
--     - [ ] Child task
--       Child text
--         - Child list item without time
-- - [ ] 12:00 - 13:00 After
-",
-}
-`;
-
 exports[`Editing > Daily notes > Creates tasks 1`] = `
 {
   "fixtures/fixture-vault/2025-07-20.md": "

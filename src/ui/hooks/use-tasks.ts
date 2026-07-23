@@ -15,7 +15,7 @@ import type { Moment } from "../../util/obsidian-moment";
 import { getUpdateTrigger } from "../../util/store";
 import {
   getEndTime,
-  hideNestedTimedLocalTasks,
+  hideNestedLocalPlanTimeBlocks,
   isWithDuration,
 } from "../../util/time-block-utils";
 
@@ -56,7 +56,7 @@ export function useTasks(props: {
       const startOfToday = $currentTime.clone().startOf("day");
       const endOfToday = startOfToday.clone().add(1, "day");
 
-      return hideNestedTimedLocalTasks(
+      return hideNestedLocalPlanTimeBlocks(
         $localTimeBlocks.concat($remoteTimeBlocks),
       ).filter(
         (timeBlock): timeBlock is WithDuration<TimeBlock> =>

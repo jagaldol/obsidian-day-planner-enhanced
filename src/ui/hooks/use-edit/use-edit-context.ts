@@ -139,7 +139,7 @@ export function useEditContext(props: {
   const combinedTimeBlocks = derived(
     [remoteTimeBlocks, timeBlocksWithPendingUpdate],
     ([$remoteTimeBlocks, $timeBlocksWithPendingUpdate]): TimelineTimeBlock[] =>
-      t.hideNestedTimedLocalTasks([
+      t.hideNestedLocalPlanTimeBlocks([
         ...$remoteTimeBlocks,
         ...$timeBlocksWithPendingUpdate,
       ]),
