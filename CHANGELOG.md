@@ -4,6 +4,16 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.33.0**, and follows its own versioning.
 
+## 0.4.2
+
+### 🐞 Fixed issues
+
+- Fixed nested local plan items appearing as separate Timeline or All Day blocks while also being rendered inside their parent. Nested descendants now remain inside their parent block in both single-day and multi-day views.
+
+### ✨ Other improvements
+
+- Removed the non-functional **Show sub-tasks as blocks** setting; its legacy stored value is now cleaned up when settings are loaded.
+
 ## 0.4.1
 
 ### ✨ New features
