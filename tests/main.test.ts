@@ -5,6 +5,7 @@ vi.mock("obsidian", () => {
   class EmptyClass {}
 
   return {
+    AbstractInputSuggest: EmptyClass,
     App: EmptyClass,
     Component: EmptyClass,
     FileView: EmptyClass,
@@ -23,6 +24,7 @@ vi.mock("obsidian", () => {
     Vault: EmptyClass,
     Workspace: EmptyClass,
     WorkspaceLeaf: EmptyClass,
+    getAllTags: vi.fn(),
     moment,
     normalizePath: (path: string) => path,
     request: vi.fn(),

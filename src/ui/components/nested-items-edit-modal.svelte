@@ -19,8 +19,13 @@
     removeTimeRangeFromLine,
   } from "../../parser/parser";
   import type { EditableNestedListItem } from "../../service/list-item-entry-editor";
+  import {
+    type AttachMarkdownInputSuggest,
+    hasActiveMarkdownInputSuggest,
+  } from "../markdown-input-suggest";
 
   let {
+    attachMarkdownInputSuggest,
     initialItems,
     parentText,
     editController,
@@ -29,6 +34,7 @@
     onSave,
     onCancel,
   }: {
+    attachMarkdownInputSuggest?: AttachMarkdownInputSuggest;
     initialItems: EditableNestedListItem[];
     parentText: string;
     editController?: {
@@ -79,6 +85,16 @@
 
   function focusOnMount(node: HTMLInputElement) {
     window.requestAnimationFrame(() => node.focus());
+  }
+
+  function markdownInputSuggest(node: HTMLInputElement) {
+    const detach = attachMarkdownInputSuggest?.(node);
+
+    return {
+      destroy() {
+        detach?.();
+      },
+    };
   }
 
   function replaceFirstLine(text: string, firstLine: string) {
@@ -275,6 +291,13 @@
   }
 
   function handleEditKeydown(event: KeyboardEvent, pathKey: string) {
+    if (
+      event.currentTarget instanceof HTMLInputElement &&
+      hasActiveMarkdownInputSuggest(event.currentTarget)
+    ) {
+      return;
+    }
+
     if (event.key === "Enter") {
       consumeEditShortcut(event);
       applyEdit(pathKey);
@@ -288,6 +311,13 @@
   }
 
   function handleWindowKeydown(event: KeyboardEvent) {
+    if (
+      event.target instanceof HTMLInputElement &&
+      hasActiveMarkdownInputSuggest(event.target)
+    ) {
+      return;
+    }
+
     if (event.key !== "Escape") {
       return;
     }
@@ -484,6 +514,7 @@
               onkeydown={(event) => handleEditKeydown(event, pathKey)}
               bind:value={editingText}
               use:focusOnMount
+              use:markdownInputSuggest
             />
           </div>
         {:else}

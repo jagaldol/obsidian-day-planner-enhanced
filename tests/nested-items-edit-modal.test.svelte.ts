@@ -3,6 +3,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 
 import type { EditableNestedListItem } from "../src/service/list-item-entry-editor";
 import NestedItemsEditModal from "../src/ui/components/nested-items-edit-modal.svelte";
+import type { AttachMarkdownInputSuggest } from "../src/ui/markdown-input-suggest";
 
 function click(element: Element | null) {
   expect(element).not.toBeNull();
@@ -61,6 +62,7 @@ function getInput() {
 function renderModal(
   initialItems: EditableNestedListItem[],
   props: {
+    attachMarkdownInputSuggest?: AttachMarkdownInputSuggest;
     onEditEscape?: () => void;
     onEditStateChange?: (isEditing: boolean) => void;
   } = {},
@@ -74,6 +76,7 @@ function renderModal(
   const component = mount(NestedItemsEditModal, {
     target,
     props: {
+      attachMarkdownInputSuggest: props.attachMarkdownInputSuggest,
       initialItems,
       onEditEscape: props.onEditEscape,
       onEditStateChange: props.onEditStateChange,
@@ -93,6 +96,28 @@ afterEach(() => {
 });
 
 describe("NestedItemsEditModal", () => {
+  test("attaches markdown suggestions while an item is being edited", () => {
+    const detach = vi.fn();
+    const attachMarkdownInputSuggest = vi.fn(() => detach);
+    const { component, target } = renderModal(
+      [{ text: "Project task", symbol: "-" }],
+      { attachMarkdownInputSuggest },
+    );
+
+    try {
+      click(target.querySelector('button[aria-label="Edit Project task"]'));
+
+      expect(attachMarkdownInputSuggest).toHaveBeenCalledWith(getInput());
+
+      keydown(getInput(), "Escape");
+
+      expect(detach).toHaveBeenCalledOnce();
+    } finally {
+      unmount(component);
+      target.remove();
+    }
+  });
+
   test("enters edit mode when clicking the displayed text area", () => {
     const { component, target } = renderModal([
       { text: "11:40 - 12:00 레이저 제모", symbol: "-" },

@@ -24,12 +24,14 @@ export async function getTextFromUser(props: {
   app: App;
   initialText?: string;
   getDescriptionText: (value: string) => string;
+  sourcePath?: string;
 }): Promise<string | undefined> {
   return new Promise((resolve) => {
     new SingleSuggestModal({
       app: props.app,
       initialValue: props.initialText,
       getDescriptionText: props.getDescriptionText,
+      sourcePath: props.sourcePath,
       onChooseSuggestion: async ({ text }) => {
         resolve(text);
       },

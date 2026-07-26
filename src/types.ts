@@ -78,6 +78,7 @@ export interface ObsidianContext {
   editText: (props: {
     initialText?: string;
     getDescriptionText: (value: string) => string;
+    sourcePath?: string;
   }) => Promise<string | undefined>;
   editLine: (target: {
     path: string;

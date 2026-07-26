@@ -89,6 +89,39 @@ class MockMenu {
   showAtMouseEvent(_event: MouseEvent) {}
 }
 
+class MockAbstractInputSuggest {
+  limit = 100;
+
+  constructor(_app: unknown, _textInputEl: HTMLInputElement | HTMLDivElement) {}
+
+  close() {}
+}
+
+class MockSuggestModal {
+  inputEl = document.createElement("input");
+  resultContainerEl = document.createElement("div");
+
+  constructor(_app: unknown) {}
+
+  setInstructions(_instructions: unknown[]) {}
+
+  onOpen() {}
+
+  selectSuggestion(item: unknown, event: MouseEvent | KeyboardEvent) {
+    (
+      this as unknown as {
+        onChooseSuggestion: (
+          value: unknown,
+          selectionEvent: MouseEvent | KeyboardEvent,
+        ) => void;
+      }
+    ).onChooseSuggestion(item, event);
+    this.close();
+  }
+
+  close() {}
+}
+
 Object.defineProperty(HTMLElement.prototype, "empty", {
   configurable: true,
   value(this: HTMLElement) {
@@ -97,6 +130,9 @@ Object.defineProperty(HTMLElement.prototype, "empty", {
 });
 
 vi.mock("obsidian", () => ({
+  AbstractInputSuggest: MockAbstractInputSuggest,
+  getAllTags: (cache: { tags?: Array<{ tag: string }> }) =>
+    cache.tags?.map(({ tag }) => tag) ?? null,
   moment,
   TFile: vi.fn(),
   normalizePath: (p: string) => path.normalize(p),
@@ -111,11 +147,7 @@ vi.mock("obsidian", () => ({
       throw new Error("Modal is not implemented in tests");
     }
   },
-  SuggestModal: class SuggestModal {
-    constructor() {
-      throw new Error("SuggestModal is not implemented in tests");
-    }
-  },
+  SuggestModal: MockSuggestModal,
   Menu: MockMenu,
   SettingGroup: MockSettingGroup,
   Notice: vi.fn(),

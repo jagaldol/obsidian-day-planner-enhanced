@@ -725,11 +725,13 @@ export default class DayPlanner extends Plugin {
     const editText: ObsidianContext["editText"] = ({
       initialText,
       getDescriptionText,
+      sourcePath,
     }) =>
       getTextFromUser({
         app: this.app,
         initialText,
         getDescriptionText,
+        sourcePath,
       });
 
     const openNestedItemsEditModal = createNestedItemsEditModalCreator(

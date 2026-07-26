@@ -11,6 +11,7 @@ import type { EditableTimeBlock } from "../time-block-types";
 import { getFirstLine } from "../util/markdown";
 
 import NestedItemsEditModal from "./components/nested-items-edit-modal.svelte";
+import { createMarkdownInputSuggest } from "./markdown-input-suggest";
 
 interface NestedItemEditController {
   cancelActiveEdit?: () => void;
@@ -146,6 +147,7 @@ export function createNestedItemsEditModalCreator(
     const component = mount(NestedItemsEditModal, {
       target: modal.contentEl,
       props: {
+        attachMarkdownInputSuggest: createMarkdownInputSuggest(app, path),
         editController,
         initialItems: toEditableNestedListItems(task.children),
         parentText: getFirstLine(task.text),

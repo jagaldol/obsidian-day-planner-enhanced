@@ -77,6 +77,22 @@
   margin-top: var(--size-4-2);
 }
 
+.suggestion-container.day-planner-markdown-suggestion {
+  width: var(--day-planner-markdown-suggestion-width);
+  min-width: min(360px, calc(100vw - 24px));
+  max-width: min(720px, calc(100vw - 24px));
+  max-height: min(480px, calc(100vh - 24px));
+}
+
+.day-planner-markdown-suggestion .suggestion {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.day-planner-markdown-suggestion-instructions {
+  flex: 0 0 auto;
+}
+
 .planner-progress-value {
   background-color: var(--color-accent);
   height: 100%;

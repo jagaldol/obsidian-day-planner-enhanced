@@ -61,6 +61,7 @@
 
     const next = await editText({
       initialText: summary,
+      sourcePath: task.path,
       getDescriptionText: (value) =>
         value.trim().length === 0
           ? "Start typing to update task text"
