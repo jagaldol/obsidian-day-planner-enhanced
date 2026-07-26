@@ -29,10 +29,18 @@ function createTimestampRegExps(timestampFormat: string) {
     ? `(?:${separatedTime}|${compactTime}(?=${timeRangeSeparator}${rangeEnd}))`
     : separatedTime;
   const timeRange = `(?<start>${rangeStart})(?:${timeRangeSeparator}(?<end>${rangeEnd}))?`;
+  const rangeStartAfterLeadingTags = acceptsCompact
+    ? `(?:${separatedTime}|${compactTime})`
+    : separatedTime;
+  const timeRangeAfterLeadingTags = `(?<start>${rangeStartAfterLeadingTags})(?:${timeRangeSeparator}(?<end>${rangeEnd}))?`;
 
   return {
     timeRange: new RegExp(timeRange, "im"),
     timeRangeAtStartOfLine: new RegExp(`^${timeRange}`, "im"),
+    timeRangeAfterLeadingTagsAtStartOfLine: new RegExp(
+      `^${timeRangeAfterLeadingTags}`,
+      "im",
+    ),
   };
 }
 
@@ -42,12 +50,16 @@ export const timeRegExp = new RegExp(`^${time}$`);
 export let timeRangeRegExp = initialTimestampRegExps.timeRange;
 export let timeRangeAtStartOfLineRegExp =
   initialTimestampRegExps.timeRangeAtStartOfLine;
+export let timeRangeAfterLeadingTagsAtStartOfLineRegExp =
+  initialTimestampRegExps.timeRangeAfterLeadingTagsAtStartOfLine;
 
 export function configureTimestampRegExps(timestampFormat: string) {
   const next = createTimestampRegExps(timestampFormat);
 
   timeRangeRegExp = next.timeRange;
   timeRangeAtStartOfLineRegExp = next.timeRangeAtStartOfLine;
+  timeRangeAfterLeadingTagsAtStartOfLineRegExp =
+    next.timeRangeAfterLeadingTagsAtStartOfLine;
 }
 
 const datePattern = "\\d{4}-\\d{2}-\\d{2}";

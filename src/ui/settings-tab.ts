@@ -19,7 +19,7 @@ import {
 import Callout from "../ui/components/callout.svelte";
 
 export const timestampFormatDescription =
-  "Use HH:mm for 24-hour timestamps; ':' and '.' are accepted separators. Separator-free timestamps require an end time. Restart Obsidian after changing this setting to reindex existing tasks. Current sample: ";
+  "Use HH:mm for 24-hour timestamps; ':' and '.' are accepted separators. Separator-free timestamps require an end time unless a single timestamp immediately follows leading tags. Restart Obsidian after changing this setting to reindex existing tasks. Current sample: ";
 
 export class DayPlannerSettingsTab extends PluginSettingTab {
   private warningComponent?: Component;

@@ -1,5 +1,8 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
-import { timeRangeAtStartOfLineRegExp } from "../regexp";
+import {
+  timeRangeAfterLeadingTagsAtStartOfLineRegExp,
+  timeRangeAtStartOfLineRegExp,
+} from "../regexp";
 import { getDiffInMinutes } from "../util/moment";
 import type { Moment } from "../util/obsidian-moment";
 
@@ -68,9 +71,10 @@ function toTimeRangeMatch(
 }
 
 /**
- * Matches a timestamp at the start of task text. A complete range may also
- * follow one or more leading Obsidian tags, but arbitrary mid-line clocks stay
- * untimed.
+ * Matches a timestamp at the start of task text or immediately after one or
+ * more leading Obsidian tags. The tag boundary also provides enough context to
+ * accept a single compact HHmm timestamp without treating arbitrary mid-line
+ * numbers as schedule times.
  */
 export function getTimeRangeMatch(line: string): TimeRangeMatch | null {
   const { prefix, text } = splitMarkdownListPrefix(line);
@@ -88,9 +92,9 @@ export function getTimeRangeMatch(line: string): TimeRangeMatch | null {
 
   const taggedMatch = text
     .slice(leadingTags.length)
-    .match(timeRangeAtStartOfLineRegExp);
+    .match(timeRangeAfterLeadingTagsAtStartOfLineRegExp);
 
-  if (!taggedMatch?.groups?.["end"]) {
+  if (!taggedMatch) {
     return null;
   }
 

@@ -211,15 +211,80 @@ it.each([
 });
 
 it.each([
-  "#task/Highpriority 08:50 Fix the parser",
-  "#task/Highpriority Review the error logged at 15:36",
-  "#task/Highpriority Notes 08:50 - 09:50",
+  {
+    line: "- [ ] #task/Flexible 10:00 TEST ⏳ 2026-07-27",
+    start: "2026-07-27 10:00",
+  },
+  {
+    line: "[ ] #task #work/project 08:50 Fix the parser",
+    start: "2026-07-27 08:50",
+  },
+  {
+    line: "#task/Highpriority 08:50 Fix the parser",
+    start: "2026-07-27 08:50",
+  },
 ])(
-  "Does not read incomplete or embedded time after leading tags: %s",
-  (line) => {
-    expect(getTimeFromLine({ day: moment("2026-07-26"), line })).toBeNull();
+  "Reads a single time immediately after leading tags: $line",
+  ({ line, start }) => {
+    expect(
+      getTimeFromLine({
+        day: moment("2026-07-27"),
+        line,
+      }),
+    ).toEqual({
+      durationMinutes: undefined,
+      startTime: moment(start),
+    });
   },
 );
+
+it.each([
+  "#task/Highpriority Review the error logged at 15:36",
+  "#task/Highpriority Notes 08:50 - 09:50",
+])("Does not read embedded time after leading tags: %s", (line) => {
+  expect(getTimeFromLine({ day: moment("2026-07-26"), line })).toBeNull();
+});
+
+it.each([
+  {
+    line: "- [ ] #task/Flexible 1000 TEST ⏳ 2026-07-27",
+    start: "2026-07-27 10:00",
+  },
+  {
+    line: "[ ] #task #work/project 0850 Fix the parser",
+    start: "2026-07-27 08:50",
+  },
+  {
+    line: "#task/Highpriority 0850 Fix the parser",
+    start: "2026-07-27 08:50",
+  },
+])(
+  "Reads compact single time immediately after leading tags: $line",
+  ({ line, start }) => {
+    configureTimestampRegExps("HHmm");
+
+    expect(
+      getTimeFromLine({
+        day: moment("2026-07-27"),
+        line,
+      }),
+    ).toEqual({
+      durationMinutes: undefined,
+      startTime: moment(start),
+    });
+  },
+);
+
+it.each([
+  "1000 Direct compact text",
+  "- [ ] 1000 Direct compact task",
+  "#task/Flexible Review code 1000",
+  "#task/Flexible Notes 0850 - 0950",
+])("Keeps ambiguous compact text untimed with HHmm: %s", (line) => {
+  configureTimestampRegExps("HHmm");
+
+  expect(getTimeFromLine({ day: moment("2026-07-27"), line })).toBeNull();
+});
 
 it("Only replaces a leading time range", () => {
   expect(
@@ -255,6 +320,12 @@ it("Keeps leading tags before a replaced or inserted time range", () => {
   expect(
     replaceOrPrependTimeRange(
       "- [ ] #task/Highpriority 08:50 - 09:50 Old title",
+      "10:00 - 10:30",
+    ),
+  ).toBe("- [ ] #task/Highpriority 10:00 - 10:30 Old title");
+  expect(
+    replaceOrPrependTimeRange(
+      "- [ ] #task/Highpriority 08:50 Old title",
       "10:00 - 10:30",
     ),
   ).toBe("- [ ] #task/Highpriority 10:00 - 10:30 Old title");
@@ -300,13 +371,22 @@ it("Removes only the time range after leading tags", () => {
   expect(
     removeTimeRange("- [ ] #task #work/project 08:50 - 09:50 Fix the parser"),
   ).toBe("- [ ] #task #work/project Fix the parser");
+  expect(removeTimeRange("- [ ] #task/Flexible 10:00 TEST ⏳ 2026-07-27")).toBe(
+    "- [ ] #task/Flexible TEST ⏳ 2026-07-27",
+  );
 });
 
-it("Removes compact ranges with HHmm", () => {
+it("Removes compact ranges and tagged single times with HHmm", () => {
   configureTimestampRegExps("HHmm");
 
   expect(removeTimeRange("- [ ] 0700 - 0840 Exercise")).toBe("- [ ] Exercise");
   expect(removeTimeRange("- [ ] #task/Highpriority 0700 - 0840 Exercise")).toBe(
     "- [ ] #task/Highpriority Exercise",
+  );
+  expect(removeTimeRange("- [ ] #task/Flexible 1000 TEST")).toBe(
+    "- [ ] #task/Flexible TEST",
+  );
+  expect(removeTimeRange("- [ ] 1000 Direct compact task")).toBe(
+    "- [ ] 1000 Direct compact task",
   );
 });

@@ -87,6 +87,9 @@ describe("DayPlannerSettingsTab declarative settings", () => {
     expect(timestampFormatDescription).toContain("':'");
     expect(timestampFormatDescription).toContain("'.'");
     expect(timestampFormatDescription).toContain("require an end time");
+    expect(timestampFormatDescription).toContain(
+      "immediately follows leading tags",
+    );
     expect(timestampFormatDescription).toContain("Restart Obsidian");
     expect(timestampFormatDescription).not.toContain("hh:mm");
   });

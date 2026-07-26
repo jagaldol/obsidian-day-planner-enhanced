@@ -110,6 +110,24 @@ describe("Task views", () => {
     );
   });
 
+  test("Keeps leading tags in titles while formatting tagged single times", () => {
+    const { listItem, nestedListItems } = toRenderableMarkdown({
+      text: "#task/Flexible 10:00 TEST ⏳ 2026-07-27",
+      symbol: "-",
+      status: " ",
+      children: [
+        {
+          text: "#work/project 10:15 Verify the fix",
+          symbol: "-",
+          status: " ",
+        },
+      ],
+    });
+
+    expect(listItem).toBe("- [ ] #task/Flexible TEST ⏳ 2026-07-27");
+    expect(nestedListItems).toBe("- [ ] #work/project `10:15` Verify the fix");
+  });
+
   test("Preserves numeric-leading text when rendering with HH:mm", () => {
     const { listItem, nestedListItems } = toRenderableMarkdown({
       text: "2026 goals",
@@ -132,6 +150,31 @@ describe("Task views", () => {
 
     expect(listItem).toBe("Exercise");
     expect(nestedListItems).toBe("- `0710 - 0720` Warm-up");
+  });
+
+  test("Formats compact single times only after leading tags with HHmm", () => {
+    configureTimestampRegExps("HHmm");
+
+    const tagged = toRenderableMarkdown({
+      text: "#task/Flexible 1000 TEST",
+      symbol: "-",
+      status: " ",
+      children: [
+        { text: "#work/project 1015 Verify the fix", symbol: "-" },
+        { text: "1100 Direct compact note", symbol: "-" },
+      ],
+    });
+    const direct = toRenderableMarkdown({
+      text: "1000 Direct compact task",
+      symbol: "-",
+      status: " ",
+    });
+
+    expect(tagged.listItem).toBe("- [ ] #task/Flexible TEST");
+    expect(tagged.nestedListItems).toBe(
+      "- #work/project `1015` Verify the fix\n\n---\n\n- 1100 Direct compact note",
+    );
+    expect(direct.listItem).toBe("- [ ] 1000 Direct compact task");
   });
 
   test("Preserves a completed task title starting with 0700 after an HHmm range", () => {

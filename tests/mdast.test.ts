@@ -225,19 +225,40 @@ test("Does not sort embedded clock text as a timed group", () => {
   expect(actual).toBe(expected);
 });
 
-test("Sorts complete ranges after leading tags without sorting tagged informational times", () => {
+test("Sorts single times and ranges after leading tags without sorting tagged informational times", () => {
   const input = `- [ ] #task Review the error logged at 15:36
-- [ ] #task/Highpriority 10:00 - 11:00 Root b
+- [ ] #task/Highpriority 10:00 Root b
 - Notes for b
 - [ ] #task #work/project 09:00 - 10:00 Root a
 `;
 
   const expected = `- [ ] #task Review the error logged at 15:36
 - [ ] #task #work/project 09:00 - 10:00 Root a
-- [ ] #task/Highpriority 10:00 - 11:00 Root b
+- [ ] #task/Highpriority 10:00 Root b
 - Notes for b
 `;
 
+  const tree = fromMarkdown(input);
+  const list = tree.children[0];
+
+  isList(list);
+
+  expect(toMarkdown(sortListsRecursivelyByTimestamp(list))).toBe(expected);
+});
+
+test("Sorts compact single times only when they immediately follow leading tags", () => {
+  configureTimestampRegExps("HHmm");
+
+  const input = `- [ ] 1000 Direct compact task
+- [ ] #task Review code 1100
+- [ ] #task/Highpriority 1000 Root b
+- [ ] #task #work/project 0900 Root a
+`;
+  const expected = `- [ ] 1000 Direct compact task
+- [ ] #task Review code 1100
+- [ ] #task #work/project 0900 Root a
+- [ ] #task/Highpriority 1000 Root b
+`;
   const tree = fromMarkdown(input);
   const list = tree.children[0];
 

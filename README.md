@@ -195,7 +195,7 @@ For example, these tasks will show up in the timeline:
 - [ ] #task 11:00 - 13:00 This task uses the Dataview property format [scheduled:: 2021-08-29]
 ```
 
-One or more leading Obsidian tags may appear immediately before a complete time range. Time expressions elsewhere in the task description remain ordinary text and are not interpreted as timeline times.
+One or more leading Obsidian tags may appear immediately before either a single start time or a complete time range. A single start time uses the configured default task duration. When the timestamp format is `HHmm`, a compact single time such as `#task 1000 Focus` is accepted only in this leading-tag form; untagged compact numbers and time expressions elsewhere in the task description remain ordinary text.
 
 ### 3. Showing internet calendars
 
