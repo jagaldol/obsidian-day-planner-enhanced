@@ -4,7 +4,7 @@
 
   import { MouseButton, vibrationDurationMillis } from "../../constants";
   import { setTimelineSelectionActive } from "../../global-store/timeline-auto-scroll";
-  import { isTouchEvent } from "../../util/dom";
+  import { isInteractiveEventTarget, isTouchEvent } from "../../util/dom";
   import { createGestures } from "../actions/gestures";
   import { pointerUpOutside } from "../actions/pointer-up-outside";
   import type { HTMLActionArray } from "../actions/use-actions";
@@ -100,7 +100,11 @@
 
   const use = [
     createGestures({
-      ontap: () => {
+      ontap: (event) => {
+        if (isInteractiveEventTarget(event.target)) {
+          return;
+        }
+
         setPrimary();
       },
       onlongpress: (event) => {
@@ -112,7 +116,7 @@
   ];
 
   function handlePointerUp(event: PointerEvent) {
-    if (isTouchEvent(event)) {
+    if (isTouchEvent(event) || isInteractiveEventTarget(event.target)) {
       return;
     }
 

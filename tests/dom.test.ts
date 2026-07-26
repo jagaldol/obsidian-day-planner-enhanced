@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import {
+  containsInteractiveElement,
   createAutoScroll,
   dispatchAutoScrollPointerMove,
   getIsomorphicClientY,
   getPointerOffsetY,
+  isInteractiveEventTarget,
   listenForAutoScrollPointerMove,
 } from "../src/util/dom";
 
@@ -29,6 +31,23 @@ describe("pointer coordinates", () => {
 
     expect(getIsomorphicClientY(event)).toBe(140);
     expect(getPointerOffsetY(el, event)).toBe(40);
+  });
+});
+
+describe("interactive event targets", () => {
+  test("recognizes links and their descendants", () => {
+    const block = document.createElement("div");
+    const link = document.createElement("a");
+    const child = document.createElement("span");
+
+    link.appendChild(child);
+    block.appendChild(link);
+
+    expect(isInteractiveEventTarget(link)).toBe(true);
+    expect(isInteractiveEventTarget(child)).toBe(true);
+    expect(isInteractiveEventTarget(document.createElement("div"))).toBe(false);
+    expect(containsInteractiveElement(block)).toBe(true);
+    expect(containsInteractiveElement(child)).toBe(false);
   });
 });
 

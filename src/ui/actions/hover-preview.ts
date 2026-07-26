@@ -1,60 +1,135 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
-import { derived, writable } from "svelte/store";
+import { derived, writable, type Readable } from "svelte/store";
 
 import { getObsidianContext } from "../../context/obsidian-context";
 import { isListItemSourced, type LocalTimeBlock } from "../../time-block-types";
+import type { ShowPreview } from "../../util/create-show-preview";
+import {
+  containsInteractiveElement,
+  isElement,
+  isHTMLElement,
+  isInteractiveEventTarget,
+} from "../../util/dom";
 
-export function hoverPreview(task: LocalTimeBlock) {
+interface HoverPreviewDependencies {
+  isModPressed: Readable<boolean>;
+  showPreview: ShowPreview;
+}
+
+interface HoverTarget {
+  event: MouseEvent;
+  line?: number;
+  linktext: string;
+  sourcePath: string;
+  targetEl: HTMLElement;
+}
+
+export function createHoverPreview(
+  task: LocalTimeBlock,
+  { isModPressed, showPreview }: HoverPreviewDependencies,
+) {
   return (el: HTMLElement) => {
-    const { isModPressed, showPreview } = getObsidianContext();
-    let currentEvent: MouseEvent | undefined;
+    const hoverTarget = writable<HoverTarget | undefined>();
+    let activePreviewTarget: HTMLElement | undefined;
 
-    const hovering = writable(false);
-
-    function handleMouseEnter(event: MouseEvent) {
-      currentEvent = event;
-      hovering.set(true);
+    function clearPreview() {
+      hoverTarget.set(undefined);
     }
 
-    function handleMouseLeave(event: MouseEvent) {
-      currentEvent = undefined;
-      hovering.set(false);
-    }
+    function handleMouseOver(event: MouseEvent) {
+      const internalLink = isElement(event.target)
+        ? event.target.closest("a.internal-link")
+        : null;
+      const linktext = internalLink?.getAttribute("data-href");
 
-    el.addEventListener("mouseenter", handleMouseEnter);
-    el.addEventListener("mouseleave", handleMouseLeave);
+      if (
+        internalLink &&
+        linktext &&
+        el.contains(internalLink) &&
+        isHTMLElement(internalLink)
+      ) {
+        hoverTarget.set({
+          event,
+          linktext,
+          sourcePath: task.source === "unwritten" ? "/" : task.path,
+          targetEl: internalLink,
+        });
+        return;
+      }
 
-    const shouldShowPreview = derived(
-      [isModPressed, hovering],
-      ([$isModPressed, $hovering]) => {
-        return $isModPressed && $hovering;
-      },
-    );
+      if (isInteractiveEventTarget(event.target)) {
+        clearPreview();
+        return;
+      }
 
-    const unsubscribe = shouldShowPreview.subscribe((newValue) => {
-      if (!newValue || !currentEvent) {
+      const targetEl = isHTMLElement(event.target) ? event.target : el;
+
+      // A broad container that also owns a rendered link must not own the
+      // source popover. Otherwise moving into that link keeps the old popover
+      // alive while Obsidian starts the link preview.
+      if (containsInteractiveElement(targetEl)) {
+        clearPreview();
         return;
       }
 
       if (task.source === "unwritten") {
+        clearPreview();
         return;
       }
 
-      showPreview(
-        el,
-        currentEvent,
-        task.path,
-        isListItemSourced(task) ? task.position.start.line : undefined,
-      );
+      hoverTarget.set({
+        event,
+        line: isListItemSourced(task) ? task.position.start.line : undefined,
+        linktext: task.path,
+        sourcePath: task.path,
+        targetEl,
+      });
+    }
+
+    function handleMouseLeave() {
+      clearPreview();
+    }
+
+    el.addEventListener("mouseover", handleMouseOver, true);
+    el.addEventListener("mouseleave", handleMouseLeave);
+
+    const activeHoverTarget = derived(
+      [isModPressed, hoverTarget],
+      ([$isModPressed, $hoverTarget]) =>
+        $isModPressed ? $hoverTarget : undefined,
+    );
+
+    const unsubscribe = activeHoverTarget.subscribe((currentHoverTarget) => {
+      if (!currentHoverTarget) {
+        activePreviewTarget = undefined;
+        return;
+      }
+
+      if (activePreviewTarget === currentHoverTarget.targetEl) {
+        return;
+      }
+
+      const { event, line, linktext, sourcePath, targetEl } =
+        currentHoverTarget;
+
+      showPreview(targetEl, targetEl, event, linktext, line, sourcePath);
+      activePreviewTarget = targetEl;
     });
 
     return {
       destroy() {
-        el.removeEventListener("mouseenter", handleMouseEnter);
+        el.removeEventListener("mouseover", handleMouseOver, true);
         el.removeEventListener("mouseleave", handleMouseLeave);
+        clearPreview();
         unsubscribe();
       },
     };
   };
+}
+
+export function hoverPreview(task: LocalTimeBlock) {
+  const { isModPressed, showPreview } = getObsidianContext();
+
+  return createHoverPreview(task, { isModPressed, showPreview });
 }
 /* eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. */

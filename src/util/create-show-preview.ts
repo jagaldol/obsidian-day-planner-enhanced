@@ -9,7 +9,14 @@ type AppWithPagePreview = App & {
 
 export const createShowPreview =
   (app: App) =>
-  (el: HTMLElement, event: MouseEvent, path: string, line = 0) => {
+  (
+    hoverParent: HTMLElement,
+    targetEl: HTMLElement,
+    event: MouseEvent,
+    linktext: string,
+    line = 0,
+    sourcePath = linktext,
+  ) => {
     const pagePreview = (app as AppWithPagePreview).internalPlugins.plugins[
       "page-preview"
     ];
@@ -21,9 +28,10 @@ export const createShowPreview =
     app.workspace.trigger("hover-link", {
       event,
       source: "search",
-      hoverParent: el,
-      targetEl: el,
-      linktext: path,
+      hoverParent,
+      targetEl,
+      linktext,
+      sourcePath,
       state: { scroll: line },
     });
   };

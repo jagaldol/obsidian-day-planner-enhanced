@@ -22,6 +22,40 @@ export function isHTMLElement(value: unknown): value is HTMLElement {
   );
 }
 
+export function isElement(value: unknown): value is Element {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const node = value as Node;
+
+  if (typeof node.instanceOf === "function") {
+    return node.instanceOf(Element);
+  }
+
+  return value instanceof (node.ownerDocument?.defaultView ?? window).Element;
+}
+
+const interactiveElementSelector = [
+  "a",
+  "button",
+  "input",
+  "select",
+  "textarea",
+  '[contenteditable="true"]',
+  '[role="button"]',
+].join(", ");
+
+export function isInteractiveEventTarget(target: EventTarget | null) {
+  return (
+    isElement(target) && target.closest(interactiveElementSelector) !== null
+  );
+}
+
+export function containsInteractiveElement(element: Element) {
+  return element.querySelector(interactiveElementSelector) !== null;
+}
+
 export function isTouchEvent(event: PointerEvent) {
   return ["pen", "touch"].includes(event.pointerType);
 }
@@ -287,16 +321,22 @@ function stopPropagationForElWithLineData(event: Event) {
 export function createRenderMarkdownAttachment({
   renderMarkdown,
   markdown,
+  sourcePath,
   taskLines,
   onCheckboxLineClick,
 }: {
-  renderMarkdown: (el: HTMLElement, markdown: string) => () => void;
+  renderMarkdown: (
+    el: HTMLElement,
+    markdown: string,
+    sourcePath: string,
+  ) => () => void;
   markdown: string;
+  sourcePath: string;
   taskLines: Array<number | undefined>;
   onCheckboxLineClick?: (line: number) => Promise<void>;
 }) {
   return (el: HTMLElement) => {
-    const destroyMarkdown = renderMarkdown(el, markdown);
+    const destroyMarkdown = renderMarkdown(el, markdown, sourcePath);
 
     addLineDataToCheckboxes(el, taskLines);
 

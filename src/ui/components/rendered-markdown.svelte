@@ -33,6 +33,7 @@
   );
 
   const { listItem, nestedListItems } = $derived(toRenderableMarkdown(task));
+  const sourcePath = $derived(task.source === "unwritten" ? "/" : task.path);
 
   const timeRange = $derived.by(() => {
     if (task.isAllDayEvent) {
@@ -157,6 +158,7 @@
         {@attach createRenderMarkdownAttachment({
           renderMarkdown,
           markdown: listItem,
+          sourcePath,
           taskLines: [listItemLine],
           onCheckboxLineClick,
         })}
@@ -175,6 +177,7 @@
         {@attach createRenderMarkdownAttachment({
           renderMarkdown,
           markdown: nestedListItems,
+          sourcePath,
           taskLines: nestedListItemLines,
           onCheckboxLineClick,
         })}
