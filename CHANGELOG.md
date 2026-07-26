@@ -4,6 +4,14 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.33.0**, and follows its own versioning.
 
+## 0.4.4
+
+### 🐞 Fixed issues
+
+- Restored Tasks-style parsing for a single start time immediately after one or more leading Obsidian tags, such as `#task/Flexible 10:00 Focus`.
+- Added the same constrained support for compact single times such as `#task/Flexible 1000 Focus` when the configured timestamp format is `HHmm`.
+- Kept untagged compact numbers and time expressions elsewhere in task descriptions untimed, while applying the configured default duration to recognized single-time tasks.
+
 ## 0.4.3
 
 ### 🐞 Fixed issues
