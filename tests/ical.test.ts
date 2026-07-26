@@ -65,8 +65,6 @@ function makeStoreForTests(props?: { preloadedState?: Partial<RootState> }) {
       timeRemainingLowerLimit: icalParseLowerLimit,
     });
 
-  onTestFinished(() => icalParseScheduler.cancelTasks());
-
   const inMemoryVault = new InMemoryVault([]) as unknown as Vault;
   const metadataCache = new FakeMetadataCache({}) as unknown as MetadataCache;
   const periodicNotes = new FakePeriodicNotes([]) as unknown as PeriodicNotes;
@@ -86,6 +84,10 @@ function makeStoreForTests(props?: { preloadedState?: Partial<RootState> }) {
       settings: defaultSettingsForTests,
       icalParseScheduler,
     },
+  });
+  onTestFinished(() => {
+    listenerMiddleware.clearListeners();
+    icalParseScheduler.cancelTasks();
   });
 
   return makeStore({
@@ -116,7 +118,9 @@ async function setUp(props: {
 
   dispatch(icalRefreshRequested());
 
-  await vi.waitUntil(() => selectRemoteTasks(getState()).length > 0);
+  await vi.waitUntil(() => selectRemoteTasks(getState()).length > 0, {
+    timeout: 5_000,
+  });
 
   return {
     remoteTasks: selectRemoteTasks(getState()),

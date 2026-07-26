@@ -4,6 +4,16 @@ import path from "path";
 import yaml from "js-yaml";
 
 window.moment = moment;
+window.requestIdleCallback = (callback) =>
+  window.setTimeout(
+    () =>
+      callback({
+        didTimeout: false,
+        timeRemaining: () => 50,
+      }),
+    0,
+  );
+window.cancelIdleCallback = (handle) => window.clearTimeout(handle);
 
 class MockValueControl {
   addOptions(_options: Record<string, string>) {

@@ -153,25 +153,33 @@ export async function setUp(props?: {
       timeRemainingLowerLimit: icalParseLowerLimit,
     });
 
-  onTestFinished(() => icalParseScheduler.cancelTasks());
-
-  const { useSelector, store, remoteTasks, localTasks, pointerDateTime } =
-    createReactor({
-      preloadedState: {
-        ...defaultPreloadedStateForTests,
-        obsidian: {
-          ...initialState,
-          visibleDays,
-        },
+  const {
+    useSelector,
+    store,
+    listenerMiddleware,
+    remoteTasks,
+    localTasks,
+    pointerDateTime,
+  } = createReactor({
+    preloadedState: {
+      ...defaultPreloadedStateForTests,
+      obsidian: {
+        ...initialState,
+        visibleDays,
       },
-      listPropsParser,
-      indexServices,
-      vault: vault as unknown as Vault,
-      metadataCache,
-      periodicNotes,
-      settings,
-      icalParseScheduler,
-    });
+    },
+    listPropsParser,
+    indexServices,
+    vault: vault as unknown as Vault,
+    metadataCache,
+    periodicNotes,
+    settings,
+    icalParseScheduler,
+  });
+  onTestFinished(() => {
+    listenerMiddleware.clearListeners();
+    icalParseScheduler.cancelTasks();
+  });
 
   const { getState, dispatch } = store;
 
