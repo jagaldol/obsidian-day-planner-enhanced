@@ -4,6 +4,14 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.33.0**, and follows its own versioning.
 
+## 0.4.3
+
+### 🐞 Fixed issues
+
+- Restored Tasks-style time parsing when one or more leading Obsidian tags are followed immediately by a complete time range, such as `#task/Highpriority 08:50 - 09:50`.
+- Kept informational time expressions elsewhere in task descriptions untimed, including tagged descriptions that do not begin with a complete start–end range.
+- Preserved leading tags when rendering, sorting, moving, resizing, scheduling, or unscheduling affected timeline items.
+
 ## 0.4.2
 
 ### 🐞 Fixed issues
