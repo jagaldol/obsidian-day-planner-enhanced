@@ -14,7 +14,10 @@
   import { onDestroy, onMount, untrack } from "svelte";
   import { isNotVoid } from "typed-assert";
 
-  import { timeRangeAtStartOfLineRegExp } from "../../regexp";
+  import {
+    getTimeRangeMatch,
+    removeTimeRangeFromLine,
+  } from "../../parser/parser";
   import type { EditableNestedListItem } from "../../service/list-item-entry-editor";
 
   let {
@@ -59,14 +62,14 @@
 
   function getDisplayParts(text: string) {
     const firstLine = getFirstLine(text).trim();
-    const match = firstLine.match(timeRangeAtStartOfLineRegExp);
+    const match = getTimeRangeMatch(firstLine);
 
     if (!match) {
       return { title: firstLine, timeRange: undefined };
     }
 
-    const timeRange = match[0].trim();
-    const title = firstLine.slice(match[0].length).trim();
+    const timeRange = match.timeRange.trim();
+    const title = removeTimeRangeFromLine(firstLine).trim();
 
     return {
       timeRange,

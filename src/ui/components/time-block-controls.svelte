@@ -9,7 +9,11 @@
     isTimelineTaskSelectionMatch,
     pendingTimelineTaskSelection,
   } from "../../global-store/timeline-task-selection";
-  import { timeRangeAtStartOfLineRegExp } from "../../regexp";
+  import {
+    getTimeRangeMatch,
+    removeTimeRangeFromLine,
+    replaceOrPrependTimeRange,
+  } from "../../parser/parser";
   import { type EditableTimeBlock } from "../../time-block-types";
   import { createMarkdownListTokens, getFirstLine } from "../../util/markdown";
   import type { HTMLActionArray } from "../actions/use-actions";
@@ -52,11 +56,8 @@
 
     // todo: replace with getOnelineSummary()
     const firstLine = getFirstLine(task.text);
-    const timestampMatch = firstLine.match(timeRangeAtStartOfLineRegExp);
-    const timestampEnd = timestampMatch ? timestampMatch[0].length : 0;
-    const afterTimestamp = firstLine.slice(timestampEnd);
-    const leadingSpace = afterTimestamp.match(/^\s*/)?.[0] ?? "";
-    const summary = afterTimestamp.slice(leadingSpace.length);
+    const timestampMatch = getTimeRangeMatch(firstLine);
+    const summary = removeTimeRangeFromLine(firstLine).trim();
 
     const next = await editText({
       initialText: summary,
@@ -70,12 +71,14 @@
       return;
     }
 
-    const lineStart = firstLine.slice(0, timestampEnd) + leadingSpace;
+    const updatedFirstLine = timestampMatch
+      ? replaceOrPrependTimeRange(next, timestampMatch.timeRange)
+      : next;
 
     await editLine({
       path: task.path,
       position: task.position.start,
-      contents: `${createMarkdownListTokens(task)} ${lineStart}${next}`,
+      contents: `${createMarkdownListTokens(task)} ${updatedFirstLine}`,
     });
   }
 

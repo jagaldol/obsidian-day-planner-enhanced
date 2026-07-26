@@ -205,12 +205,12 @@ test("Sorts timed groups recursively at each nested level", () => {
 });
 
 test("Does not sort embedded clock text as a timed group", () => {
-  const input = `- [ ] SRT 371(15:36 출발)
+  const input = `- [ ] Review the error logged at 15:36
 - [ ] 12:00 Root b
 - [ ] 11:00 Root a
 `;
 
-  const expected = `- [ ] SRT 371(15:36 출발)
+  const expected = `- [ ] Review the error logged at 15:36
 - [ ] 11:00 Root a
 - [ ] 12:00 Root b
 `;
@@ -223,6 +223,27 @@ test("Does not sort embedded clock text as a timed group", () => {
   const actual = toMarkdown(sortListsRecursivelyByTimestamp(list));
 
   expect(actual).toBe(expected);
+});
+
+test("Sorts complete ranges after leading tags without sorting tagged informational times", () => {
+  const input = `- [ ] #task Review the error logged at 15:36
+- [ ] #task/Highpriority 10:00 - 11:00 Root b
+- Notes for b
+- [ ] #task #work/project 09:00 - 10:00 Root a
+`;
+
+  const expected = `- [ ] #task Review the error logged at 15:36
+- [ ] #task #work/project 09:00 - 10:00 Root a
+- [ ] #task/Highpriority 10:00 - 11:00 Root b
+- Notes for b
+`;
+
+  const tree = fromMarkdown(input);
+  const list = tree.children[0];
+
+  isList(list);
+
+  expect(toMarkdown(sortListsRecursivelyByTimestamp(list))).toBe(expected);
 });
 
 test.each([

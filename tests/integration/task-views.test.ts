@@ -88,6 +88,28 @@ describe("Task views", () => {
 - [x] Workshop notes`);
   });
 
+  test("Keeps leading tags in titles while formatting tagged time ranges", () => {
+    const { listItem, nestedListItems } = toRenderableMarkdown({
+      text: "#task/Highpriority 08:50 - 09:50 Fix the parser ⏳ 2026-07-26",
+      symbol: "-",
+      status: " ",
+      children: [
+        {
+          text: "#work/project 09:00 - 09:15 Verify the fix",
+          symbol: "-",
+          status: " ",
+        },
+      ],
+    });
+
+    expect(listItem).toBe(
+      "- [ ] #task/Highpriority Fix the parser ⏳ 2026-07-26",
+    );
+    expect(nestedListItems).toBe(
+      "- [ ] #work/project `09:00 - 09:15` Verify the fix",
+    );
+  });
+
   test("Preserves numeric-leading text when rendering with HH:mm", () => {
     const { listItem, nestedListItems } = toRenderableMarkdown({
       text: "2026 goals",

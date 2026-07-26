@@ -195,6 +195,8 @@ For example, these tasks will show up in the timeline:
 - [ ] #task 11:00 - 13:00 This task uses the Dataview property format [scheduled:: 2021-08-29]
 ```
 
+One or more leading Obsidian tags may appear immediately before a complete time range. Time expressions elsewhere in the task description remain ordinary text and are not interpreted as timeline times.
+
 ### 3. Showing internet calendars
 
 To show events from internet calendars like **Google Calendar, iCloud Calendar and Outlook** you only need to add an ICS link in the plugin settings.

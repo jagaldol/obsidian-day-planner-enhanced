@@ -4,8 +4,12 @@ import { get } from "svelte/store";
 
 import { bullet, defaultDayFormat, emDash } from "../constants";
 import { settings } from "../global-store/settings";
-import { replaceOrPrependTimeRange } from "../parser/parser";
-import { obsidianBlockIdRegExp, timeRangeAtStartOfLineRegExp } from "../regexp";
+import {
+  getTimeRangeMatch,
+  removeTimeRangeFromLine,
+  replaceOrPrependTimeRange,
+} from "../parser/parser";
+import { obsidianBlockIdRegExp } from "../regexp";
 import type { DayPlannerSettings } from "../settings";
 import {
   isListItemSourced,
@@ -369,33 +373,11 @@ export function truncateToRange<T extends WithDuration<TimeBlock>>(
 }
 
 export function removeTimeRangeFromStartOfLine(text: string) {
-  return text.replace(timeRangeAtStartOfLineRegExp, "");
-}
-
-function splitMarkdownListPrefix(text: string) {
-  const match = text.match(/^(\s*(?:\d+[.)]|[-*+])\s+(?:\[[^\]]\]\s+)?)(.*)$/u);
-
-  if (match) {
-    return { prefix: match[1], text: match[2] };
-  }
-
-  const checkboxMatch = text.match(/^(\s*\[[^\]]\]\s+)(.*)$/u);
-
-  if (!checkboxMatch) {
-    return undefined;
-  }
-
-  return { prefix: checkboxMatch[1], text: checkboxMatch[2] };
+  return removeTimeRangeFromLine(text);
 }
 
 export function removeTimeRange(text: string) {
-  const listLine = splitMarkdownListPrefix(text);
-  const prefix = listLine?.prefix ?? "";
-  const textWithoutPrefix = listLine?.text ?? text;
-
-  return `${prefix}${removeTimeRangeFromStartOfLine(textWithoutPrefix)
-    .trim()
-    .replace(/\s+/g, " ")}`;
+  return removeTimeRangeFromLine(text);
 }
 
 export function isTimeEqual(a: EditableTimeBlock, b: EditableTimeBlock) {
@@ -577,25 +559,19 @@ function getNestedListItems(children: Node[] | undefined) {
 }
 
 function hasLeadingTimeRange(node: Node) {
-  return timeRangeAtStartOfLineRegExp.test(getFirstLine(node.text));
+  return getTimeRangeMatch(getFirstLine(node.text)) !== null;
 }
 
 function wrapLeadingTimeRangeInCodeSpan(line: string) {
-  const match = line.match(/^(\s*(?:\d+[.)]|[-*+])\s+(?:\[[^\]]\]\s+)?)(.*)$/u);
-  const prefix = match?.[1];
-  const text = match?.[2];
+  const match = getTimeRangeMatch(line);
 
-  if (!prefix || !text || !timeRangeAtStartOfLineRegExp.test(text)) {
+  if (!match) {
     return line;
   }
 
-  return (
-    prefix +
-    text.replace(
-      timeRangeAtStartOfLineRegExp,
-      (timeRange) => `\`${timeRange}\``,
-    )
-  );
+  return `${line.slice(0, match.startIndex)}\`${match.timeRange}\`${line.slice(
+    match.endIndex,
+  )}`;
 }
 
 function getIndentedText(

@@ -8,12 +8,8 @@ import type { EditorPosition } from "obsidian";
 import { check, isExactly, isNotVoid } from "typed-assert";
 import type { Point } from "unist";
 
-import { compareTimestamps } from "../parser/parser";
-import {
-  escapedSquareBracket,
-  listItemRegExp,
-  timeRangeAtStartOfLineRegExp,
-} from "../regexp";
+import { compareTimestamps, getTimeRangeMatch } from "../parser/parser";
+import { escapedSquareBracket, listItemRegExp } from "../regexp";
 import { takeWhile } from "../util/collection";
 
 export { fromMarkdown };
@@ -150,7 +146,7 @@ export function sortListsRecursively<T extends Node>(
 function hasTimestampInText(node: Node) {
   const text = getFirstTextNodeValue(node).replace(/^\[[^\]]\]\s+/u, "");
 
-  return timeRangeAtStartOfLineRegExp.test(text);
+  return getTimeRangeMatch(text) !== null;
 }
 
 function sortTimestampedGroups<T extends Node>(

@@ -171,19 +171,19 @@ it("Does not read embedded clock text as a schedule time", () => {
   expect(
     getTimeFromLine({
       day: moment("2023-01-01"),
-      line: "SRT 371(15:36 출발)",
+      line: "Review the error logged at 15:36",
     }),
   ).toBeNull();
   expect(
     getTimeFromLine({
       day: moment("2023-01-01"),
-      line: "- [ ] SRT 371(15:36 출발)",
+      line: "- [ ] Review the error logged at 15:36",
     }),
   ).toBeNull();
   expect(
     getTimeFromLine({
       day: moment("2023-01-01"),
-      line: "[ ] SRT 371(15:36 출발)",
+      line: "[ ] Review the error logged at 15:36",
     }),
   ).toBeNull();
   expect(
@@ -194,46 +194,119 @@ it("Does not read embedded clock text as a schedule time", () => {
   ).toMatchObject({ startTime: moment("2023-01-01 12:00") });
 });
 
+it.each([
+  "- [ ] #task/Highpriority 08:50 - 09:50 Fix the parser ⏳ 2026-07-26",
+  "[ ] #task #work/project 08:50 - 09:50 Fix the parser",
+  "#task/Highpriority 08:50 - 09:50 Fix the parser",
+])("Reads a complete time range immediately after leading tags: %s", (line) => {
+  expect(
+    getTimeFromLine({
+      day: moment("2026-07-26"),
+      line,
+    }),
+  ).toMatchObject({
+    durationMinutes: 60,
+    startTime: moment("2026-07-26 08:50"),
+  });
+});
+
+it.each([
+  "#task/Highpriority 08:50 Fix the parser",
+  "#task/Highpriority Review the error logged at 15:36",
+  "#task/Highpriority Notes 08:50 - 09:50",
+])(
+  "Does not read incomplete or embedded time after leading tags: %s",
+  (line) => {
+    expect(getTimeFromLine({ day: moment("2026-07-26"), line })).toBeNull();
+  },
+);
+
 it("Only replaces a leading time range", () => {
   expect(
-    replaceOrPrependTimeRange("SRT 371(15:36 출발)", "10:00 - 10:30"),
-  ).toBe("10:00 - 10:30 SRT 371(15:36 출발)");
+    replaceOrPrependTimeRange(
+      "Review the error logged at 15:36",
+      "10:00 - 10:30",
+    ),
+  ).toBe("10:00 - 10:30 Review the error logged at 15:36");
   expect(replaceOrPrependTimeRange("09:00 Old title", "10:00 - 10:30")).toBe(
     "10:00 - 10:30 Old title",
   );
   expect(
-    replaceOrPrependTimeRange("- [ ] SRT 371(15:36 출발)", "10:00 - 10:30"),
-  ).toBe("- [ ] 10:00 - 10:30 SRT 371(15:36 출발)");
+    replaceOrPrependTimeRange(
+      "- [ ] Review the error logged at 15:36",
+      "10:00 - 10:30",
+    ),
+  ).toBe("- [ ] 10:00 - 10:30 Review the error logged at 15:36");
   expect(
     replaceOrPrependTimeRange("- [ ] 09:00 Old title", "10:00 - 10:30"),
   ).toBe("- [ ] 10:00 - 10:30 Old title");
   expect(
-    replaceOrPrependTimeRange("[ ] SRT 371(15:36 출발)", "10:00 - 10:30"),
-  ).toBe("[ ] 10:00 - 10:30 SRT 371(15:36 출발)");
+    replaceOrPrependTimeRange(
+      "[ ] Review the error logged at 15:36",
+      "10:00 - 10:30",
+    ),
+  ).toBe("[ ] 10:00 - 10:30 Review the error logged at 15:36");
   expect(replaceOrPrependTimeRange("2026 goals", "10:00 - 10:30")).toBe(
     "10:00 - 10:30 2026 goals",
   );
 });
 
+it("Keeps leading tags before a replaced or inserted time range", () => {
+  expect(
+    replaceOrPrependTimeRange(
+      "- [ ] #task/Highpriority 08:50 - 09:50 Old title",
+      "10:00 - 10:30",
+    ),
+  ).toBe("- [ ] #task/Highpriority 10:00 - 10:30 Old title");
+  expect(
+    replaceOrPrependTimeRange(
+      "- [ ] #task/Highpriority Untimed title",
+      "10:00 - 10:30",
+    ),
+  ).toBe("- [ ] #task/Highpriority 10:00 - 10:30 Untimed title");
+  expect(
+    replaceOrPrependTimeRange(
+      "#task #work/project Untimed title",
+      "10:00 - 10:30",
+    ),
+  ).toBe("#task #work/project 10:00 - 10:30 Untimed title");
+});
+
 it("Only removes a leading time range", () => {
-  expect(removeTimeRange("SRT 371(15:36 출발)")).toBe("SRT 371(15:36 출발)");
-  expect(removeTimeRange("09:00 SRT 371(15:36 출발)")).toBe(
-    "SRT 371(15:36 출발)",
+  expect(removeTimeRange("Review the error logged at 15:36")).toBe(
+    "Review the error logged at 15:36",
   );
-  expect(removeTimeRange("- [ ] 09:00 - 10:00 SRT 371(15:36 출발)")).toBe(
-    "- [ ] SRT 371(15:36 출발)",
+  expect(removeTimeRange("09:00 Review the error logged at 15:36")).toBe(
+    "Review the error logged at 15:36",
   );
-  expect(removeTimeRange("- SRT 371(15:36 출발)")).toBe(
-    "- SRT 371(15:36 출발)",
+  expect(
+    removeTimeRange("- [ ] 09:00 - 10:00 Review the error logged at 15:36"),
+  ).toBe("- [ ] Review the error logged at 15:36");
+  expect(removeTimeRange("- Review the error logged at 15:36")).toBe(
+    "- Review the error logged at 15:36",
   );
-  expect(removeTimeRange("[ ] 09:00 - 10:00 SRT 371(15:36 출발)")).toBe(
-    "[ ] SRT 371(15:36 출발)",
-  );
+  expect(
+    removeTimeRange("[ ] 09:00 - 10:00 Review the error logged at 15:36"),
+  ).toBe("[ ] Review the error logged at 15:36");
   expect(removeTimeRange("- [ ] 2026 goals")).toBe("- [ ] 2026 goals");
+});
+
+it("Removes only the time range after leading tags", () => {
+  expect(
+    removeTimeRange(
+      "- [ ] #task/Highpriority 08:50 - 09:50 Fix the parser ⏳ 2026-07-26",
+    ),
+  ).toBe("- [ ] #task/Highpriority Fix the parser ⏳ 2026-07-26");
+  expect(
+    removeTimeRange("- [ ] #task #work/project 08:50 - 09:50 Fix the parser"),
+  ).toBe("- [ ] #task #work/project Fix the parser");
 });
 
 it("Removes compact ranges with HHmm", () => {
   configureTimestampRegExps("HHmm");
 
   expect(removeTimeRange("- [ ] 0700 - 0840 Exercise")).toBe("- [ ] Exercise");
+  expect(removeTimeRange("- [ ] #task/Highpriority 0700 - 0840 Exercise")).toBe(
+    "- [ ] #task/Highpriority Exercise",
+  );
 });
