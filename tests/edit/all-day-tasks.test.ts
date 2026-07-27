@@ -3,10 +3,12 @@ import { get } from "svelte/store";
 import { test, expect, describe } from "vitest";
 
 import { defaultSettingsForTests } from "../../src/settings";
+import type { EditableTimeBlock } from "../../src/time-block-types";
 import { EditMode } from "../../src/ui/hooks/use-edit/types";
 import * as t from "../../src/util/time-block-utils";
 
 import {
+  baseTask,
   baseTasks,
   day,
   nextDay,
@@ -19,6 +21,110 @@ describe("all-day tasks", () => {
     start: day,
     end: nextDay,
   };
+
+  function allDayTask(props: {
+    id: string;
+    line: number;
+    path: string;
+    source?: "dailyNoteDate" | "tasksPluginProp";
+    startTime?: moment.Moment;
+  }): EditableTimeBlock {
+    const {
+      id,
+      line,
+      path,
+      source = "tasksPluginProp",
+      startTime = day,
+    } = props;
+
+    return {
+      ...baseTask,
+      id,
+      isAllDayEvent: true,
+      path,
+      position: {
+        start: { line, col: 0, offset: line },
+        end: { line, col: 1, offset: line + 1 },
+      },
+      source,
+      startTime,
+      text: id,
+    };
+  }
+
+  test("keeps all-day order stable across file reindexing", () => {
+    const dailyFirst = allDayTask({
+      id: "daily-first",
+      line: 10,
+      path: "fixtures/daily/2023-01-01.md",
+      source: "dailyNoteDate",
+      startTime: day.clone().add(1, "hour"),
+    });
+    const dailySecond = allDayTask({
+      id: "daily-second",
+      line: 11,
+      path: "fixtures/daily/2023-01-01.md",
+      source: "dailyNoteDate",
+    });
+    const taskAFirst = allDayTask({
+      id: "task-a-first",
+      line: 20,
+      path: "fixtures/tasks/가.md",
+    });
+    const taskASecond = allDayTask({
+      id: "task-a-second",
+      line: 21,
+      path: "fixtures/tasks/가.md",
+    });
+    const taskBFirst = allDayTask({
+      id: "task-b-first",
+      line: 30,
+      path: "fixtures/tasks/나.md",
+    });
+    const nextDayDaily = allDayTask({
+      id: "next-day-daily",
+      line: 10,
+      path: "fixtures/daily/2023-01-02.md",
+      source: "dailyNoteDate",
+      startTime: nextDay,
+    });
+    const expectedIds = [
+      "daily-first",
+      "daily-second",
+      "task-a-first",
+      "task-a-second",
+      "task-b-first",
+      "next-day-daily",
+    ];
+    const {
+      getDisplayedAllDayTasksForMultiDayRow,
+      props: { localTasks },
+    } = setUp({
+      tasks: [
+        taskBFirst,
+        nextDayDaily,
+        taskASecond,
+        dailySecond,
+        taskAFirst,
+        dailyFirst,
+      ],
+    });
+    const displayedIds = () =>
+      get(getDisplayedAllDayTasksForMultiDayRow)(range).map(({ id }) => id);
+
+    expect(displayedIds()).toEqual(expectedIds);
+
+    localTasks.set([
+      taskAFirst,
+      taskASecond,
+      taskBFirst,
+      dailyFirst,
+      dailySecond,
+      nextDayDaily,
+    ]);
+
+    expect(displayedIds()).toEqual(expectedIds);
+  });
 
   test("an unscheduled task gets moved to another day", () => {
     const { handlers, moveCursorTo, getDisplayedAllDayTasksForMultiDayRow } =

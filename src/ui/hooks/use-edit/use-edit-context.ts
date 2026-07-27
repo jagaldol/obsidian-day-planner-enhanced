@@ -28,6 +28,81 @@ import { transform } from "./transform/transform";
 import type { EditOperation } from "./types";
 import { useEditActions } from "./use-edit-actions";
 
+const allDayPathCollator = new Intl.Collator("ko", {
+  numeric: true,
+  sensitivity: "base",
+});
+
+function compareText(left: string, right: string) {
+  const localized = allDayPathCollator.compare(
+    left.normalize("NFC"),
+    right.normalize("NFC"),
+  );
+
+  if (localized !== 0) {
+    return localized;
+  }
+
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function getAllDaySourceRank(timeBlock: TimelineTimeBlock) {
+  switch (timeBlock.source) {
+    case "ical":
+      return 0;
+    case "dailyNoteDate":
+      return 1;
+    case "tasksPluginProp":
+      return 2;
+    case "unwritten":
+      return 3;
+  }
+}
+
+function compareAllDayTimeBlocks(
+  left: TimelineTimeBlock,
+  right: TimelineTimeBlock,
+) {
+  const dateComparison = t
+    .getDayKey(left.startTime)
+    .localeCompare(t.getDayKey(right.startTime));
+
+  if (dateComparison !== 0) {
+    return dateComparison;
+  }
+
+  const sourceComparison =
+    getAllDaySourceRank(left) - getAllDaySourceRank(right);
+
+  if (sourceComparison !== 0) {
+    return sourceComparison;
+  }
+
+  if (left.source === "ical" && right.source === "ical") {
+    return (
+      compareText(left.calendar.name, right.calendar.name) ||
+      compareText(left.summary, right.summary) ||
+      compareText(left.id, right.id)
+    );
+  }
+
+  const leftIsIndexed =
+    left.source === "dailyNoteDate" || left.source === "tasksPluginProp";
+  const rightIsIndexed =
+    right.source === "dailyNoteDate" || right.source === "tasksPluginProp";
+
+  if (leftIsIndexed && rightIsIndexed) {
+    return (
+      compareText(left.path, right.path) ||
+      left.position.start.line - right.position.start.line ||
+      left.position.start.col - right.position.start.col ||
+      compareText(left.id, right.id)
+    );
+  }
+
+  return compareText(left.id, right.id);
+}
+
 function groupByDay(timeBlocks: TimelineTimeBlock[]) {
   return timeBlocks.reduce<
     Record<
@@ -216,7 +291,8 @@ export function useEditContext(props: {
               t.isWithDuration(timeBlock)
                 ? t.truncateToRange(timeBlock, range)
                 : timeBlock,
-          );
+          )
+          .toSorted(compareAllDayTimeBlocks);
       },
   );
 
