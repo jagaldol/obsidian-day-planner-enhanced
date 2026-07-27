@@ -319,6 +319,59 @@ describe("renderMarkdownInputSuggestion", () => {
       "Projects/Project Alpha.md",
     );
   });
+
+  test("renders a new tag as freely insertable syntax", () => {
+    const itemEl = document.createElement("div");
+    const context = getMarkdownSuggestionContext("#new-tag");
+
+    expect(context).toBeDefined();
+
+    renderMarkdownInputSuggestion(
+      suggestion({
+        context: context!,
+        isNew: true,
+        kind: "tag",
+        value: "new-tag",
+      }),
+      itemEl,
+    );
+
+    expect(
+      itemEl.querySelector(".day-planner-markdown-suggestion-label")
+        ?.textContent,
+    ).toBe("#new-tag");
+    expect(
+      itemEl.querySelector(".day-planner-markdown-suggestion-status"),
+    ).toBeNull();
+    expect(itemEl.textContent).not.toContain("Create");
+  });
+
+  test("marks a new wikilink as unresolved without implying file creation", () => {
+    const itemEl = document.createElement("div");
+    const context = getMarkdownSuggestionContext("[[Missing note");
+
+    expect(context).toBeDefined();
+
+    renderMarkdownInputSuggestion(
+      suggestion({
+        context: context!,
+        isNew: true,
+        kind: "wikilink",
+        value: "Missing note",
+      }),
+      itemEl,
+    );
+
+    expect(
+      itemEl.querySelector(".day-planner-markdown-suggestion-label")
+        ?.textContent,
+    ).toBe("[[Missing note]]");
+    expect(
+      itemEl.querySelector(".day-planner-markdown-suggestion-status")
+        ?.textContent,
+    ).toBe("Unresolved");
+    expect(itemEl.textContent).not.toContain("Create");
+  });
 });
 
 describe("applyMarkdownInputSuggestion", () => {

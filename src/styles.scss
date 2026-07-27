@@ -89,6 +89,26 @@
   min-height: 0;
 }
 
+.day-planner-markdown-suggestion-title {
+  display: flex;
+  gap: var(--size-2-2);
+  align-items: baseline;
+  min-width: 0;
+}
+
+.day-planner-markdown-suggestion-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.day-planner-markdown-suggestion-status {
+  flex: 0 0 auto;
+
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-normal);
+  color: var(--text-faint);
+}
+
 .day-planner-markdown-suggestion-instructions {
   flex: 0 0 auto;
 }

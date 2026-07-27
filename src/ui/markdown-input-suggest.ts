@@ -318,14 +318,26 @@ export function renderMarkdownInputSuggestion(
 
   const contentEl = el.ownerDocument.createElement("div");
   const titleEl = el.ownerDocument.createElement("div");
+  const titleTextEl = el.ownerDocument.createElement("span");
   const syntax = getInsertedText(suggestion);
 
   contentEl.className = "suggestion-content";
-  titleEl.className = "suggestion-title";
-  titleEl.textContent = suggestion.isNew
-    ? `Create ${syntax}`
+  titleEl.className = "suggestion-title day-planner-markdown-suggestion-title";
+  titleTextEl.className = "day-planner-markdown-suggestion-label";
+  titleTextEl.textContent = suggestion.isNew
+    ? syntax
     : (suggestion.label ??
       (suggestion.kind === "tag" ? syntax : suggestion.value));
+  titleEl.appendChild(titleTextEl);
+
+  if (suggestion.isNew && suggestion.kind === "wikilink") {
+    const statusEl = el.ownerDocument.createElement("span");
+
+    statusEl.className = "day-planner-markdown-suggestion-status";
+    statusEl.textContent = "Unresolved";
+    titleEl.appendChild(statusEl);
+  }
+
   contentEl.appendChild(titleEl);
 
   if (suggestion.detail) {
