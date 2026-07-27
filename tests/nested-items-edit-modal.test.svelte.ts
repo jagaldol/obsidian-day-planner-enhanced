@@ -96,6 +96,67 @@ afterEach(() => {
 });
 
 describe("NestedItemsEditModal", () => {
+  test("uses New item as a placeholder instead of a prefilled value", () => {
+    const { component, target, onSave } = renderModal([]);
+
+    try {
+      click(target.querySelector("button.add-root-row"));
+
+      const input = getInput();
+
+      expect(input?.value).toBe("");
+      expect(input?.placeholder).toBe("New item");
+
+      (input as HTMLInputElement).value = "Review the timeline";
+      input?.dispatchEvent(new Event("input", { bubbles: true }));
+      flushSync();
+
+      keydown(input, "Enter");
+      click(target.querySelector("button.mod-cta"));
+
+      expect(onSave).toHaveBeenCalledWith([
+        {
+          text: "Review the timeline",
+          symbol: "-",
+          status: undefined,
+          task: undefined,
+          children: [],
+        },
+      ]);
+    } finally {
+      unmount(component);
+      target.remove();
+    }
+  });
+
+  test("does not save an untouched new item", () => {
+    const { component, target, onSave } = renderModal([]);
+
+    try {
+      click(target.querySelector("button.add-root-row"));
+      click(target.querySelector("button.mod-cta"));
+
+      expect(onSave).toHaveBeenCalledWith([]);
+    } finally {
+      unmount(component);
+      target.remove();
+    }
+  });
+
+  test("removes an untouched new item when its edit is canceled", () => {
+    const { component, target } = renderModal([]);
+
+    try {
+      click(target.querySelector("button.add-root-row"));
+      keydown(getInput(), "Escape");
+
+      expect(target.querySelector(".nested-item-card")).toBeNull();
+    } finally {
+      unmount(component);
+      target.remove();
+    }
+  });
+
   test("attaches markdown suggestions while an item is being edited", () => {
     const detach = vi.fn();
     const attachMarkdownInputSuggest = vi.fn(() => detach);

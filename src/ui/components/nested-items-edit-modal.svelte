@@ -59,7 +59,7 @@
   }
 
   function createNewItem(): EditableNestedListItem {
-    return { text: "New item", symbol: "-" };
+    return { text: "", symbol: "-" };
   }
 
   function getFirstLine(text: string) {
@@ -139,7 +139,7 @@
     const nextIndex = items.length;
 
     items = [...items, newItem];
-    beginEdit(`${nextIndex}`, newItem);
+    beginEdit(`${nextIndex}`, newItem, true);
   }
 
   function addChild(path: number[]) {
@@ -151,7 +151,7 @@
     const nextIndex = item.children?.length ?? 0;
 
     item.children = [...(item.children ?? []), newItem];
-    beginEdit([...path, nextIndex].join("."), newItem);
+    beginEdit([...path, nextIndex].join("."), newItem, true);
   }
 
   function deleteItem(path: number[]) {
@@ -246,9 +246,14 @@
     item.task = nextState;
   }
 
-  function beginEdit(pathKey: string, item: EditableNestedListItem) {
+  function beginEdit(
+    pathKey: string,
+    item: EditableNestedListItem,
+    isNewItem = false,
+  ) {
     editingPathKey = pathKey;
     editingText = getFirstLine(item.text);
+    editingIsNewItem = isNewItem;
   }
 
   function beginItemEdit(pathKey: string, item: EditableNestedListItem) {
@@ -348,7 +353,17 @@
     }
 
     if (editingText.trim().length === 0) {
-      cancelEdit();
+      if (editingIsNewItem) {
+        const path = pathKey.split(".").map(Number);
+        const siblings = getSiblings(path);
+        const index = path[path.length - 1];
+
+        isNotVoid(index);
+
+        siblings.splice(index, 1);
+      }
+
+      finishEdit();
       return;
     }
 
@@ -356,12 +371,27 @@
     const item = getItem(path);
 
     item.text = replaceFirstLine(item.text, editingText.trim());
-    cancelEdit();
+    finishEdit();
   }
 
   function cancelEdit() {
+    if (editingIsNewItem && editingPathKey !== undefined) {
+      const path = editingPathKey.split(".").map(Number);
+      const siblings = getSiblings(path);
+      const index = path[path.length - 1];
+
+      isNotVoid(index);
+
+      siblings.splice(index, 1);
+    }
+
+    finishEdit();
+  }
+
+  function finishEdit() {
     editingPathKey = undefined;
     editingText = "";
+    editingIsNewItem = false;
   }
 
   function clearMoveFeedback() {
@@ -400,6 +430,7 @@
   );
   let editingPathKey = $state<string | undefined>();
   let editingText = $state("");
+  let editingIsNewItem = $state(false);
   let movedPathKey = $state<string | undefined>();
   let movedDirection = $state<-1 | 1 | undefined>();
   let moveFeedbackTimeout: number | undefined;
@@ -512,6 +543,7 @@
             <input
               aria-label="Nested item text"
               onkeydown={(event) => handleEditKeydown(event, pathKey)}
+              placeholder="New item"
               bind:value={editingText}
               use:focusOnMount
               use:markdownInputSuggest
