@@ -51,6 +51,10 @@ describe("createRenderMarkdown", () => {
     link.dataset.href = "../Projects/Day Planner";
     link.appendChild(linkText);
     el.appendChild(link);
+    const renderedLinkClick = vi.fn((event: MouseEvent) =>
+      event.stopPropagation(),
+    );
+    link.addEventListener("click", renderedLinkClick);
 
     const event = new MouseEvent("click", {
       bubbles: true,
@@ -67,6 +71,7 @@ describe("createRenderMarkdown", () => {
       sourcePath,
       false,
     );
+    expect(renderedLinkClick).not.toHaveBeenCalled();
 
     destroy();
   });

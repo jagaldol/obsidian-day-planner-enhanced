@@ -113,6 +113,10 @@
   flex: 0 0 auto;
 }
 
+body:has(.modal.day-planner-nested-items-modal) .popover.hover-popover {
+  z-index: var(--layer-menu) !important;
+}
+
 .planner-progress-value {
   background-color: var(--color-accent);
   height: 100%;

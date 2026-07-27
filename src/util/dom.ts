@@ -52,10 +52,6 @@ export function isInteractiveEventTarget(target: EventTarget | null) {
   );
 }
 
-export function containsInteractiveElement(element: Element) {
-  return element.querySelector(interactiveElementSelector) !== null;
-}
-
 export function isTouchEvent(event: PointerEvent) {
   return ["pen", "touch"].includes(event.pointerType);
 }

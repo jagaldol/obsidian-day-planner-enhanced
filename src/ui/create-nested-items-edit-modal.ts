@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
 import { App, Modal, type KeymapEventHandler } from "obsidian";
 import { mount, unmount } from "svelte";
-import type { Readable } from "svelte/store";
 
 import {
   type EditableNestedListItem,
@@ -10,7 +9,10 @@ import {
 } from "../service/list-item-entry-editor";
 import type { EditableTimeBlock } from "../time-block-types";
 import { createRenderMarkdown } from "../util/create-render-markdown";
-import { createShowPreview } from "../util/create-show-preview";
+import {
+  createShowPreview,
+  dayPlannerHoverLinkSource,
+} from "../util/create-show-preview";
 import { getFirstLine } from "../util/markdown";
 
 import { createInternalLinkHoverPreview } from "./actions/hover-preview";
@@ -114,10 +116,11 @@ function toEditableNestedListItems(
 export function createNestedItemsEditModalCreator(
   app: App,
   taskEntryEditor: ListItemEntryEditor,
-  isModPressed: Readable<boolean>,
 ) {
   const renderMarkdown = createRenderMarkdown(app);
-  const showPreview = createShowPreview(app);
+  const showPreview = createShowPreview(app, {
+    source: dayPlannerHoverLinkSource,
+  });
 
   return (task: EditableTimeBlock) => {
     if (task.source === "unwritten") {
@@ -158,7 +161,6 @@ export function createNestedItemsEditModalCreator(
       target: modal.contentEl,
       props: {
         attachInternalLinkHoverPreview: createInternalLinkHoverPreview(path, {
-          isModPressed,
           showPreview,
         }),
         attachMarkdownInputSuggest: createMarkdownInputSuggest(app, path),

@@ -51,12 +51,12 @@ export const createRenderMarkdown =
         );
     };
 
-    el.addEventListener("click", openInternalLink);
-    el.addEventListener("auxclick", openInternalLink);
+    el.addEventListener("click", openInternalLink, true);
+    el.addEventListener("auxclick", openInternalLink, true);
 
     return () => {
-      el.removeEventListener("click", openInternalLink);
-      el.removeEventListener("auxclick", openInternalLink);
+      el.removeEventListener("click", openInternalLink, true);
+      el.removeEventListener("auxclick", openInternalLink, true);
       loader.unload();
     };
   };

@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import {
-  containsInteractiveElement,
   createAutoScroll,
   dispatchAutoScrollPointerMove,
   getIsomorphicClientY,
@@ -46,8 +45,6 @@ describe("interactive event targets", () => {
     expect(isInteractiveEventTarget(link)).toBe(true);
     expect(isInteractiveEventTarget(child)).toBe(true);
     expect(isInteractiveEventTarget(document.createElement("div"))).toBe(false);
-    expect(containsInteractiveElement(block)).toBe(true);
-    expect(containsInteractiveElement(child)).toBe(false);
   });
 });
 

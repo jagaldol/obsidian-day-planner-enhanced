@@ -60,7 +60,6 @@ export interface ObsidianContext {
   toggleCheckboxInFile: VaultFacade["toggleCheckboxInFile"];
   editContext: ReturnType<typeof useEditContext>;
   showPreview: ShowPreview;
-  isModPressed: Readable<boolean>;
   reSync: () => void;
   isOnline: Readable<boolean>;
   isDarkMode: Signal<boolean>;

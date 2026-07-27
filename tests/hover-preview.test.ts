@@ -1,58 +1,60 @@
-import { writable } from "svelte/store";
 import { describe, expect, test, vi } from "vitest";
 
 import {
   createHoverPreview,
   createInternalLinkHoverPreview,
 } from "../src/ui/actions/hover-preview";
+import type { LocalTimeBlock } from "../src/time-block-types";
 
-import { baseTask } from "./edit/util/fixtures";
+import { baseTask, unscheduledTask } from "./edit/util/fixtures";
 
-function setUp(isModPressedInitially: boolean) {
-  const isModPressed = writable(isModPressedInitially);
+function setUp(task: LocalTimeBlock = baseTask) {
   const showPreview = vi.fn();
   const block = document.createElement("div");
   const link = document.createElement("a");
   const linkText = document.createElement("span");
   const blockText = document.createElement("span");
+  const timeRange = document.createElement("div");
+  const timeText = document.createElement("span");
 
   link.className = "internal-link";
   link.dataset.href = "Linked note";
   link.appendChild(linkText);
-  block.append(link, blockText);
+  timeRange.className = "time-block-range";
+  timeRange.appendChild(timeText);
+  block.append(timeRange, link, blockText);
   document.body.appendChild(block);
 
-  const action = createHoverPreview(baseTask, {
-    isModPressed,
-    showPreview,
-  })(block);
+  const action = createHoverPreview(task, { showPreview })(block);
 
   return {
     action,
     block,
     blockText,
-    isModPressed,
     linkText,
     showPreview,
+    timeRange,
+    timeText,
   };
 }
 
 describe("hoverPreview", () => {
   test("requests the rendered link preview from Obsidian", () => {
-    const { action, block, linkText, showPreview } = setUp(true);
+    const { action, block, linkText, showPreview } = setUp();
     const event = new MouseEvent("mouseover", { bubbles: true });
 
     try {
       linkText.dispatchEvent(event);
 
       expect(showPreview).toHaveBeenCalledWith(
+        expect.objectContaining({ hoverPopover: null }),
         linkText.parentElement,
-        linkText.parentElement,
-        event,
+        expect.any(MouseEvent),
         "Linked note",
         undefined,
         "path",
       );
+      expect(showPreview.mock.calls[0]?.[2]).not.toBe(event);
     } finally {
       action.destroy();
       block.remove();
@@ -60,20 +62,23 @@ describe("hoverPreview", () => {
   });
 
   test("does not forcibly unload the source popover on link entry", () => {
-    const { action, block, blockText, linkText, showPreview } = setUp(true);
+    const { action, block, linkText, showPreview, timeRange, timeText } =
+      setUp();
     const unload = vi.fn();
 
     try {
-      blockText.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
-      Object.assign(blockText, { hoverPopover: { unload } });
+      timeText.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+      Object.assign(timeRange, { hoverPopover: { unload } });
 
       linkText.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
 
       expect(showPreview).toHaveBeenCalledTimes(2);
       expect(unload).not.toHaveBeenCalled();
-      expect(Reflect.get(blockText, "hoverPopover")).toEqual({ unload });
+      expect(Reflect.get(timeRange, "hoverPopover")).toEqual({
+        unload,
+      });
 
-      blockText.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+      timeText.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
 
       expect(showPreview).toHaveBeenCalledTimes(3);
     } finally {
@@ -82,16 +87,16 @@ describe("hoverPreview", () => {
     }
   });
 
-  test("keeps source-location preview on non-interactive block content", () => {
-    const { action, block, blockText, showPreview } = setUp(true);
+  test("previews a timeline source location without a modifier key", () => {
+    const { action, block, showPreview, timeRange, timeText } = setUp();
     const event = new MouseEvent("mouseover", { bubbles: true });
 
     try {
-      blockText.dispatchEvent(event);
+      timeText.dispatchEvent(event);
 
       expect(showPreview).toHaveBeenCalledWith(
-        blockText,
-        blockText,
+        expect.objectContaining({ hoverPopover: null }),
+        timeRange,
         event,
         "path",
         0,
@@ -103,29 +108,59 @@ describe("hoverPreview", () => {
     }
   });
 
-  test("uses the current non-interactive target when Mod is pressed later", () => {
-    const { action, block, blockText, isModPressed, showPreview } =
-      setUp(false);
+  test("does not preview an all-day source location", () => {
+    const { action, block, blockText, showPreview, timeText } =
+      setUp(unscheduledTask);
+    const event = new MouseEvent("mouseover", { bubbles: true });
 
     try {
-      blockText.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+      blockText.dispatchEvent(event);
+      timeText.dispatchEvent(event);
 
       expect(showPreview).not.toHaveBeenCalled();
-
-      isModPressed.set(true);
-
-      expect(showPreview).toHaveBeenCalledOnce();
-      expect(showPreview.mock.calls[0]?.[1]).toBe(blockText);
     } finally {
       action.destroy();
       block.remove();
     }
   });
 
-  test("does not start a source preview from a broad link container", () => {
-    const { action, block, showPreview } = setUp(true);
+  test("previews an all-day wikilink without a modifier key", () => {
+    const { action, block, linkText, showPreview } = setUp(unscheduledTask);
+    const event = new MouseEvent("mouseover", { bubbles: true });
+    const renderedLinkHover = vi.fn();
+    linkText.parentElement?.addEventListener("mouseover", renderedLinkHover);
 
     try {
+      linkText.dispatchEvent(event);
+
+      expect(showPreview).toHaveBeenCalledWith(
+        expect.objectContaining({ hoverPopover: null }),
+        linkText.parentElement,
+        expect.any(MouseEvent),
+        "Linked note",
+        undefined,
+        "path",
+      );
+      expect(showPreview.mock.calls[0]?.[2]).not.toBe(event);
+
+      linkText.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+
+      expect(showPreview).toHaveBeenCalledTimes(2);
+      expect(showPreview.mock.calls[0]?.[0]).toBe(
+        showPreview.mock.calls[1]?.[0],
+      );
+      expect(renderedLinkHover).not.toHaveBeenCalled();
+    } finally {
+      action.destroy();
+      block.remove();
+    }
+  });
+
+  test("does not preview non-time timeline content", () => {
+    const { action, block, blockText, showPreview } = setUp();
+
+    try {
+      blockText.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
       block.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
 
       expect(showPreview).not.toHaveBeenCalled();
@@ -137,8 +172,7 @@ describe("hoverPreview", () => {
 });
 
 describe("internalLinkHoverPreview", () => {
-  test("previews only the rendered link relative to its source file", () => {
-    const isModPressed = writable(true);
+  test("previews the rendered link without a modifier key", () => {
     const showPreview = vi.fn();
     const container = document.createElement("div");
     const plainText = document.createElement("span");
@@ -154,7 +188,6 @@ describe("internalLinkHoverPreview", () => {
     const action = createInternalLinkHoverPreview(
       "fixtures/daily/2023-01-01.md",
       {
-        isModPressed,
         showPreview,
       },
     )(container);
@@ -166,13 +199,14 @@ describe("internalLinkHoverPreview", () => {
 
       linkText.dispatchEvent(event);
       expect(showPreview).toHaveBeenCalledWith(
+        expect.objectContaining({ hoverPopover: null }),
         link,
-        link,
-        event,
+        expect.any(MouseEvent),
         "Project#Plan",
         undefined,
         "fixtures/daily/2023-01-01.md",
       );
+      expect(showPreview.mock.calls[0]?.[2]).not.toBe(event);
     } finally {
       action.destroy();
       container.remove();

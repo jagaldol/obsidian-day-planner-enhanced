@@ -91,7 +91,10 @@ import TimelineView from "./ui/timeline-view";
 import { UndoNotice } from "./ui/undo-notice";
 import { createEnvironmentHooks } from "./util/create-environment-hooks";
 import { createRenderMarkdown } from "./util/create-render-markdown";
-import { createShowPreview } from "./util/create-show-preview";
+import {
+  createShowPreview,
+  dayPlannerHoverLinkSource,
+} from "./util/create-show-preview";
 import { runWithNoticeOnError } from "./util/effect";
 import { notifyAboutStartedTasks } from "./util/notify-about-started-tasks";
 import { createBackgroundBatchScheduler } from "./util/scheduler";
@@ -203,6 +206,10 @@ export default class DayPlanner extends Plugin {
     });
 
     this.initSettingsStore({ initialSettings, dispatch });
+    this.registerHoverLinkSource(dayPlannerHoverLinkSource, {
+      display: this.manifest.name,
+      defaultMod: false,
+    });
     this.registerViews({
       store,
       dispatch,
@@ -602,7 +609,7 @@ export default class DayPlanner extends Plugin {
       new Notice("Tasks changed externally; edit canceled");
     };
 
-    const { isDarkMode, isOnline, isModPressed } = createEnvironmentHooks({
+    const { isDarkMode, isOnline } = createEnvironmentHooks({
       workspace: this.app.workspace,
     });
 
@@ -737,7 +744,6 @@ export default class DayPlanner extends Plugin {
     const openNestedItemsEditModal = createNestedItemsEditModalCreator(
       this.app,
       this.taskEntryEditor,
-      isModPressed,
     );
     const removeTask: ObsidianContext["removeTask"] = (task) => {
       const base = get(localTasks);
@@ -765,8 +771,9 @@ export default class DayPlanner extends Plugin {
       renderMarkdown: createRenderMarkdown(this.app),
       toggleCheckboxInFile: this.vaultFacade.toggleCheckboxInFile,
       editContext,
-      showPreview: createShowPreview(this.app),
-      isModPressed,
+      showPreview: createShowPreview(this.app, {
+        source: dayPlannerHoverLinkSource,
+      }),
       reSync: () => dispatch(icalRefreshRequested()),
       isOnline,
       isDarkMode,
