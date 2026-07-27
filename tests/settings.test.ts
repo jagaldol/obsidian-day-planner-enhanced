@@ -13,4 +13,12 @@ describe("settings migration", () => {
     expect(settings.startHour).toBe(9);
     expect(settings.timelineColumns).toEqual(defaultSettings.timelineColumns);
   });
+
+  test("keeps Tasks metadata visible by default", () => {
+    expect(defaultSettings.hideTasksMetadata).toBe(false);
+    expect(mergeStoredSettings(null).hideTasksMetadata).toBe(false);
+    expect(
+      mergeStoredSettings({ hideTasksMetadata: true }).hideTasksMetadata,
+    ).toBe(true);
+  });
 });

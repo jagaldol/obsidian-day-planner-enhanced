@@ -197,6 +197,8 @@ For example, these tasks will show up in the timeline:
 
 One or more leading Obsidian tags may appear immediately before either a single start time or a complete time range. A single start time uses the configured default task duration. When the timestamp format is `HHmm`, a compact single time such as `#task 1000 Focus` is accepted only in this leading-tag form; untagged compact numbers and time expressions elsewhere in the task description remain ordinary text.
 
+Enable **Tasks integration → Hide Tasks metadata in planner** to keep task descriptions and tags visible while hiding Tasks dates and completion, recurrence, priority, IDs, dependencies, on-completion behavior, and inline fields such as `(scheduled:: …)` inside Day Planner blocks. This only changes the rendered timeline; source notes and scheduling metadata remain unchanged. The setting is off by default.
+
 ### 3. Showing internet calendars
 
 To show events from internet calendars like **Google Calendar, iCloud Calendar and Outlook** you only need to add an ICS link in the plugin settings.

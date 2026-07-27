@@ -128,6 +128,53 @@ describe("Task views", () => {
     expect(nestedListItems).toBe("- [ ] #work/project `10:15` Verify the fix");
   });
 
+  test("Optionally hides Tasks metadata while preserving descriptions and tags", () => {
+    const { listItem, nestedListItems } = toRenderableMarkdown(
+      {
+        text: "#task 10:00 - 11:00 Plan trip ⏳ 2026-07-27 📅 2026-08-07 🔁 every month when done",
+        symbol: "-",
+        status: " ",
+        children: [
+          {
+            text: "Book hotel [scheduled:: 2026-07-27] [priority:: high]",
+            symbol: "-",
+            status: " ",
+          },
+          {
+            text: "Call bank (due:: 2026-08-07) ✅ 2026-08-08",
+            symbol: "-",
+            status: "x",
+          },
+          {
+            text: "Keep project context [owner:: Finance]",
+            symbol: "-",
+          },
+        ],
+      },
+      { hideTasksMetadata: true },
+    );
+
+    expect(listItem).toBe("- [ ] #task Plan trip");
+    expect(nestedListItems).toBe(`- [ ] Book hotel
+- [x] Call bank
+- Keep project context [owner:: Finance]`);
+  });
+
+  test("Hides all Tasks emoji metadata fields without changing source text", () => {
+    const text =
+      "10:00 - 11:00 Ship release 🔺 🆔 task-1 ⛔ task-0 🏁 keep ➕ 2026-07-01 🛫 2026-07-26 ⏳ 2026-07-27 📅 2026-07-28 ❌ 2026-07-29 ✅ 2026-07-30";
+    const task = {
+      text,
+      symbol: "-",
+      status: " ",
+    };
+
+    expect(
+      toRenderableMarkdown(task, { hideTasksMetadata: true }).listItem,
+    ).toBe("- [ ] Ship release");
+    expect(task.text).toBe(text);
+  });
+
   test("Preserves numeric-leading text when rendering with HH:mm", () => {
     const { listItem, nestedListItems } = toRenderableMarkdown({
       text: "2026 goals",

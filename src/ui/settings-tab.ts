@@ -15,6 +15,7 @@ import {
   type DayPlannerSettings,
   eventFormats,
   firstDaysOfWeek,
+  hideTasksMetadataDescription,
 } from "../settings";
 import Callout from "../ui/components/callout.svelte";
 
@@ -147,6 +148,17 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
                 friday: "Friday",
               },
             },
+          },
+        ],
+      },
+      {
+        type: "group",
+        heading: "Tasks integration",
+        items: [
+          {
+            name: "Hide Tasks metadata in planner",
+            desc: hideTasksMetadataDescription,
+            control: { type: "toggle", key: "hideTasksMetadata" },
           },
         ],
       },
@@ -791,6 +803,21 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
               this.updateSettings({ firstDayOfWeek: value });
             }),
         ),
+      );
+
+    new SettingGroup(containerEl)
+      .setHeading("Tasks integration")
+      .addSetting((setting) =>
+        setting
+          .setName("Hide Tasks metadata in planner")
+          .setDesc(hideTasksMetadataDescription)
+          .addToggle((toggle) =>
+            toggle
+              .setValue(this.plugin.settings().hideTasksMetadata)
+              .onChange((value: boolean) => {
+                this.updateSettings({ hideTasksMetadata: value });
+              }),
+          ),
       );
 
     new SettingGroup(containerEl)

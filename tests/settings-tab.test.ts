@@ -16,7 +16,11 @@ vi.mock("obsidian", () => ({
 }));
 
 import type DayPlanner from "../src/main";
-import { defaultSettings, type DayPlannerSettings } from "../src/settings";
+import {
+  defaultSettings,
+  type DayPlannerSettings,
+  hideTasksMetadataDescription,
+} from "../src/settings";
 import {
   DayPlannerSettingsTab,
   timestampFormatDescription,
@@ -63,6 +67,11 @@ describe("DayPlannerSettingsTab declarative settings", () => {
     expect(serializedDefinitions).toContain("Remote calendar URL");
     expect(serializedDefinitions).toContain("Date format in timeline header");
     expect(serializedDefinitions).toContain("Enable time tracker");
+    expect(serializedDefinitions).toContain("Tasks integration");
+    expect(serializedDefinitions).toContain("hideTasksMetadata");
+    expect(serializedDefinitions).toContain(hideTasksMetadataDescription);
+    expect(hideTasksMetadataDescription).toContain("⏳ 📅 ➕ 🛫 ✅");
+    expect(hideTasksMetadataDescription).toContain("(scheduled:: …)");
     expect(serializedDefinitions).toContain("Color 1");
     expect(serializedDefinitions).toContain("timelineEndColor");
   });
@@ -80,6 +89,11 @@ describe("DayPlannerSettingsTab declarative settings", () => {
     tab.setControlValue("eventFormatOnCreation", "bullet");
 
     expect(get(settingsStore).eventFormatOnCreation).toBe("bullet");
+
+    tab.setControlValue("hideTasksMetadata", true);
+
+    expect(tab.getControlValue("hideTasksMetadata")).toBe(true);
+    expect(get(settingsStore).hideTasksMetadata).toBe(true);
   });
 
   test("documents the supported 24-hour timestamp syntax", () => {

@@ -32,7 +32,11 @@
       : undefined,
   );
 
-  const { listItem, nestedListItems } = $derived(toRenderableMarkdown(task));
+  const { listItem, nestedListItems } = $derived(
+    toRenderableMarkdown(task, {
+      hideTasksMetadata: $settings.hideTasksMetadata,
+    }),
+  );
   const sourcePath = $derived(task.source === "unwritten" ? "/" : task.path);
 
   const timeRange = $derived.by(() => {

@@ -2,6 +2,7 @@
   import { SettingGroup } from "obsidian";
 
   import { getObsidianContext } from "../../context/obsidian-context";
+  import { hideTasksMetadataDescription } from "../../settings";
   import { range } from "../../util/collection";
 
   const { settings } = getObsidianContext();
@@ -93,6 +94,20 @@
             }),
         ),
       );
+
+    new SettingGroup(el).setHeading("Tasks integration").addSetting((setting) =>
+      setting
+        .setName("Hide Tasks metadata")
+        .setDesc(hideTasksMetadataDescription)
+        .addToggle((toggle) =>
+          toggle.setValue($settings.hideTasksMetadata).onChange((value) => {
+            $settings = {
+              ...$settings,
+              hideTasksMetadata: value,
+            };
+          }),
+        ),
+    );
 
     new SettingGroup(el)
       .setHeading("Time tracking")

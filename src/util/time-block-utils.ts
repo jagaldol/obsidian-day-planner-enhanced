@@ -515,18 +515,88 @@ export function hideNestedLocalPlanTimeBlocks<T extends TimeBlock>(
   );
 }
 
-export function toRenderableMarkdown(timeBlock: Node) {
+const tasksInlineMetadataFieldNames = [
+  "cancelled",
+  "completion",
+  "created",
+  "depends\\s*on",
+  "due",
+  "id",
+  "on\\s*completion",
+  "priority",
+  "recurrence",
+  "repeat",
+  "scheduled",
+  "start",
+].join("|");
+
+const tasksSquareInlineMetadataRegExp = new RegExp(
+  String.raw`\s*\[\s*(?:${tasksInlineMetadataFieldNames})\s*::[^\]\n]*\]`,
+  "giu",
+);
+const tasksParenthesizedInlineMetadataRegExp = new RegExp(
+  String.raw`\s*\(\s*(?:${tasksInlineMetadataFieldNames})\s*::[^\)\n]*\)`,
+  "giu",
+);
+
+const tasksDateMetadataEmoji = String.raw`(?:➕|🛫|⏳|📅|✅|❌)\s*\d{4}-\d{2}-\d{2}`;
+const tasksPriorityMetadataEmoji = String.raw`(?:🔺|⏫|🔼|🔽|⏬)`;
+const tasksIdMetadataEmoji = String.raw`🆔\s*[a-z\d_-]+`;
+const tasksDependencyMetadataEmoji = String.raw`⛔\s*[a-z\d_-]+(?:\s*,\s*[a-z\d_-]+)*`;
+const tasksOnCompletionMetadataEmoji = String.raw`🏁\s*(?:keep|delete)`;
+const tasksNonRecurrenceMetadataEmoji = [
+  tasksDateMetadataEmoji,
+  tasksPriorityMetadataEmoji,
+  tasksIdMetadataEmoji,
+  tasksDependencyMetadataEmoji,
+  tasksOnCompletionMetadataEmoji,
+].join("|");
+
+const tasksRecurrenceMetadataRegExp = new RegExp(
+  String.raw`\s*🔁\s+.*?(?=\s+(?:${tasksNonRecurrenceMetadataEmoji})|$)`,
+  "giu",
+);
+const tasksEmojiMetadataRegExp = new RegExp(
+  String.raw`\s*(?:${tasksNonRecurrenceMetadataEmoji})`,
+  "giu",
+);
+
+export function removeTasksMetadata(text: string) {
+  return text
+    .replace(tasksSquareInlineMetadataRegExp, "")
+    .replace(tasksParenthesizedInlineMetadataRegExp, "")
+    .replace(tasksRecurrenceMetadataRegExp, "")
+    .replace(tasksEmojiMetadataRegExp, "")
+    .replace(/[ \t]+$/gm, "");
+}
+
+interface RenderableMarkdownOptions {
+  hideTasksMetadata?: boolean;
+}
+
+function optionallyRemoveTasksMetadata(
+  text: string,
+  options: RenderableMarkdownOptions,
+) {
+  return options.hideTasksMetadata ? removeTasksMetadata(text) : text;
+}
+
+export function toRenderableMarkdown(
+  timeBlock: Node,
+  options: RenderableMarkdownOptions = {},
+) {
   const formattedFirstLine = pipe(
     timeBlock,
     getFirstLineAsMarkdown,
     (node) => (timeBlock.status ? node : removeListTokens(node)),
     deleteProps,
     removeTimeRange,
+    (text) => optionallyRemoveTasksMetadata(text, options),
   );
 
   const [, ...linesAfterFirst] = timeBlock.text.split("\n");
 
-  const nestedListItems = getNestedListItems(timeBlock.children);
+  const nestedListItems = getNestedListItems(timeBlock.children, options);
 
   return {
     listItem: formattedFirstLine,
@@ -535,7 +605,10 @@ export function toRenderableMarkdown(timeBlock: Node) {
   };
 }
 
-function getNestedListItems(children: Node[] | undefined) {
+function getNestedListItems(
+  children: Node[] | undefined,
+  options: RenderableMarkdownOptions,
+) {
   let previousChildHasTimeRange: boolean | undefined;
 
   return children
@@ -551,7 +624,12 @@ function getNestedListItems(children: Node[] | undefined) {
       }
 
       previousChildHasTimeRange = childHasTimeRange;
-      result.push(getIndentedText(child, "", { formatTimeRanges: true }));
+      result.push(
+        getIndentedText(child, "", {
+          formatTimeRanges: true,
+          hideTasksMetadata: options.hideTasksMetadata,
+        }),
+      );
 
       return result;
     })
@@ -577,11 +655,18 @@ function wrapLeadingTimeRangeInCodeSpan(line: string) {
 function getIndentedText(
   root: Node,
   parentIndentation: string = "",
-  options: { formatTimeRanges?: boolean } = {},
+  options: {
+    formatTimeRanges?: boolean;
+    hideTasksMetadata?: boolean;
+  } = {},
 ): string {
+  const firstLineAsMarkdown = optionallyRemoveTasksMetadata(
+    getFirstLineAsMarkdown(root),
+    options,
+  );
   const firstLine = options.formatTimeRanges
-    ? wrapLeadingTimeRangeInCodeSpan(getFirstLineAsMarkdown(root))
-    : getFirstLineAsMarkdown(root);
+    ? wrapLeadingTimeRangeInCodeSpan(firstLineAsMarkdown)
+    : firstLineAsMarkdown;
   const [, ...linesAfterFirst] = root.text.split("\n");
 
   let listItemLineWithParagraphs = parentIndentation + firstLine;

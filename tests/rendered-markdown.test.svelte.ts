@@ -54,4 +54,60 @@ describe("RenderedMarkdown", () => {
 
     unmount(component);
   });
+
+  test("reactively hides Tasks metadata when the setting is enabled", () => {
+    const target = document.createElement("div");
+    const renderMarkdown = vi.fn(() => vi.fn());
+    const sourcePath = "Journal/2026-07-27.md";
+    const settings = writable({
+      ...defaultSettingsForTests,
+      hideTasksMetadata: false,
+    });
+    const context = new Map<string, unknown>([
+      [
+        obsidianContextKey,
+        {
+          renderMarkdown,
+          settings,
+          toggleCheckboxInFile: vi.fn(),
+        } as unknown as ObsidianContext,
+      ],
+    ]);
+
+    document.body.appendChild(target);
+
+    const component = mount(RenderedMarkdown, {
+      context,
+      props: {
+        task: {
+          ...baseTask,
+          path: sourcePath,
+          text: "10:00 - 11:00 Review proposal ⏳ 2026-07-27 📅 2026-08-07",
+        },
+      },
+      target,
+    });
+
+    flushSync();
+
+    expect(renderMarkdown).toHaveBeenLastCalledWith(
+      expect.any(HTMLElement),
+      expect.stringContaining("⏳ 2026-07-27"),
+      sourcePath,
+    );
+
+    settings.update((current) => ({
+      ...current,
+      hideTasksMetadata: true,
+    }));
+    flushSync();
+
+    expect(renderMarkdown).toHaveBeenLastCalledWith(
+      expect.any(HTMLElement),
+      "- [ ] Review proposal",
+      sourcePath,
+    );
+
+    unmount(component);
+  });
 });
