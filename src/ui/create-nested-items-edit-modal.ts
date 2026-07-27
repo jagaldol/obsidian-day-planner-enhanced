@@ -87,7 +87,9 @@ class NestedItemsHostModal extends Modal {
 
     return (
       activeElement instanceof HTMLInputElement &&
-      activeElement.getAttribute("aria-label") === "Nested item text" &&
+      ["Nested item text", "Parent item title"].includes(
+        activeElement.getAttribute("aria-label") ?? "",
+      ) &&
       this.contentEl.contains(activeElement)
     );
   }
@@ -169,7 +171,10 @@ export function createNestedItemsEditModalCreator(
         onEditStateChange: (isEditing: boolean) => {
           isNestedItemEditing = isEditing;
         },
-        onSave: async (children: EditableNestedListItem[]) => {
+        onSave: async (
+          parentText: string,
+          children: EditableNestedListItem[],
+        ) => {
           await runWithNoticeOnError(
             taskEntryEditor.replaceNestedItemsAtLocation(
               {
@@ -177,6 +182,7 @@ export function createNestedItemsEditModalCreator(
                 line: position.start.line,
               },
               children,
+              parentText,
             ),
           );
 

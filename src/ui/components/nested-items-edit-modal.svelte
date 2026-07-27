@@ -17,6 +17,7 @@
   import {
     getTimeRangeMatch,
     removeTimeRangeFromLine,
+    replaceOrPrependTimeRange,
   } from "../../parser/parser";
   import type { EditableNestedListItem } from "../../service/list-item-entry-editor";
   import type { RenderMarkdown } from "../../types";
@@ -51,7 +52,10 @@
     };
     onEditEscape?: () => void;
     onEditStateChange?: (isEditing: boolean) => void;
-    onSave: (items: EditableNestedListItem[]) => Promise<void> | void;
+    onSave: (
+      parentText: string,
+      items: EditableNestedListItem[],
+    ) => Promise<void> | void;
     onCancel: () => void;
   } = $props();
 
@@ -289,6 +293,14 @@
     beginEdit(pathKey, item);
   }
 
+  function beginParentEdit() {
+    applyOpenEdit();
+    clearMoveFeedback();
+    editingPathKey = parentEditPathKey;
+    editingText = parentDisplay.title;
+    editingIsNewItem = false;
+  }
+
   function consumeEditShortcut(event: KeyboardEvent) {
     event.preventDefault();
     event.stopPropagation();
@@ -379,6 +391,19 @@
       return;
     }
 
+    if (pathKey === parentEditPathKey) {
+      const nextTitle = editingText.trim();
+
+      if (nextTitle.length > 0) {
+        parentFirstLine = parentDisplay.timeRange
+          ? replaceOrPrependTimeRange(nextTitle, parentDisplay.timeRange)
+          : nextTitle;
+      }
+
+      finishEdit();
+      return;
+    }
+
     if (editingText.trim().length === 0) {
       if (editingIsNewItem) {
         const path = pathKey.split(".").map(Number);
@@ -449,12 +474,14 @@
 
   function save() {
     applyOpenEdit();
-    onSave(cloneItems(items));
+    onSave(parentFirstLine, cloneItems(items));
   }
 
+  const parentEditPathKey = "$parent";
   let items = $state<EditableNestedListItem[]>(
     cloneItems(untrack(() => initialItems)),
   );
+  let parentFirstLine = $state(untrack(() => parentText));
   let editingPathKey = $state<string | undefined>();
   let editingText = $state("");
   let editingIsNewItem = $state(false);
@@ -463,7 +490,7 @@
   let moveFeedbackTimeout: number | undefined;
   let escapeCloseSuppressionTimeout: number | undefined;
   let isSuppressingEscapeClose = false;
-  const parentDisplay = $derived(getDisplayParts(parentText));
+  const parentDisplay = $derived(getDisplayParts(parentFirstLine));
 
   $effect(() => {
     onEditStateChange?.(editingPathKey !== undefined);
@@ -498,11 +525,30 @@
     {#if parentDisplay.timeRange}
       <div class="parent-time-range">{parentDisplay.timeRange}</div>
     {/if}
-    <div
-      class="parent-title markdown-rendered"
-      use:internalLinkHoverPreview
-      use:renderedMarkdown={parentDisplay.title}
-    ></div>
+    {#if editingPathKey === parentEditPathKey}
+      <input
+        class="parent-title-input"
+        aria-label="Parent item title"
+        onkeydown={(event) => handleEditKeydown(event, parentEditPathKey)}
+        bind:value={editingText}
+        use:focusOnMount
+        use:markdownInputSuggest
+      />
+    {:else}
+      <div class="parent-title-content">
+        <button
+          class="parent-title-edit-surface"
+          aria-label={`Edit schedule title ${parentDisplay.title}`}
+          onclick={beginParentEdit}
+          type="button"
+        ></button>
+        <div
+          class="parent-title markdown-rendered"
+          use:internalLinkHoverPreview
+          use:renderedMarkdown={parentDisplay.title}
+        ></div>
+      </div>
+    {/if}
   </div>
 
   <div class="nested-items-list">
@@ -746,11 +792,79 @@
     color: var(--text-muted);
   }
 
-  .parent-title {
+  .parent-title-content {
+    position: relative;
+    width: fit-content;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .parent-title-edit-surface {
+    cursor: text;
+
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+    padding: 0;
+
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .parent-title,
+  .parent-title-input {
     font-size: var(--font-ui-large);
     font-weight: var(--font-semibold);
     line-height: 1.25;
     color: var(--text-normal);
+  }
+
+  .parent-title {
+    pointer-events: none;
+
+    position: relative;
+    z-index: 1;
+
+    min-width: 0;
+
+    overflow-wrap: anywhere;
+  }
+
+  .parent-title :global(a) {
+    pointer-events: auto;
+  }
+
+  .parent-title-input {
+    display: block;
+
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+
+    font-family: inherit;
+
+    appearance: none;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    outline: 0;
+    box-shadow: none;
+    caret-color: var(--interactive-accent);
+  }
+
+  .parent-title-input:focus {
+    background: transparent;
+    border: 0;
+    outline: 0;
+    box-shadow: none;
   }
 
   .parent-title :global(p),
@@ -1143,7 +1257,8 @@
       padding-inline-end: var(--size-4-6);
     }
 
-    .parent-title {
+    .parent-title,
+    .parent-title-input {
       font-size: var(--font-ui-medium);
     }
 

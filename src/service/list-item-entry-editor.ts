@@ -70,6 +70,17 @@ function getLineIndentation(line: string) {
   return line.match(/^\s*/)?.[0] ?? "";
 }
 
+function replaceListItemText(line: string, text: string) {
+  const match = line.match(
+    /^([\s>]*(?:\d+[.)]|[-*+])\s+(?:\[[^\]]\]\s+)?)(.*)$/u,
+  );
+  const prefix = match?.[1];
+
+  isNotVoid(prefix, `Could not find list item prefix in "${line}"`);
+
+  return prefix + text;
+}
+
 const nestedListItemIndentationStep = "    ";
 
 function getFirstLineAndRest(text: string) {
@@ -142,6 +153,7 @@ export class ListItemEntryEditor {
   replaceNestedItemsAtLocation = (
     { path, line }: ListItemLocation,
     children: EditableNestedListItem[],
+    parentText?: string,
   ) =>
     Effect.gen(this, function* () {
       const listItem = yield* this.metadataCacheFacade.getListItemEffect(
@@ -162,6 +174,13 @@ export class ListItemEntryEditor {
 
             isNotVoid(parentLine);
 
+            if (parentText !== undefined) {
+              lines[listItem.position.start.line] = replaceListItemText(
+                parentLine,
+                parentText,
+              );
+            }
+
             const parentIndentation = getLineIndentation(parentLine);
             const childIndentation =
               parentIndentation + nestedListItemIndentationStep;
@@ -173,7 +192,7 @@ export class ListItemEntryEditor {
 
             if (existingChildren.length === 0) {
               if (replacementLines.length === 0) {
-                return contents;
+                return lines.join("\n");
               }
 
               lines.splice(

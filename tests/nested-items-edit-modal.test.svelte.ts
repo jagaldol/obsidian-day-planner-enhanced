@@ -60,6 +60,14 @@ function getInput() {
   );
 }
 
+function getParentTitleInput() {
+  return document.querySelector<HTMLInputElement>(
+    'input[aria-label="Parent item title"]',
+  );
+}
+
+const defaultParentText = "11:30 - 13:40 Example schedule";
+
 function renderModal(
   initialItems: EditableNestedListItem[],
   props: {
@@ -69,6 +77,7 @@ function renderModal(
     attachMarkdownInputSuggest?: AttachMarkdownInputSuggest;
     onEditEscape?: () => void;
     onEditStateChange?: (isEditing: boolean) => void;
+    parentText?: string;
     renderMarkdown?: RenderMarkdown;
     sourcePath?: string;
   } = {},
@@ -98,7 +107,7 @@ function renderModal(
       initialItems,
       onEditEscape: props.onEditEscape,
       onEditStateChange: props.onEditStateChange,
-      parentText: "11:30 - 13:40 Example schedule",
+      parentText: props.parentText ?? defaultParentText,
       renderMarkdown,
       sourcePath: props.sourcePath ?? "fixtures/daily/2023-01-01.md",
       onSave,
@@ -116,6 +125,58 @@ afterEach(() => {
 });
 
 describe("NestedItemsEditModal", () => {
+  test("edits the parent title inline without exposing a separate edit UI", () => {
+    const attachMarkdownInputSuggest = vi.fn(() => () => {});
+    const { component, target, onSave } = renderModal([], {
+      attachMarkdownInputSuggest,
+      parentText: "#focus 11:30 - 13:40 Example schedule",
+    });
+
+    try {
+      expect(target.querySelector(".parent-title")?.textContent).toBe(
+        "#focus Example schedule",
+      );
+      expect(getParentTitleInput()).toBeNull();
+
+      click(
+        target.querySelector(
+          'button[aria-label="Edit schedule title #focus Example schedule"]',
+        ),
+      );
+
+      const input = getParentTitleInput();
+
+      expect(input?.value).toBe("#focus Example schedule");
+      expect(input?.classList.contains("parent-title-input")).toBe(true);
+      expect(attachMarkdownInputSuggest).toHaveBeenCalledWith(input);
+      expect(target.querySelector(".edit-actions")).toBeNull();
+
+      (input as HTMLInputElement).value = "#deep Updated schedule";
+      input?.dispatchEvent(new Event("input", { bubbles: true }));
+      flushSync();
+
+      keydown(input, "Enter");
+
+      expect(getParentTitleInput()).toBeNull();
+      expect(target.querySelector(".parent-time-range")?.textContent).toBe(
+        "11:30 - 13:40",
+      );
+      expect(target.querySelector(".parent-title")?.textContent).toBe(
+        "#deep Updated schedule",
+      );
+
+      click(target.querySelector("button.mod-cta"));
+
+      expect(onSave).toHaveBeenCalledWith(
+        "#deep 11:30 - 13:40 Updated schedule",
+        [],
+      );
+    } finally {
+      unmount(component);
+      target.remove();
+    }
+  });
+
   test("uses New item as a placeholder instead of a prefilled value", () => {
     const { component, target, onSave } = renderModal([]);
 
@@ -134,7 +195,7 @@ describe("NestedItemsEditModal", () => {
       keydown(input, "Enter");
       click(target.querySelector("button.mod-cta"));
 
-      expect(onSave).toHaveBeenCalledWith([
+      expect(onSave).toHaveBeenCalledWith(defaultParentText, [
         {
           text: "Review the timeline",
           symbol: "-",
@@ -156,7 +217,7 @@ describe("NestedItemsEditModal", () => {
       click(target.querySelector("button.add-root-row"));
       click(target.querySelector("button.mod-cta"));
 
-      expect(onSave).toHaveBeenCalledWith([]);
+      expect(onSave).toHaveBeenCalledWith(defaultParentText, []);
     } finally {
       unmount(component);
       target.remove();
@@ -300,7 +361,7 @@ describe("NestedItemsEditModal", () => {
 
       click(target.querySelector("button.mod-cta"));
 
-      expect(onSave).toHaveBeenCalledWith([
+      expect(onSave).toHaveBeenCalledWith(defaultParentText, [
         {
           text: "New item",
           symbol: "-",
@@ -354,7 +415,7 @@ describe("NestedItemsEditModal", () => {
       click(target.querySelector('button[aria-label="Edit Second item"]'));
       click(target.querySelector("button.mod-cta"));
 
-      expect(onSave).toHaveBeenCalledWith([
+      expect(onSave).toHaveBeenCalledWith(defaultParentText, [
         {
           text: "Updated first item",
           symbol: "-",
@@ -404,7 +465,7 @@ describe("NestedItemsEditModal", () => {
 
       click(target.querySelector("button.mod-cta"));
 
-      expect(onSave).toHaveBeenCalledWith([
+      expect(onSave).toHaveBeenCalledWith(defaultParentText, [
         {
           text: "Verify markdown output",
           symbol: "-",

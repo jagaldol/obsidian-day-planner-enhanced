@@ -87,3 +87,83 @@ test("rewrites nested item indentation to four spaces per level", async () => {
     ].join("\n"),
   );
 });
+
+test("updates the parent text and nested items in one edit", async () => {
+  const path = "test.md";
+  const file = createInMemoryFile({
+    path,
+    contents: [
+      "# Heading",
+      "- [ ] 10:30 - 15:00 Original title",
+      "  Parent details",
+      "    - Existing child",
+      "- After",
+    ].join("\n"),
+  });
+  const vault = new InMemoryVault([file]);
+  const metadataCache = new FakeMetadataCache({
+    [path]: {
+      listItems: [
+        createListItem({ line: 1, parent: -1 }),
+        createListItem({ line: 3, parent: 1 }),
+        createListItem({ line: 4, parent: -4 }),
+      ],
+    } as CachedMetadata,
+  }) as unknown as MetadataCache;
+  const editor = new ListItemEntryEditor(
+    new FakeWorkspaceFacade() as unknown as WorkspaceFacade,
+    new VaultFacade(vault as unknown as Vault, () => undefined),
+    new MetadataCacheFacade(metadataCache),
+    undefined as unknown as ListPropsParser,
+  );
+
+  await Effect.runPromise(
+    editor.replaceNestedItemsAtLocation(
+      { path, line: 1 },
+      [{ text: "Updated child", symbol: "-" }],
+      "10:30 - 15:00 Updated [[Project]] title",
+    ),
+  );
+
+  expect(file.contents).toBe(
+    [
+      "# Heading",
+      "- [ ] 10:30 - 15:00 Updated [[Project]] title",
+      "  Parent details",
+      "    - Updated child",
+      "- After",
+    ].join("\n"),
+  );
+});
+
+test("updates the parent text when it has no nested items", async () => {
+  const path = "test.md";
+  const file = createInMemoryFile({
+    path,
+    contents: ["# Heading", "1. 09:00 - 10:00 Original title"].join("\n"),
+  });
+  const vault = new InMemoryVault([file]);
+  const metadataCache = new FakeMetadataCache({
+    [path]: {
+      listItems: [createListItem({ line: 1, parent: -1 })],
+    } as CachedMetadata,
+  }) as unknown as MetadataCache;
+  const editor = new ListItemEntryEditor(
+    new FakeWorkspaceFacade() as unknown as WorkspaceFacade,
+    new VaultFacade(vault as unknown as Vault, () => undefined),
+    new MetadataCacheFacade(metadataCache),
+    undefined as unknown as ListPropsParser,
+  );
+
+  await Effect.runPromise(
+    editor.replaceNestedItemsAtLocation(
+      { path, line: 1 },
+      [],
+      "09:00 - 10:00 Updated title",
+    ),
+  );
+
+  expect(file.contents).toBe(
+    ["# Heading", "1. 09:00 - 10:00 Updated title"].join("\n"),
+  );
+});
