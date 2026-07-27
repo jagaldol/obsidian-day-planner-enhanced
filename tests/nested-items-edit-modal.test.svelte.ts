@@ -98,9 +98,9 @@ function renderModal(
       initialItems,
       onEditEscape: props.onEditEscape,
       onEditStateChange: props.onEditStateChange,
-      parentText: "11:30 - 13:40 오전 처리 및 셀프 정리",
+      parentText: "11:30 - 13:40 Example schedule",
       renderMarkdown,
-      sourcePath: props.sourcePath ?? "Journal/2026-07-27.md",
+      sourcePath: props.sourcePath ?? "fixtures/daily/2023-01-01.md",
       onSave,
       onCancel,
     },
@@ -201,13 +201,13 @@ describe("NestedItemsEditModal", () => {
 
   test("enters edit mode when clicking the displayed text area", () => {
     const { component, target } = renderModal([
-      { text: "11:40 - 12:00 레이저 제모", symbol: "-" },
+      { text: "11:40 - 12:00 Example item", symbol: "-" },
     ]);
 
     try {
-      click(target.querySelector('button[aria-label="Edit 레이저 제모"]'));
+      click(target.querySelector('button[aria-label="Edit Example item"]'));
 
-      expect(getInput()?.value).toBe("11:40 - 12:00 레이저 제모");
+      expect(getInput()?.value).toBe("11:40 - 12:00 Example item");
     } finally {
       unmount(component);
       target.remove();
@@ -218,7 +218,7 @@ describe("NestedItemsEditModal", () => {
     const destroyMarkdown = vi.fn();
     const renderMarkdown = vi.fn<RenderMarkdown>(
       (element, markdown, sourcePath) => {
-        expect(sourcePath).toBe("Journal/2026-07-27.md");
+        expect(sourcePath).toBe("fixtures/daily/2023-01-01.md");
         element.textContent = "";
 
         if (markdown.includes("[[Project")) {
@@ -264,7 +264,7 @@ describe("NestedItemsEditModal", () => {
       expect(renderMarkdown).toHaveBeenCalledWith(
         itemText,
         "Review [[Project#Plan|plan]] #focus",
-        "Journal/2026-07-27.md",
+        "fixtures/daily/2023-01-01.md",
       );
 
       click(link);

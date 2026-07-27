@@ -24,7 +24,7 @@ describe("createRenderMarkdown", () => {
   test("renders links relative to the task source file", () => {
     const app = { workspace: {} } as App;
     const el = document.createElement("div");
-    const sourcePath = "Journal/2026-07-27.md";
+    const sourcePath = "fixtures/daily/2023-01-01.md";
 
     createRenderMarkdown(app)(el, "[[Project]]", sourcePath);
 
@@ -43,7 +43,7 @@ describe("createRenderMarkdown", () => {
     const el = document.createElement("div");
     const link = document.createElement("a");
     const linkText = document.createElement("span");
-    const sourcePath = "Journal/2026-07-27.md";
+    const sourcePath = "fixtures/daily/2023-01-01.md";
 
     const destroy = createRenderMarkdown(app)(el, "[[Project]]", sourcePath);
 
@@ -80,7 +80,7 @@ describe("createRenderMarkdown", () => {
     const destroy = createRenderMarkdown(app)(
       el,
       "[[Project]]",
-      "Journal/2026-07-27.md",
+      "fixtures/daily/2023-01-01.md",
     );
 
     link.className = "internal-link";
@@ -97,7 +97,7 @@ describe("createRenderMarkdown", () => {
 
     expect(openLinkText).toHaveBeenCalledWith(
       "Project",
-      "Journal/2026-07-27.md",
+      "fixtures/daily/2023-01-01.md",
       "tab",
     );
 

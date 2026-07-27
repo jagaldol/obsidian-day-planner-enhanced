@@ -50,7 +50,7 @@ const defaultPreloadedStateForTests: Partial<RootState> = {
           name: "Test",
           url: "https://example.com",
           color: "#ff0000",
-          email: "bishop1860@gmail.com",
+          email: "attendee@example.com",
         },
       ],
     },

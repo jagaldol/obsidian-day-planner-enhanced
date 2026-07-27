@@ -151,10 +151,13 @@ describe("internalLinkHoverPreview", () => {
     container.append(plainText, link);
     document.body.appendChild(container);
 
-    const action = createInternalLinkHoverPreview("Journal/2026-07-27.md", {
-      isModPressed,
-      showPreview,
-    })(container);
+    const action = createInternalLinkHoverPreview(
+      "fixtures/daily/2023-01-01.md",
+      {
+        isModPressed,
+        showPreview,
+      },
+    )(container);
     const event = new MouseEvent("mouseover", { bubbles: true });
 
     try {
@@ -168,7 +171,7 @@ describe("internalLinkHoverPreview", () => {
         event,
         "Project#Plan",
         undefined,
-        "Journal/2026-07-27.md",
+        "fixtures/daily/2023-01-01.md",
       );
     } finally {
       action.destroy();

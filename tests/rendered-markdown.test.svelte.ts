@@ -17,7 +17,7 @@ describe("RenderedMarkdown", () => {
   test("renders task markdown relative to its source file", () => {
     const target = document.createElement("div");
     const renderMarkdown = vi.fn(() => vi.fn());
-    const sourcePath = "Journal/2026-07-27.md";
+    const sourcePath = "fixtures/daily/2023-01-01.md";
     const context = new Map<string, unknown>([
       [
         obsidianContextKey,
@@ -58,7 +58,7 @@ describe("RenderedMarkdown", () => {
   test("reactively hides Tasks metadata when the setting is enabled", () => {
     const target = document.createElement("div");
     const renderMarkdown = vi.fn(() => vi.fn());
-    const sourcePath = "Journal/2026-07-27.md";
+    const sourcePath = "fixtures/daily/2023-01-01.md";
     const settings = writable({
       ...defaultSettingsForTests,
       hideTasksMetadata: false,

@@ -6,7 +6,7 @@ import { SingleSuggestModal } from "../src/ui/SingleSuggestModal";
 function createApp() {
   const files = [
     { basename: "Project Alpha", path: "Projects/Project Alpha.md" },
-    { basename: "Today", path: "Journal/Today.md" },
+    { basename: "Today", path: "fixtures/daily/Today.md" },
   ] as TFile[];
 
   return {
@@ -38,7 +38,7 @@ function createModal() {
     getDescriptionText: (value) => `Update to ${value}`,
     onChooseSuggestion,
     onClose,
-    sourcePath: "Journal/Today.md",
+    sourcePath: "fixtures/daily/Today.md",
   });
 
   return { modal, onChooseSuggestion, onClose };

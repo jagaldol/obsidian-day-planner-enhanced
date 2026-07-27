@@ -24,7 +24,7 @@ describe("createShowPreview", () => {
       event,
       "../Projects/Day Planner",
       12,
-      "Journal/2026-07-27.md",
+      "fixtures/daily/2023-01-01.md",
     );
 
     expect(trigger).toHaveBeenCalledWith("hover-link", {
@@ -33,7 +33,7 @@ describe("createShowPreview", () => {
       hoverParent,
       targetEl,
       linktext: "../Projects/Day Planner",
-      sourcePath: "Journal/2026-07-27.md",
+      sourcePath: "fixtures/daily/2023-01-01.md",
       state: { scroll: 12 },
     });
   });

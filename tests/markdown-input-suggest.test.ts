@@ -13,7 +13,7 @@ function createApp() {
   const files = [
     { basename: "Project Alpha", path: "Projects/Project Alpha.md" },
     { basename: "Project Beta", path: "Projects/Project Beta.md" },
-    { basename: "Today", path: "Journal/Today.md" },
+    { basename: "Today", path: "fixtures/daily/Today.md" },
   ] as TFile[];
   const tagsByPath = new Map([
     [
@@ -31,7 +31,7 @@ function createApp() {
       ],
     ],
     [
-      "Journal/Today.md",
+      "fixtures/daily/Today.md",
       [
         { heading: "Daily overview", level: 1 },
         { heading: "Work log", level: 2 },
@@ -143,7 +143,7 @@ describe("MarkdownSuggestionCatalog", () => {
   test("suggests existing notes and an unresolved link candidate", () => {
     const catalog = new MarkdownSuggestionCatalog(
       createApp(),
-      "Journal/Today.md",
+      "fixtures/daily/Today.md",
     );
     const context = getMarkdownSuggestionContext("Review [[Project");
 
@@ -162,7 +162,7 @@ describe("MarkdownSuggestionCatalog", () => {
   test("suggests existing nested tags without duplicates", () => {
     const catalog = new MarkdownSuggestionCatalog(
       createApp(),
-      "Journal/Today.md",
+      "fixtures/daily/Today.md",
     );
     const context = getMarkdownSuggestionContext("Review #project/");
 
@@ -177,7 +177,7 @@ describe("MarkdownSuggestionCatalog", () => {
   test("suggests headings from the current note in document order", () => {
     const catalog = new MarkdownSuggestionCatalog(
       createApp(),
-      "Journal/Today.md",
+      "fixtures/daily/Today.md",
     );
     const context = getMarkdownSuggestionContext("Review [[#");
 
@@ -193,13 +193,13 @@ describe("MarkdownSuggestionCatalog", () => {
         })),
     ).toEqual([
       {
-        detail: "Journal/Today.md",
+        detail: "fixtures/daily/Today.md",
         isNew: false,
         label: "Daily overview",
         value: "#Daily overview",
       },
       {
-        detail: "Journal/Today.md",
+        detail: "fixtures/daily/Today.md",
         isNew: false,
         label: "Work log",
         value: "#Work log",
@@ -210,7 +210,7 @@ describe("MarkdownSuggestionCatalog", () => {
   test("resolves a linked note and matches its headings", () => {
     const catalog = new MarkdownSuggestionCatalog(
       createApp(),
-      "Journal/Today.md",
+      "fixtures/daily/Today.md",
     );
     const context = getMarkdownSuggestionContext("Review [[Project Alpha#mile");
 
@@ -231,7 +231,7 @@ describe("MarkdownSuggestionCatalog", () => {
   test("does not invent heading suggestions for an unresolved note", () => {
     const catalog = new MarkdownSuggestionCatalog(
       createApp(),
-      "Journal/Today.md",
+      "fixtures/daily/Today.md",
     );
     const context = getMarkdownSuggestionContext("Review [[Missing#");
 
