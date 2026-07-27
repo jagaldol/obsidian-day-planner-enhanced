@@ -29,6 +29,7 @@ vi.mock("obsidian", () => {
     normalizePath: (path: string) => path,
     request: vi.fn(),
     sanitizeHTMLToDom: vi.fn(),
+    stripHeadingForLink: (heading: string) => heading,
     stringifyYaml: vi.fn(),
   };
 });

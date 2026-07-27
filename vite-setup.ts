@@ -119,6 +119,19 @@ class MockSuggestModal {
     this.close();
   }
 
+  selectActiveSuggestion(event: MouseEvent | KeyboardEvent) {
+    const suggestions = (
+      this as unknown as {
+        getSuggestions: (query: string) => unknown[];
+      }
+    ).getSuggestions(this.inputEl.value);
+    const suggestion = suggestions[0];
+
+    if (suggestion) {
+      this.selectSuggestion(suggestion, event);
+    }
+  }
+
   close() {}
 }
 
@@ -136,6 +149,7 @@ vi.mock("obsidian", () => ({
   moment,
   TFile: vi.fn(),
   normalizePath: (p: string) => path.normalize(p),
+  stripHeadingForLink: (heading: string) => heading,
   parseYaml: (source: string) => {
     return yaml.load(source);
   },

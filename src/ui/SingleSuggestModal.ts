@@ -33,7 +33,10 @@ export class SingleSuggestModal extends SuggestModal<Suggestion> {
       { command: "↑↓", purpose: "to navigate" },
       { command: "esc", purpose: "to dismiss" },
       { command: "↵", purpose: "to select or confirm" },
+      { command: "tab", purpose: "to select and continue" },
     ]);
+
+    this.inputEl.addEventListener("keydown", this.handleTab, true);
   }
 
   private readonly markdownSuggestionCatalog: MarkdownSuggestionCatalog;
@@ -84,7 +87,9 @@ export class SingleSuggestModal extends SuggestModal<Suggestion> {
 
     evt.preventDefault();
     evt.stopPropagation();
-    applyMarkdownInputSuggestionToElement(this.inputEl, item);
+    applyMarkdownInputSuggestionToElement(this.inputEl, item, {
+      keepCursorInsideWikilink: "key" in evt && evt.key === "Tab",
+    });
   }
 
   onChooseSuggestion(item: Suggestion, evt: MouseEvent | KeyboardEvent) {
@@ -94,11 +99,35 @@ export class SingleSuggestModal extends SuggestModal<Suggestion> {
   }
 
   close() {
+    this.inputEl.removeEventListener("keydown", this.handleTab, true);
+
     // Note: we need to be able to run onChooseSuggestion before onClose
     window.setTimeout(() => {
       this.props.onClose();
       super.close();
     });
   }
+
+  private readonly handleTab = (event: KeyboardEvent) => {
+    if (event.key !== "Tab" || event.shiftKey) {
+      return;
+    }
+
+    const context = getMarkdownSuggestionContext(
+      this.inputEl.value,
+      this.inputEl.selectionStart ?? this.inputEl.value.length,
+    );
+
+    if (
+      !context ||
+      this.markdownSuggestionCatalog.getSuggestions(context).length === 0
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    this.selectActiveSuggestion(event);
+  };
 }
 /* eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. */

@@ -13,6 +13,7 @@ function createApp() {
   const files = [
     { basename: "Project Alpha", path: "Projects/Project Alpha.md" },
     { basename: "Project Beta", path: "Projects/Project Beta.md" },
+    { basename: "Today", path: "Journal/Today.md" },
   ] as TFile[];
   const tagsByPath = new Map([
     [
@@ -21,15 +22,40 @@ function createApp() {
     ],
     ["Projects/Project Beta.md", [{ tag: "#project/beta" }]],
   ]);
+  const headingsByPath = new Map([
+    [
+      "Projects/Project Alpha.md",
+      [
+        { heading: "Overview", level: 1 },
+        { heading: "Milestones", level: 2 },
+      ],
+    ],
+    [
+      "Journal/Today.md",
+      [
+        { heading: "Daily overview", level: 1 },
+        { heading: "Work log", level: 2 },
+      ],
+    ],
+  ]);
 
   return {
     metadataCache: {
       fileToLinktext: (file: TFile) => file.basename,
+      getFirstLinkpathDest: (linkpath: string) =>
+        files.find(
+          (file) =>
+            file.basename === linkpath ||
+            file.path.replace(/\.md$/, "") === linkpath,
+        ) ?? null,
       getFileCache: (file: TFile) => ({
+        headings: headingsByPath.get(file.path) ?? [],
         tags: tagsByPath.get(file.path) ?? [],
       }),
     },
     vault: {
+      getFileByPath: (path: string) =>
+        files.find((file) => file.path === path) ?? null,
       getMarkdownFiles: () => files,
     },
   } as unknown as App;
@@ -63,6 +89,40 @@ describe("markdown input suggestion context", () => {
       kind: "wikilink",
       query: "Old",
       to: 19,
+    });
+  });
+
+  test("finds current-note and linked-note heading queries", () => {
+    expect(getMarkdownSuggestionContext("Review [[#Dai")).toEqual({
+      from: 7,
+      kind: "heading",
+      linkpath: "",
+      query: "Dai",
+      to: 13,
+    });
+    expect(getMarkdownSuggestionContext("Review [[Project Alpha#Mil")).toEqual({
+      from: 7,
+      kind: "heading",
+      linkpath: "Project Alpha",
+      query: "Mil",
+      to: 26,
+    });
+  });
+
+  test("finds an empty heading query inside a complete wikilink", () => {
+    expect(getMarkdownSuggestionContext("[[#]]", 3)).toEqual({
+      from: 0,
+      kind: "heading",
+      linkpath: "",
+      query: "",
+      to: 5,
+    });
+    expect(getMarkdownSuggestionContext("[[Project Alpha#]]", 16)).toEqual({
+      from: 0,
+      kind: "heading",
+      linkpath: "Project Alpha",
+      query: "",
+      to: 18,
     });
   });
 
@@ -112,6 +172,71 @@ describe("MarkdownSuggestionCatalog", () => {
       "project/beta",
       "project/",
     ]);
+  });
+
+  test("suggests headings from the current note in document order", () => {
+    const catalog = new MarkdownSuggestionCatalog(
+      createApp(),
+      "Journal/Today.md",
+    );
+    const context = getMarkdownSuggestionContext("Review [[#");
+
+    expect(context).toBeDefined();
+    expect(
+      catalog
+        .getSuggestions(context!)
+        .map(({ detail, isNew, label, value }) => ({
+          detail,
+          isNew,
+          label,
+          value,
+        })),
+    ).toEqual([
+      {
+        detail: "Journal/Today.md",
+        isNew: false,
+        label: "Daily overview",
+        value: "#Daily overview",
+      },
+      {
+        detail: "Journal/Today.md",
+        isNew: false,
+        label: "Work log",
+        value: "#Work log",
+      },
+    ]);
+  });
+
+  test("resolves a linked note and matches its headings", () => {
+    const catalog = new MarkdownSuggestionCatalog(
+      createApp(),
+      "Journal/Today.md",
+    );
+    const context = getMarkdownSuggestionContext("Review [[Project Alpha#mile");
+
+    expect(context).toBeDefined();
+    expect(
+      catalog
+        .getSuggestions(context!)
+        .map(({ isNew, label, value }) => ({ isNew, label, value })),
+    ).toEqual([
+      {
+        isNew: false,
+        label: "Milestones",
+        value: "Project Alpha#Milestones",
+      },
+    ]);
+  });
+
+  test("does not invent heading suggestions for an unresolved note", () => {
+    const catalog = new MarkdownSuggestionCatalog(
+      createApp(),
+      "Journal/Today.md",
+    );
+    const context = getMarkdownSuggestionContext("Review [[Missing#");
+
+    expect(context).toBeDefined();
+    expect(catalog.getSuggestions(context!)).toEqual([]);
   });
 });
 
@@ -167,7 +292,32 @@ describe("renderMarkdownInputSuggestion", () => {
     expect(
       containerEl.querySelector(".day-planner-markdown-suggestion-instructions")
         ?.textContent,
-    ).toBe("↑↓to navigate↵to selectescto dismiss");
+    ).toBe("↑↓to navigate↵to selecttabto select and continueescto dismiss");
+  });
+
+  test("renders a heading label and its source note", () => {
+    const itemEl = document.createElement("div");
+    const context = getMarkdownSuggestionContext("[[Project Alpha#Over");
+
+    expect(context).toBeDefined();
+
+    renderMarkdownInputSuggestion(
+      suggestion({
+        context: context!,
+        detail: "Projects/Project Alpha.md",
+        kind: "heading",
+        label: "Overview",
+        value: "Project Alpha#Overview",
+      }),
+      itemEl,
+    );
+
+    expect(itemEl.querySelector(".suggestion-title")?.textContent).toBe(
+      "Overview",
+    );
+    expect(itemEl.querySelector(".suggestion-note")?.textContent).toBe(
+      "Projects/Project Alpha.md",
+    );
   });
 });
 
@@ -194,6 +344,26 @@ describe("applyMarkdownInputSuggestion", () => {
     });
   });
 
+  test("keeps the cursor inside a wikilink when continuing with Tab", () => {
+    const context = getMarkdownSuggestionContext("Review [[Project");
+
+    expect(context).toBeDefined();
+    expect(
+      applyMarkdownInputSuggestion(
+        "Review [[Project",
+        suggestion({
+          context: context!,
+          kind: "wikilink",
+          value: "Project Alpha",
+        }),
+        { keepCursorInsideWikilink: true },
+      ),
+    ).toEqual({
+      cursor: 22,
+      value: "Review [[Project Alpha]]",
+    });
+  });
+
   test("completes a tag and preserves following text", () => {
     const context = getMarkdownSuggestionContext("Review #proj later", 12);
 
@@ -210,6 +380,49 @@ describe("applyMarkdownInputSuggestion", () => {
     ).toEqual({
       cursor: 21,
       value: "Review #project/alpha later",
+    });
+  });
+
+  test("completes a current-note heading link", () => {
+    const context = getMarkdownSuggestionContext("Review [[#Dai");
+
+    expect(context).toBeDefined();
+    expect(
+      applyMarkdownInputSuggestion(
+        "Review [[#Dai",
+        suggestion({
+          context: context!,
+          kind: "heading",
+          label: "Daily overview",
+          value: "#Daily overview",
+        }),
+      ),
+    ).toEqual({
+      cursor: 26,
+      value: "Review [[#Daily overview]]",
+    });
+  });
+
+  test("replaces a complete linked-note heading and preserves following text", () => {
+    const context = getMarkdownSuggestionContext(
+      "Review [[Project Alpha#Old]] later",
+      26,
+    );
+
+    expect(context).toBeDefined();
+    expect(
+      applyMarkdownInputSuggestion(
+        "Review [[Project Alpha#Old]] later",
+        suggestion({
+          context: context!,
+          kind: "heading",
+          label: "Milestones",
+          value: "Project Alpha#Milestones",
+        }),
+      ),
+    ).toEqual({
+      cursor: 35,
+      value: "Review [[Project Alpha#Milestones]] later",
     });
   });
 });

@@ -1,11 +1,18 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
-import { AbstractInputSuggest, type App, getAllTags } from "obsidian";
+import {
+  AbstractInputSuggest,
+  type App,
+  getAllTags,
+  stripHeadingForLink,
+  type TFile,
+} from "obsidian";
 
-export type MarkdownSuggestionKind = "tag" | "wikilink";
+export type MarkdownSuggestionKind = "heading" | "tag" | "wikilink";
 
 export interface MarkdownSuggestionContext {
   from: number;
   kind: MarkdownSuggestionKind;
+  linkpath?: string;
   query: string;
   to: number;
 }
@@ -13,6 +20,8 @@ export interface MarkdownSuggestionContext {
 interface MarkdownSuggestionCandidate {
   detail?: string;
   kind: MarkdownSuggestionKind;
+  label?: string;
+  searchText?: string;
   value: string;
 }
 
@@ -24,6 +33,10 @@ export interface MarkdownInputSuggestion extends MarkdownSuggestionCandidate {
 export interface MarkdownSuggestionApplication {
   cursor: number;
   value: string;
+}
+
+interface MarkdownSuggestionApplicationOptions {
+  keepCursorInsideWikilink?: boolean;
 }
 
 const activeSuggestionInputs = new WeakSet<HTMLInputElement>();
@@ -45,6 +58,7 @@ function getWikilinkContext(
     return undefined;
   }
 
+  const headingSeparator = query.indexOf("#");
   const nextClosingBrackets = value.indexOf("]]", cursor);
   const nextOpeningBrackets = value.indexOf("[[", cursor);
   const to =
@@ -55,8 +69,13 @@ function getWikilinkContext(
 
   return {
     from,
-    kind: "wikilink",
-    query,
+    kind: headingSeparator < 0 ? "wikilink" : "heading",
+    ...(headingSeparator < 0
+      ? { query }
+      : {
+          linkpath: query.slice(0, headingSeparator),
+          query: query.slice(headingSeparator + 1),
+        }),
     to,
   };
 }
@@ -97,19 +116,26 @@ export function getMarkdownSuggestionContext(
 }
 
 function getInsertedText(suggestion: MarkdownInputSuggestion) {
-  return suggestion.kind === "wikilink"
-    ? `[[${suggestion.value}]]`
-    : `#${suggestion.value}`;
+  return suggestion.kind === "tag"
+    ? `#${suggestion.value}`
+    : `[[${suggestion.value}]]`;
+}
+
+function getCandidateSearchText(candidate: MarkdownSuggestionCandidate) {
+  return candidate.searchText ?? candidate.value;
 }
 
 export function applyMarkdownInputSuggestion(
   value: string,
   suggestion: MarkdownInputSuggestion,
+  options: MarkdownSuggestionApplicationOptions = {},
 ): MarkdownSuggestionApplication {
   const insertedText = getInsertedText(suggestion);
+  const cursorOffset =
+    options.keepCursorInsideWikilink && suggestion.kind !== "tag" ? 2 : 0;
 
   return {
-    cursor: suggestion.context.from + insertedText.length,
+    cursor: suggestion.context.from + insertedText.length - cursorOffset,
     value:
       value.slice(0, suggestion.context.from) +
       insertedText +
@@ -123,8 +149,8 @@ function compareCandidates(
   right: MarkdownSuggestionCandidate,
 ) {
   const normalizedQuery = query.toLocaleLowerCase();
-  const leftValue = left.value.toLocaleLowerCase();
-  const rightValue = right.value.toLocaleLowerCase();
+  const leftValue = getCandidateSearchText(left).toLocaleLowerCase();
+  const rightValue = getCandidateSearchText(right).toLocaleLowerCase();
   const leftPrefix = leftValue.startsWith(normalizedQuery);
   const rightPrefix = rightValue.startsWith(normalizedQuery);
 
@@ -132,7 +158,9 @@ function compareCandidates(
     return leftPrefix ? -1 : 1;
   }
 
-  return left.value.localeCompare(right.value);
+  return getCandidateSearchText(left).localeCompare(
+    getCandidateSearchText(right),
+  );
 }
 
 function getMatchingCandidates(
@@ -140,12 +168,17 @@ function getMatchingCandidates(
   context: MarkdownSuggestionContext,
 ) {
   const normalizedQuery = context.query.toLocaleLowerCase();
+  const matches = candidates.filter((candidate) =>
+    getCandidateSearchText(candidate)
+      .toLocaleLowerCase()
+      .includes(normalizedQuery),
+  );
 
-  return candidates
-    .filter((candidate) =>
-      candidate.value.toLocaleLowerCase().includes(normalizedQuery),
-    )
-    .sort((left, right) => compareCandidates(context.query, left, right));
+  return context.kind === "heading" && context.query.length === 0
+    ? matches
+    : matches.sort((left, right) =>
+        compareCandidates(context.query, left, right),
+      );
 }
 
 function deduplicateCandidates(candidates: MarkdownSuggestionCandidate[]) {
@@ -170,11 +203,14 @@ function getFileParentPath(path: string) {
 
 export class MarkdownSuggestionCatalog {
   private readonly candidates: Record<
-    MarkdownSuggestionKind,
+    Exclude<MarkdownSuggestionKind, "heading">,
     MarkdownSuggestionCandidate[]
   >;
 
-  constructor(app: App, sourcePath: string) {
+  constructor(
+    private readonly app: App,
+    private readonly sourcePath: string,
+  ) {
     const files = app.vault.getMarkdownFiles();
     const wikilinks = files.map((file) => ({
       detail: getFileParentPath(file.path),
@@ -201,6 +237,17 @@ export class MarkdownSuggestionCatalog {
   getSuggestions(
     context: MarkdownSuggestionContext,
   ): MarkdownInputSuggestion[] {
+    if (context.kind === "heading") {
+      return getMatchingCandidates(
+        this.getHeadingCandidates(context),
+        context,
+      ).map((candidate) => ({
+        ...candidate,
+        context,
+        isNew: false,
+      }));
+    }
+
     const matchingCandidates = getMatchingCandidates(
       this.candidates[context.kind],
       context,
@@ -227,6 +274,39 @@ export class MarkdownSuggestionCatalog {
 
     return suggestions;
   }
+
+  private getHeadingCandidates(
+    context: MarkdownSuggestionContext,
+  ): MarkdownSuggestionCandidate[] {
+    const linkpath = context.linkpath ?? "";
+    const file = this.getHeadingFile(linkpath);
+
+    if (!file) {
+      return [];
+    }
+
+    const headings = this.app.metadataCache.getFileCache(file)?.headings ?? [];
+    const fileLinktext =
+      linkpath.length === 0
+        ? ""
+        : this.app.metadataCache.fileToLinktext(file, this.sourcePath, true);
+
+    return deduplicateCandidates(
+      headings.map((heading) => ({
+        detail: file.path,
+        kind: "heading",
+        label: heading.heading,
+        searchText: heading.heading,
+        value: `${fileLinktext}#${stripHeadingForLink(heading.heading)}`,
+      })),
+    );
+  }
+
+  private getHeadingFile(linkpath: string): TFile | null {
+    return linkpath.length === 0
+      ? this.app.vault.getFileByPath(this.sourcePath)
+      : this.app.metadataCache.getFirstLinkpathDest(linkpath, this.sourcePath);
+  }
 }
 
 export function renderMarkdownInputSuggestion(
@@ -244,9 +324,8 @@ export function renderMarkdownInputSuggestion(
   titleEl.className = "suggestion-title";
   titleEl.textContent = suggestion.isNew
     ? `Create ${syntax}`
-    : suggestion.kind === "wikilink"
-      ? suggestion.value
-      : syntax;
+    : (suggestion.label ??
+      (suggestion.kind === "tag" ? syntax : suggestion.value));
   contentEl.appendChild(titleEl);
 
   if (suggestion.detail) {
@@ -282,6 +361,10 @@ function createInstruction(
   return instructionEl;
 }
 
+function isTabSelectionEvent(event: MouseEvent | KeyboardEvent) {
+  return "key" in event && event.key === "Tab";
+}
+
 function decorateMarkdownInputSuggestionPopover(
   suggestionEl: HTMLElement,
   inputEl: HTMLInputElement,
@@ -313,6 +396,7 @@ function decorateMarkdownInputSuggestionPopover(
   instructionsEl.append(
     createInstruction(containerEl, "↑↓", "to navigate"),
     createInstruction(containerEl, "↵", "to select"),
+    createInstruction(containerEl, "tab", "to select and continue"),
     createInstruction(containerEl, "esc", "to dismiss"),
   );
   containerEl.appendChild(instructionsEl);
@@ -321,8 +405,13 @@ function decorateMarkdownInputSuggestionPopover(
 export function applyMarkdownInputSuggestionToElement(
   inputEl: HTMLInputElement,
   suggestion: MarkdownInputSuggestion,
+  options: MarkdownSuggestionApplicationOptions = {},
 ) {
-  const result = applyMarkdownInputSuggestion(inputEl.value, suggestion);
+  const result = applyMarkdownInputSuggestion(
+    inputEl.value,
+    suggestion,
+    options,
+  );
 
   inputEl.value = result.value;
   inputEl.dispatchEvent(new Event("input", { bubbles: true }));
@@ -331,6 +420,12 @@ export function applyMarkdownInputSuggestionToElement(
 }
 
 class MarkdownInputSuggest extends AbstractInputSuggest<MarkdownInputSuggestion> {
+  private currentSuggestions: MarkdownInputSuggestion[] = [];
+  private readonly renderedSuggestions = new Map<
+    HTMLElement,
+    MarkdownInputSuggestion
+  >();
+
   constructor(
     app: App,
     private readonly inputEl: HTMLInputElement,
@@ -338,6 +433,7 @@ class MarkdownInputSuggest extends AbstractInputSuggest<MarkdownInputSuggestion>
   ) {
     super(app, inputEl);
     this.limit = 50;
+    this.inputEl.addEventListener("keydown", this.handleTab, true);
   }
 
   protected getSuggestions(query: string) {
@@ -349,6 +445,9 @@ class MarkdownInputSuggest extends AbstractInputSuggest<MarkdownInputSuggestion>
       ? this.catalog.getSuggestions(context).slice(0, this.limit)
       : [];
 
+    this.currentSuggestions = suggestions;
+    this.renderedSuggestions.clear();
+
     if (suggestions.length > 0) {
       activeSuggestionInputs.add(this.inputEl);
     } else {
@@ -359,6 +458,7 @@ class MarkdownInputSuggest extends AbstractInputSuggest<MarkdownInputSuggestion>
   }
 
   renderSuggestion(suggestion: MarkdownInputSuggestion, el: HTMLElement) {
+    this.renderedSuggestions.set(el, suggestion);
     renderMarkdownInputSuggestion(suggestion, el, this.inputEl);
   }
 
@@ -368,13 +468,52 @@ class MarkdownInputSuggest extends AbstractInputSuggest<MarkdownInputSuggestion>
   ) {
     event.preventDefault();
     event.stopPropagation();
-    applyMarkdownInputSuggestionToElement(this.inputEl, suggestion);
+    applyMarkdownInputSuggestionToElement(this.inputEl, suggestion, {
+      keepCursorInsideWikilink: isTabSelectionEvent(event),
+    });
     this.close();
   }
 
   close() {
     activeSuggestionInputs.delete(this.inputEl);
+    this.currentSuggestions = [];
+    this.renderedSuggestions.clear();
     super.close();
+  }
+
+  dispose() {
+    this.inputEl.removeEventListener("keydown", this.handleTab, true);
+    this.close();
+  }
+
+  private readonly handleTab = (event: KeyboardEvent) => {
+    if (event.key !== "Tab" || event.shiftKey) {
+      return;
+    }
+
+    const suggestion =
+      this.getActiveRenderedSuggestion() ?? this.currentSuggestions[0];
+
+    if (!suggestion) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    this.selectSuggestion(suggestion, event);
+  };
+
+  private getActiveRenderedSuggestion() {
+    for (const [el, suggestion] of this.renderedSuggestions) {
+      if (
+        el.classList.contains("is-selected") ||
+        el.getAttribute("aria-selected") === "true"
+      ) {
+        return suggestion;
+      }
+    }
+
+    return undefined;
   }
 }
 
@@ -391,7 +530,7 @@ export function createMarkdownInputSuggest(
   return (inputEl) => {
     const suggest = new MarkdownInputSuggest(app, inputEl, catalog);
 
-    return () => suggest.close();
+    return () => suggest.dispose();
   };
 }
 
