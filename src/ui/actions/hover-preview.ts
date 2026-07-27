@@ -16,12 +16,89 @@ interface HoverPreviewDependencies {
   showPreview: ShowPreview;
 }
 
+interface InternalLinkHoverTarget {
+  event: MouseEvent;
+  linktext: string;
+  targetEl: HTMLElement;
+}
+
 interface HoverTarget {
   event: MouseEvent;
   line?: number;
   linktext: string;
   sourcePath: string;
   targetEl: HTMLElement;
+}
+
+export function createInternalLinkHoverPreview(
+  sourcePath: string,
+  { isModPressed, showPreview }: HoverPreviewDependencies,
+) {
+  return (el: HTMLElement) => {
+    const hoverTarget = writable<InternalLinkHoverTarget | undefined>();
+    let activePreviewTarget: HTMLElement | undefined;
+
+    function clearPreview() {
+      hoverTarget.set(undefined);
+    }
+
+    function handleMouseOver(event: MouseEvent) {
+      const internalLink = isElement(event.target)
+        ? event.target.closest("a.internal-link")
+        : null;
+      const linktext = internalLink?.getAttribute("data-href");
+
+      if (
+        !internalLink ||
+        !linktext ||
+        !el.contains(internalLink) ||
+        !isHTMLElement(internalLink)
+      ) {
+        clearPreview();
+        return;
+      }
+
+      hoverTarget.set({
+        event,
+        linktext,
+        targetEl: internalLink,
+      });
+    }
+
+    el.addEventListener("mouseover", handleMouseOver, true);
+    el.addEventListener("mouseleave", clearPreview);
+
+    const activeHoverTarget = derived(
+      [isModPressed, hoverTarget],
+      ([$isModPressed, $hoverTarget]) =>
+        $isModPressed ? $hoverTarget : undefined,
+    );
+
+    const unsubscribe = activeHoverTarget.subscribe((currentHoverTarget) => {
+      if (!currentHoverTarget) {
+        activePreviewTarget = undefined;
+        return;
+      }
+
+      if (activePreviewTarget === currentHoverTarget.targetEl) {
+        return;
+      }
+
+      const { event, linktext, targetEl } = currentHoverTarget;
+
+      showPreview(targetEl, targetEl, event, linktext, undefined, sourcePath);
+      activePreviewTarget = targetEl;
+    });
+
+    return {
+      destroy() {
+        el.removeEventListener("mouseover", handleMouseOver, true);
+        el.removeEventListener("mouseleave", clearPreview);
+        clearPreview();
+        unsubscribe();
+      },
+    };
+  };
 }
 
 export function createHoverPreview(

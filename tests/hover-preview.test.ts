@@ -1,7 +1,10 @@
 import { writable } from "svelte/store";
 import { describe, expect, test, vi } from "vitest";
 
-import { createHoverPreview } from "../src/ui/actions/hover-preview";
+import {
+  createHoverPreview,
+  createInternalLinkHoverPreview,
+} from "../src/ui/actions/hover-preview";
 
 import { baseTask } from "./edit/util/fixtures";
 
@@ -129,6 +132,47 @@ describe("hoverPreview", () => {
     } finally {
       action.destroy();
       block.remove();
+    }
+  });
+});
+
+describe("internalLinkHoverPreview", () => {
+  test("previews only the rendered link relative to its source file", () => {
+    const isModPressed = writable(true);
+    const showPreview = vi.fn();
+    const container = document.createElement("div");
+    const plainText = document.createElement("span");
+    const link = document.createElement("a");
+    const linkText = document.createElement("span");
+
+    link.className = "internal-link";
+    link.dataset.href = "Project#Plan";
+    link.appendChild(linkText);
+    container.append(plainText, link);
+    document.body.appendChild(container);
+
+    const action = createInternalLinkHoverPreview("Journal/2026-07-27.md", {
+      isModPressed,
+      showPreview,
+    })(container);
+    const event = new MouseEvent("mouseover", { bubbles: true });
+
+    try {
+      plainText.dispatchEvent(event);
+      expect(showPreview).not.toHaveBeenCalled();
+
+      linkText.dispatchEvent(event);
+      expect(showPreview).toHaveBeenCalledWith(
+        link,
+        link,
+        event,
+        "Project#Plan",
+        undefined,
+        "Journal/2026-07-27.md",
+      );
+    } finally {
+      action.destroy();
+      container.remove();
     }
   });
 });

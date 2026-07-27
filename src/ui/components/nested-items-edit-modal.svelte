@@ -19,24 +19,33 @@
     removeTimeRangeFromLine,
   } from "../../parser/parser";
   import type { EditableNestedListItem } from "../../service/list-item-entry-editor";
+  import type { RenderMarkdown } from "../../types";
   import {
     type AttachMarkdownInputSuggest,
     hasActiveMarkdownInputSuggest,
   } from "../markdown-input-suggest";
 
   let {
+    attachInternalLinkHoverPreview,
     attachMarkdownInputSuggest,
     initialItems,
     parentText,
+    renderMarkdown,
+    sourcePath,
     editController,
     onEditEscape,
     onEditStateChange,
     onSave,
     onCancel,
   }: {
+    attachInternalLinkHoverPreview: (element: HTMLElement) => {
+      destroy: () => void;
+    };
     attachMarkdownInputSuggest?: AttachMarkdownInputSuggest;
     initialItems: EditableNestedListItem[];
     parentText: string;
+    renderMarkdown: RenderMarkdown;
+    sourcePath: string;
     editController?: {
       cancelActiveEdit?: () => void;
     };
@@ -95,6 +104,24 @@
         detach?.();
       },
     };
+  }
+
+  function renderedMarkdown(node: HTMLElement, markdown: string) {
+    let destroyMarkdown = renderMarkdown(node, markdown, sourcePath);
+
+    return {
+      update(nextMarkdown: string) {
+        destroyMarkdown();
+        destroyMarkdown = renderMarkdown(node, nextMarkdown, sourcePath);
+      },
+      destroy() {
+        destroyMarkdown();
+      },
+    };
+  }
+
+  function internalLinkHoverPreview(node: HTMLElement) {
+    return attachInternalLinkHoverPreview(node);
   }
 
   function replaceFirstLine(text: string, firstLine: string) {
@@ -471,7 +498,11 @@
     {#if parentDisplay.timeRange}
       <div class="parent-time-range">{parentDisplay.timeRange}</div>
     {/if}
-    <div class="parent-title">{parentDisplay.title}</div>
+    <div
+      class="parent-title markdown-rendered"
+      use:internalLinkHoverPreview
+      use:renderedMarkdown={parentDisplay.title}
+    ></div>
   </div>
 
   <div class="nested-items-list">
@@ -550,18 +581,23 @@
             />
           </div>
         {:else}
-          <button
-            class="item-content"
-            aria-label={`Edit ${display.title}`}
-            onclick={() => beginItemEdit(pathKey, item)}
-            tabindex="-1"
-            type="button"
-          >
+          <div class="item-content">
+            <button
+              class="item-edit-surface"
+              aria-label={`Edit ${display.title}`}
+              onclick={() => beginItemEdit(pathKey, item)}
+              tabindex="-1"
+              type="button"
+            ></button>
             {#if display.timeRange}
               <span class="item-time-range">{display.timeRange}</span>
             {/if}
-            <span class="item-text">{display.title}</span>
-          </button>
+            <div
+              class="item-text markdown-rendered"
+              use:internalLinkHoverPreview
+              use:renderedMarkdown={display.title}
+            ></div>
+          </div>
         {/if}
 
         {#if pathKey === movedPathKey}
@@ -715,6 +751,11 @@
     font-weight: var(--font-semibold);
     line-height: 1.25;
     color: var(--text-normal);
+  }
+
+  .parent-title :global(p),
+  .item-text :global(p) {
+    margin-block: 0;
   }
 
   .nested-items-list {
@@ -872,7 +913,7 @@
   }
 
   .item-content {
-    cursor: text;
+    position: relative;
 
     display: flex;
     flex: 1 1 auto;
@@ -884,9 +925,19 @@
     min-height: 44px;
     padding: var(--size-4-2);
 
-    font: inherit;
-    color: inherit;
     text-align: left;
+  }
+
+  .item-edit-surface {
+    cursor: text;
+
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+    padding: 0;
 
     background-color: transparent;
     border: 0;
@@ -894,11 +945,12 @@
     box-shadow: none;
   }
 
-  .item-content:focus {
-    outline: none;
-  }
-
   .item-time-range {
+    pointer-events: none;
+
+    position: relative;
+    z-index: 1;
+
     font-size: var(--font-ui-smaller);
     font-weight: var(--font-normal);
     line-height: 1.2;
@@ -906,10 +958,20 @@
   }
 
   .item-text {
+    pointer-events: none;
+
+    position: relative;
+    z-index: 1;
+
     min-width: 0;
+
     font-weight: var(--font-medium);
     line-height: 1.4;
     overflow-wrap: anywhere;
+  }
+
+  .item-text :global(a) {
+    pointer-events: auto;
   }
 
   .edit-form {

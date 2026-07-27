@@ -737,6 +737,7 @@ export default class DayPlanner extends Plugin {
     const openNestedItemsEditModal = createNestedItemsEditModalCreator(
       this.app,
       this.taskEntryEditor,
+      isModPressed,
     );
     const removeTask: ObsidianContext["removeTask"] = (task) => {
       const base = get(localTasks);

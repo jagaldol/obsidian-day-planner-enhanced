@@ -2,6 +2,7 @@ import { flushSync, mount, unmount } from "svelte";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import type { EditableNestedListItem } from "../src/service/list-item-entry-editor";
+import type { RenderMarkdown } from "../src/types";
 import NestedItemsEditModal from "../src/ui/components/nested-items-edit-modal.svelte";
 import type { AttachMarkdownInputSuggest } from "../src/ui/markdown-input-suggest";
 
@@ -62,25 +63,44 @@ function getInput() {
 function renderModal(
   initialItems: EditableNestedListItem[],
   props: {
+    attachInternalLinkHoverPreview?: (element: HTMLElement) => {
+      destroy: () => void;
+    };
     attachMarkdownInputSuggest?: AttachMarkdownInputSuggest;
     onEditEscape?: () => void;
     onEditStateChange?: (isEditing: boolean) => void;
+    renderMarkdown?: RenderMarkdown;
+    sourcePath?: string;
   } = {},
 ) {
   const target = document.createElement("div");
   const onSave = vi.fn();
   const onCancel = vi.fn();
+  const renderMarkdown: RenderMarkdown =
+    props.renderMarkdown ??
+    ((element, markdown) => {
+      element.textContent = markdown;
+
+      return () => {};
+    });
 
   document.body.appendChild(target);
 
   const component = mount(NestedItemsEditModal, {
     target,
     props: {
+      attachInternalLinkHoverPreview:
+        props.attachInternalLinkHoverPreview ??
+        (() => ({
+          destroy() {},
+        })),
       attachMarkdownInputSuggest: props.attachMarkdownInputSuggest,
       initialItems,
       onEditEscape: props.onEditEscape,
       onEditStateChange: props.onEditStateChange,
       parentText: "11:30 - 13:40 오전 처리 및 셀프 정리",
+      renderMarkdown,
+      sourcePath: props.sourcePath ?? "Journal/2026-07-27.md",
       onSave,
       onCancel,
     },
@@ -188,6 +208,80 @@ describe("NestedItemsEditModal", () => {
       click(target.querySelector('button[aria-label="Edit 레이저 제모"]'));
 
       expect(getInput()?.value).toBe("11:40 - 12:00 레이저 제모");
+    } finally {
+      unmount(component);
+      target.remove();
+    }
+  });
+
+  test("renders inactive wikilinks and tags while keeping the rest editable", () => {
+    const destroyMarkdown = vi.fn();
+    const renderMarkdown = vi.fn<RenderMarkdown>(
+      (element, markdown, sourcePath) => {
+        expect(sourcePath).toBe("Journal/2026-07-27.md");
+        element.textContent = "";
+
+        if (markdown.includes("[[Project")) {
+          element.append("Review ");
+
+          const link = document.createElement("a");
+
+          link.className = "internal-link";
+          link.dataset.href = "Project#Plan";
+          link.textContent = "plan";
+          element.append(link, " ");
+
+          const tag = document.createElement("a");
+
+          tag.className = "tag";
+          tag.textContent = "#focus";
+          element.append(tag);
+        } else {
+          element.textContent = markdown;
+        }
+
+        return destroyMarkdown;
+      },
+    );
+    const { component, target } = renderModal(
+      [
+        {
+          text: "11:40 - 12:00 Review [[Project#Plan|plan]] #focus",
+          symbol: "-",
+        },
+      ],
+      { renderMarkdown },
+    );
+
+    try {
+      const itemText = target.querySelector(".item-text");
+      const link = target.querySelector(".item-text a.internal-link");
+      const tag = target.querySelector(".item-text a.tag");
+
+      expect(itemText?.textContent).toBe("Review plan #focus");
+      expect(link?.textContent).toBe("plan");
+      expect(tag?.textContent).toBe("#focus");
+      expect(renderMarkdown).toHaveBeenCalledWith(
+        itemText,
+        "Review [[Project#Plan|plan]] #focus",
+        "Journal/2026-07-27.md",
+      );
+
+      click(link);
+      expect(getInput()).toBeNull();
+
+      click(tag);
+      expect(getInput()).toBeNull();
+
+      click(
+        target.querySelector(
+          'button[aria-label="Edit Review [[Project#Plan|plan]] #focus"]',
+        ),
+      );
+      expect(getInput()?.value).toBe(
+        "11:40 - 12:00 Review [[Project#Plan|plan]] #focus",
+      );
+      expect(destroyMarkdown).toHaveBeenCalled();
     } finally {
       unmount(component);
       target.remove();

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
 import { App, Modal, type KeymapEventHandler } from "obsidian";
 import { mount, unmount } from "svelte";
+import type { Readable } from "svelte/store";
 
 import {
   type EditableNestedListItem,
@@ -8,8 +9,11 @@ import {
   runWithNoticeOnError,
 } from "../service/list-item-entry-editor";
 import type { EditableTimeBlock } from "../time-block-types";
+import { createRenderMarkdown } from "../util/create-render-markdown";
+import { createShowPreview } from "../util/create-show-preview";
 import { getFirstLine } from "../util/markdown";
 
+import { createInternalLinkHoverPreview } from "./actions/hover-preview";
 import NestedItemsEditModal from "./components/nested-items-edit-modal.svelte";
 import { createMarkdownInputSuggest } from "./markdown-input-suggest";
 
@@ -108,7 +112,11 @@ function toEditableNestedListItems(
 export function createNestedItemsEditModalCreator(
   app: App,
   taskEntryEditor: ListItemEntryEditor,
+  isModPressed: Readable<boolean>,
 ) {
+  const renderMarkdown = createRenderMarkdown(app);
+  const showPreview = createShowPreview(app);
+
   return (task: EditableTimeBlock) => {
     if (task.source === "unwritten") {
       throw new Error("Cannot edit nested items on an unwritten time block");
@@ -147,10 +155,16 @@ export function createNestedItemsEditModalCreator(
     const component = mount(NestedItemsEditModal, {
       target: modal.contentEl,
       props: {
+        attachInternalLinkHoverPreview: createInternalLinkHoverPreview(path, {
+          isModPressed,
+          showPreview,
+        }),
         attachMarkdownInputSuggest: createMarkdownInputSuggest(app, path),
         editController,
         initialItems: toEditableNestedListItems(task.children),
         parentText: getFirstLine(task.text),
+        renderMarkdown,
+        sourcePath: path,
         onEditEscape: () => modal.suppressEscapeCloseForCurrentKey(),
         onEditStateChange: (isEditing: boolean) => {
           isNestedItemEditing = isEditing;
