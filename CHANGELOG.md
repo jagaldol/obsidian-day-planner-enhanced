@@ -4,6 +4,21 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.33.0**, and follows its own versioning.
 
+## 0.5.0
+
+### ✨ New features
+
+- Added Obsidian-style note, heading, and tag suggestions to task title and nested-item editors.
+- Rendered Markdown in the nested-item editor and made planner wikilinks fully interactive, including navigation and hover previews.
+- Added unobtrusive inline editing for the parent title in the nested-items modal.
+- Added an optional **Hide Tasks metadata in planner** setting that keeps descriptions and tags visible while hiding Tasks dates, recurrence, priority, IDs, dependencies, on-completion behavior, and inline fields from rendered planner blocks without changing source notes.
+
+### 🐞 Fixed issues
+
+- Replaced the literal `New item` text in newly added nested items with a placeholder and discarded empty drafts instead of saving them.
+- Stabilized All Day task ordering when task collections are refreshed or reindexed.
+- Kept floating timeline controls clipped within the timeline viewport.
+
 ## 0.4.4
 
 ### 🐞 Fixed issues
