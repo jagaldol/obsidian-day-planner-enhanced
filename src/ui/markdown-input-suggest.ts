@@ -316,9 +316,9 @@ export function renderMarkdownInputSuggestion(
 ) {
   el.classList.add("mod-complex");
 
-  const contentEl = el.createEl("div");
-  const titleEl = contentEl.createEl("div");
-  const titleTextEl = titleEl.createEl("span");
+  const contentEl = el.createDiv();
+  const titleEl = contentEl.createDiv();
+  const titleTextEl = titleEl.createSpan();
   const syntax = getInsertedText(suggestion);
 
   contentEl.className = "suggestion-content";
@@ -330,14 +330,14 @@ export function renderMarkdownInputSuggestion(
       (suggestion.kind === "tag" ? syntax : suggestion.value));
 
   if (suggestion.isNew && suggestion.kind === "wikilink") {
-    const statusEl = titleEl.createEl("span");
+    const statusEl = titleEl.createSpan();
 
     statusEl.className = "day-planner-markdown-suggestion-status";
     statusEl.textContent = "Unresolved";
   }
 
   if (suggestion.detail) {
-    const detailEl = contentEl.createEl("div");
+    const detailEl = contentEl.createDiv();
 
     detailEl.className = "suggestion-note";
     detailEl.textContent = suggestion.detail;
@@ -353,9 +353,9 @@ function createInstruction(
   command: string,
   purpose: string,
 ) {
-  const instructionEl = containerEl.createEl("span");
-  const commandEl = instructionEl.createEl("span");
-  const purposeEl = instructionEl.createEl("span");
+  const instructionEl = containerEl.createSpan();
+  const commandEl = instructionEl.createSpan();
+  const purposeEl = instructionEl.createSpan();
 
   instructionEl.className = "prompt-instruction";
   commandEl.className = "prompt-instruction-command";
@@ -391,7 +391,7 @@ function decorateMarkdownInputSuggestionPopover(
     return;
   }
 
-  const instructionsEl = containerEl.createEl("div");
+  const instructionsEl = containerEl.createDiv();
 
   instructionsEl.className =
     "prompt-instructions day-planner-markdown-suggestion-instructions";

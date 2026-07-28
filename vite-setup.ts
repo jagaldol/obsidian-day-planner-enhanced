@@ -142,17 +142,28 @@ Object.defineProperty(HTMLElement.prototype, "empty", {
   },
 });
 
-Object.defineProperty(Node.prototype, "createEl", {
+function appendTestElement<K extends keyof HTMLElementTagNameMap>(
+  parent: Node,
+  tag: K,
+): HTMLElementTagNameMap[K] {
+  const el = (parent.ownerDocument ?? document).createElement(tag);
+
+  parent.appendChild(el);
+
+  return el;
+}
+
+Object.defineProperty(Node.prototype, "createDiv", {
   configurable: true,
-  value<K extends keyof HTMLElementTagNameMap>(
-    this: Node,
-    tag: K,
-  ): HTMLElementTagNameMap[K] {
-    const el = (this.ownerDocument ?? document).createElement(tag);
+  value(this: Node): HTMLDivElement {
+    return appendTestElement(this, "div");
+  },
+});
 
-    this.appendChild(el);
-
-    return el;
+Object.defineProperty(Node.prototype, "createSpan", {
+  configurable: true,
+  value(this: Node): HTMLSpanElement {
+    return appendTestElement(this, "span");
   },
 });
 
