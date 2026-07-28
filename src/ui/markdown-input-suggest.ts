@@ -316,9 +316,9 @@ export function renderMarkdownInputSuggestion(
 ) {
   el.classList.add("mod-complex");
 
-  const contentEl = el.ownerDocument.createElement("div");
-  const titleEl = el.ownerDocument.createElement("div");
-  const titleTextEl = el.ownerDocument.createElement("span");
+  const contentEl = el.createEl("div");
+  const titleEl = contentEl.createEl("div");
+  const titleTextEl = titleEl.createEl("span");
   const syntax = getInsertedText(suggestion);
 
   contentEl.className = "suggestion-content";
@@ -328,27 +328,20 @@ export function renderMarkdownInputSuggestion(
     ? syntax
     : (suggestion.label ??
       (suggestion.kind === "tag" ? syntax : suggestion.value));
-  titleEl.appendChild(titleTextEl);
 
   if (suggestion.isNew && suggestion.kind === "wikilink") {
-    const statusEl = el.ownerDocument.createElement("span");
+    const statusEl = titleEl.createEl("span");
 
     statusEl.className = "day-planner-markdown-suggestion-status";
     statusEl.textContent = "Unresolved";
-    titleEl.appendChild(statusEl);
   }
 
-  contentEl.appendChild(titleEl);
-
   if (suggestion.detail) {
-    const detailEl = el.ownerDocument.createElement("div");
+    const detailEl = contentEl.createEl("div");
 
     detailEl.className = "suggestion-note";
     detailEl.textContent = suggestion.detail;
-    contentEl.appendChild(detailEl);
   }
-
-  el.appendChild(contentEl);
 
   if (inputEl) {
     decorateMarkdownInputSuggestionPopover(el, inputEl);
@@ -360,17 +353,14 @@ function createInstruction(
   command: string,
   purpose: string,
 ) {
-  const instructionEl = containerEl.ownerDocument.createElement("span");
-  const commandEl = containerEl.ownerDocument.createElement("span");
-  const purposeEl = containerEl.ownerDocument.createElement("span");
+  const instructionEl = containerEl.createEl("span");
+  const commandEl = instructionEl.createEl("span");
+  const purposeEl = instructionEl.createEl("span");
 
   instructionEl.className = "prompt-instruction";
   commandEl.className = "prompt-instruction-command";
   commandEl.textContent = command;
   purposeEl.textContent = purpose;
-  instructionEl.append(commandEl, purposeEl);
-
-  return instructionEl;
 }
 
 function isTabSelectionEvent(event: MouseEvent | KeyboardEvent) {
@@ -401,17 +391,14 @@ function decorateMarkdownInputSuggestionPopover(
     return;
   }
 
-  const instructionsEl = containerEl.ownerDocument.createElement("div");
+  const instructionsEl = containerEl.createEl("div");
 
   instructionsEl.className =
     "prompt-instructions day-planner-markdown-suggestion-instructions";
-  instructionsEl.append(
-    createInstruction(containerEl, "↑↓", "to navigate"),
-    createInstruction(containerEl, "↵", "to select"),
-    createInstruction(containerEl, "tab", "to select and continue"),
-    createInstruction(containerEl, "esc", "to dismiss"),
-  );
-  containerEl.appendChild(instructionsEl);
+  createInstruction(instructionsEl, "↑↓", "to navigate");
+  createInstruction(instructionsEl, "↵", "to select");
+  createInstruction(instructionsEl, "tab", "to select and continue");
+  createInstruction(instructionsEl, "esc", "to dismiss");
 }
 
 export function applyMarkdownInputSuggestionToElement(

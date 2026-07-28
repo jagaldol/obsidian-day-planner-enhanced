@@ -142,6 +142,20 @@ Object.defineProperty(HTMLElement.prototype, "empty", {
   },
 });
 
+Object.defineProperty(Node.prototype, "createEl", {
+  configurable: true,
+  value<K extends keyof HTMLElementTagNameMap>(
+    this: Node,
+    tag: K,
+  ): HTMLElementTagNameMap[K] {
+    const el = (this.ownerDocument ?? document).createElement(tag);
+
+    this.appendChild(el);
+
+    return el;
+  },
+});
+
 vi.mock("obsidian", () => ({
   AbstractInputSuggest: MockAbstractInputSuggest,
   getAllTags: (cache: { tags?: Array<{ tag: string }> }) =>
