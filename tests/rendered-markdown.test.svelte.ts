@@ -14,6 +14,72 @@ afterEach(() => {
 });
 
 describe("RenderedMarkdown", () => {
+  test.each([
+    {
+      durationMinutes: 40,
+      hideTimeRangeInSingleLine: true,
+      expectedVisible: false,
+    },
+    {
+      durationMinutes: 50,
+      hideTimeRangeInSingleLine: false,
+      expectedVisible: true,
+    },
+    {
+      durationMinutes: 50,
+      hideTimeRangeInSingleLine: true,
+      expectedVisible: false,
+    },
+    {
+      durationMinutes: 58,
+      hideTimeRangeInSingleLine: true,
+      expectedVisible: true,
+    },
+  ])(
+    "renders the time range visible=$expectedVisible for a $durationMinutes-minute block when hideTimeRangeInSingleLine=$hideTimeRangeInSingleLine",
+    ({
+      durationMinutes,
+      hideTimeRangeInSingleLine,
+      expectedVisible,
+    }) => {
+      const target = document.createElement("div");
+      const context = new Map<string, unknown>([
+        [
+          obsidianContextKey,
+          {
+            renderMarkdown: vi.fn(() => vi.fn()),
+            settings: writable({
+              ...defaultSettingsForTests,
+              hideTimeRangeInSingleLine,
+            }),
+            toggleCheckboxInFile: vi.fn(),
+          } as unknown as ObsidianContext,
+        ],
+      ]);
+
+      document.body.appendChild(target);
+
+      const component = mount(RenderedMarkdown, {
+        context,
+        props: {
+          task: {
+            ...baseTask,
+            durationMinutes,
+          },
+        },
+        target,
+      });
+
+      flushSync();
+
+      expect(target.querySelector(".time-block-range") !== null).toBe(
+        expectedVisible,
+      );
+
+      unmount(component);
+    },
+  );
+
   test("renders task markdown relative to its source file", () => {
     const target = document.createElement("div");
     const renderMarkdown = vi.fn(() => vi.fn());

@@ -98,6 +98,9 @@
   const useStackedHeader = $derived(
     !isCompact && blockHeightPx >= stackedHeaderRequiredHeightPx,
   );
+  const hideTimeRange = $derived(
+    $settings.hideTimeRangeInSingleLine && !useStackedHeader,
+  );
 
   const completed = $derived(isCompleted(task.task ?? task.status));
   const listItemLine = $derived(
@@ -127,7 +130,7 @@
         useStackedHeader && "is-stacked-header",
       ]}
     >
-      {#if timeRange}
+      {#if timeRange && !hideTimeRange}
         <div
           class={[
             "time-block-range",

@@ -46,6 +46,7 @@ Plans that cross midnight stay anchored to the day where they start while still 
 - **Smoother timeline editing**: click-created blocks use the clicked time as their start, move-block dragging follows the configured snap interval from the block's original position, end-of-day moves save the visible `23:59` boundary, newly created blocks stay selected while you type, and auto-scroll waits while you are interacting with the planner.
 - **Undo-friendly removal**: timeline block removal is immediate from the context menu and still uses the undoable edit path.
 - **Theme-aware UI polish**: nested dividers, dots, time ranges, mobile controls, and checkbox colors are tuned for scanning and Obsidian themes.
+- **Flexible time-range display**: optionally hide the time range whenever a block uses a single-line header, including compact blocks.
 - **Separate plugin identity**: installs as `day-planner-enhanced`, so it can live separately from the original Day Planner plugin.
 
 - 🪲 [Report bugs and suggest features](https://github.com/jagaldol/obsidian-day-planner-enhanced/issues)

@@ -18,6 +18,8 @@ export interface ColorOverride {
 export const eventFormats = ["task", "bullet"] as const;
 export const hideTasksMetadataDescription =
   "Hide Tasks dates/completion (⏳ 📅 ➕ 🛫 ✅), recurrence (🔁), priority, IDs/dependencies, on-completion, and inline fields like (scheduled:: …). Descriptions and tags stay visible; source notes are unchanged.";
+export const hideTimeRangeInSingleLineDescription =
+  "Give task text more room by hiding the time range whenever a block uses a single-line header, including compact blocks.";
 export const firstDaysOfWeek = [
   "monday",
   "sunday",
@@ -59,6 +61,7 @@ export interface DayPlannerSettings {
   showCompletedTasks: boolean;
   showSubtasksInTaskBlocks: boolean;
   hideTasksMetadata: boolean;
+  hideTimeRangeInSingleLine: boolean;
   icals: Array<IcalConfig>;
   colorOverrides: Array<ColorOverride>;
   releaseNotes: boolean;
@@ -98,6 +101,7 @@ export const defaultSettings: DayPlannerSettings = {
   showCompletedTasks: true,
   showSubtasksInTaskBlocks: true,
   hideTasksMetadata: false,
+  hideTimeRangeInSingleLine: false,
   icals: [],
   colorOverrides: [],
   releaseNotes: true,

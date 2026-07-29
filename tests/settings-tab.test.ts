@@ -70,6 +70,7 @@ describe("DayPlannerSettingsTab declarative settings", () => {
     expect(serializedDefinitions).toContain("Tasks integration");
     expect(serializedDefinitions).toContain("hideTasksMetadata");
     expect(serializedDefinitions).toContain(hideTasksMetadataDescription);
+    expect(serializedDefinitions).toContain("hideTimeRangeInSingleLine");
     expect(hideTasksMetadataDescription).toContain("⏳ 📅 ➕ 🛫 ✅");
     expect(hideTasksMetadataDescription).toContain("(scheduled:: …)");
     expect(serializedDefinitions).toContain("Color 1");
@@ -94,6 +95,11 @@ describe("DayPlannerSettingsTab declarative settings", () => {
 
     expect(tab.getControlValue("hideTasksMetadata")).toBe(true);
     expect(get(settingsStore).hideTasksMetadata).toBe(true);
+
+    tab.setControlValue("hideTimeRangeInSingleLine", true);
+
+    expect(tab.getControlValue("hideTimeRangeInSingleLine")).toBe(true);
+    expect(get(settingsStore).hideTimeRangeInSingleLine).toBe(true);
   });
 
   test("documents the supported 24-hour timestamp syntax", () => {

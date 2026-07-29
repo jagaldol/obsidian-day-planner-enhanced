@@ -16,6 +16,7 @@ import {
   eventFormats,
   firstDaysOfWeek,
   hideTasksMetadataDescription,
+  hideTimeRangeInSingleLineDescription,
 } from "../settings";
 import Callout from "../ui/components/callout.svelte";
 
@@ -443,6 +444,14 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
             control: {
               type: "toggle",
               key: "showTimestampInTaskBlock",
+            },
+          },
+          {
+            name: "Hide time range in single-line blocks",
+            desc: hideTimeRangeInSingleLineDescription,
+            control: {
+              type: "toggle",
+              key: "hideTimeRangeInSingleLine",
             },
           },
         ],
@@ -1145,6 +1154,18 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
               .setValue(this.plugin.settings().showTimestampInTaskBlock)
               .onChange((value) => {
                 this.updateSettings({ showTimestampInTaskBlock: value });
+              });
+          }),
+      )
+      .addSetting((setting) =>
+        setting
+          .setName("Hide time range in single-line blocks")
+          .setDesc(hideTimeRangeInSingleLineDescription)
+          .addToggle((component) => {
+            component
+              .setValue(this.plugin.settings().hideTimeRangeInSingleLine)
+              .onChange((value) => {
+                this.updateSettings({ hideTimeRangeInSingleLine: value });
               });
           }),
       );

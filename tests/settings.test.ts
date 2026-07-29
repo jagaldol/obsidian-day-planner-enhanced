@@ -21,4 +21,13 @@ describe("settings migration", () => {
       mergeStoredSettings({ hideTasksMetadata: true }).hideTasksMetadata,
     ).toBe(true);
   });
+
+  test("keeps time ranges visible in single-line blocks by default", () => {
+    expect(defaultSettings.hideTimeRangeInSingleLine).toBe(false);
+    expect(mergeStoredSettings(null).hideTimeRangeInSingleLine).toBe(false);
+    expect(
+      mergeStoredSettings({ hideTimeRangeInSingleLine: true })
+        .hideTimeRangeInSingleLine,
+    ).toBe(true);
+  });
 });

@@ -2,7 +2,10 @@
   import { SettingGroup } from "obsidian";
 
   import { getObsidianContext } from "../../context/obsidian-context";
-  import { hideTasksMetadataDescription } from "../../settings";
+  import {
+    hideTasksMetadataDescription,
+    hideTimeRangeInSingleLineDescription,
+  } from "../../settings";
   import { range } from "../../util/collection";
 
   const { settings } = getObsidianContext();
@@ -93,6 +96,21 @@
               };
             }),
         ),
+      )
+      .addSetting((setting) =>
+        setting
+          .setName("Hide time range in single-line blocks")
+          .setDesc(hideTimeRangeInSingleLineDescription)
+          .addToggle((toggle) =>
+            toggle
+              .setValue($settings.hideTimeRangeInSingleLine)
+              .onChange((value) => {
+                $settings = {
+                  ...$settings,
+                  hideTimeRangeInSingleLine: value,
+                };
+              }),
+          ),
       );
 
     new SettingGroup(el).setHeading("Tasks integration").addSetting((setting) =>
