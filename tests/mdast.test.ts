@@ -2,9 +2,12 @@ import { isNotVoid } from "typed-assert";
 import { afterEach, test, expect } from "vitest";
 
 import {
+  findFirst,
   findHeadingWithChildren,
   fromMarkdown,
+  getFirstTextNodeValue,
   isList,
+  isTextNode,
   sortListsRecursively,
   sortListsRecursivelyByTimestamp,
   sortListsRecursivelyInMarkdown,
@@ -42,6 +45,56 @@ test("roundtripping doesn't mess up Obsidian-styled markdown", () => {
   const parsed = fromMarkdown(input);
 
   expect(toMarkdown(parsed)).toEqual(input);
+});
+
+test("roundtripping preserves Obsidian wikilinks verbatim", () => {
+  const wikilinks = [
+    "[[folder/custom_syntax]]",
+    "[[folder/_Index_]]",
+    "[[folder/__Index__]]",
+    "[[folder/R&D]]",
+    "[[folder/a&copy;.md]]",
+    "[[folder/a*b]]",
+    "[[folder/a`b]]",
+    "[[folder/a<b]]",
+    String.raw`[[folder/a\b]]`,
+    String.raw`[[folder/a\_b]]`,
+    "[[folder/a](b]]",
+    "[[folder/a[b]c]]",
+    "[[folder/a  b (draft)+v2=ok!]]",
+    "[[folder/\uE041-icon]]",
+    "![[folder/R&D.png]]",
+    "[[folder/R&D#Heading&More|표시_*_<내용>]]",
+    "[[folder/note#^block-id]]",
+    String.raw`\[[literal_link]]`,
+  ];
+  const entries = wikilinks.map(
+    (wikilink, index) =>
+      `- [ ] ${String(index + 6).padStart(2, "0")}:00 ${wikilink}`,
+  );
+  const input = `${entries.toReversed().join("\n")}\n`;
+  const expectedSorted = `${entries.join("\n")}\n`;
+
+  const roundtripped = toMarkdown(fromMarkdown(input));
+  const sorted = sortListsRecursivelyInMarkdown(roundtripped);
+
+  expect(roundtripped).toBe(input);
+  expect(sorted).toBe(expectedSorted);
+  expect(sortListsRecursivelyInMarkdown(sorted)).toBe(expectedSorted);
+});
+
+test("wikilink protection preserves mdast source positions", () => {
+  const input = "- [ ] 09:00 [[folder/R&D|표시_*_내용]] suffix\n";
+  const root = fromMarkdown(input);
+  const firstText = findFirst(root, isTextNode);
+
+  isNotVoid(firstText);
+
+  expect(firstText.position).toEqual({
+    start: { line: 1, column: 3, offset: 2 },
+    end: { line: 1, column: input.length, offset: input.length - 1 },
+  });
+  expect(getFirstTextNodeValue(root)).toBe(input.slice(2, -1));
 });
 
 test("Find heading position", () => {

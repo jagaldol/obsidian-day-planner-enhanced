@@ -2,7 +2,7 @@
 import { produce } from "immer";
 import type { Node, Parent, Text as MdastText, ListItem } from "mdast";
 import type { Heading, List, Root, Nodes, Paragraph } from "mdast";
-import { fromMarkdown } from "mdast-util-from-markdown";
+import { fromMarkdown as parseMarkdown } from "mdast-util-from-markdown";
 import * as mdast from "mdast-util-to-markdown";
 import type { EditorPosition } from "obsidian";
 import { check, isExactly, isNotVoid } from "typed-assert";
@@ -17,7 +17,11 @@ import {
 } from "../regexp";
 import { takeWhile } from "../util/collection";
 
-export { fromMarkdown };
+import { protectWikilinks, restoreWikilinks } from "./wikilink";
+
+export function fromMarkdown(input: string) {
+  return parseMarkdown(protectWikilinks(input));
+}
 
 function normalizeNestedTextIndentation(listItem: string) {
   const normalizedListMarker = listItem.replace(/^(-|\d+[.)])[\t ]+/u, "$1 ");
@@ -56,6 +60,13 @@ export function toMarkdown(nodes: Nodes) {
       bullet: "-",
       listItemIndent: "tab",
       handlers: {
+        text: (node, parent, state, info) =>
+          mdast.defaultHandlers.text(
+            { ...node, value: protectWikilinks(node.value) },
+            parent,
+            state,
+            info,
+          ),
         heading: (node, parent, state, info) => {
           const isSetextHeading =
             node.position?.start.line !== node.position?.end.line;
@@ -323,7 +334,7 @@ export function getFirstTextNodeValue(node: Node) {
     return getFirstTextNodeValue(firstNode);
   }
 
-  return isTextNode(node) ? node.value : "";
+  return isTextNode(node) ? restoreWikilinks(node.value) : "";
 }
 
 export function isParentNode(node: Node): node is Parent {
@@ -382,8 +393,10 @@ function postProcess(input: string) {
     .map((line) => line.replace(dashOrNumberWithMultipleSpaces, "$1 "))
     .join("\n");
 
-  return normalizedListSpacing
-    .replace(escapedSquareBracket, "[")
-    .replace(escapedUnderscore, "_");
+  return restoreWikilinks(
+    normalizedListSpacing
+      .replace(escapedSquareBracket, "[")
+      .replace(escapedUnderscore, "_"),
+  );
 }
 /* eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. */
