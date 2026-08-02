@@ -9,7 +9,12 @@ import { check, isExactly, isNotVoid } from "typed-assert";
 import type { Point } from "unist";
 
 import { compareTimestamps, getTimeRangeMatch } from "../parser/parser";
-import { escapedSquareBracket, listItemRegExp } from "../regexp";
+import {
+  dashOrNumberWithMultipleSpaces,
+  escapedSquareBracket,
+  escapedUnderscore,
+  listItemRegExp,
+} from "../regexp";
 import { takeWhile } from "../util/collection";
 
 export { fromMarkdown };
@@ -107,6 +112,7 @@ export function findHeadingWithChildren(
 
   const planHeading = root.children[planHeadingIndex];
 
+  isNotVoid(planHeading);
   isHeading(planHeading);
 
   const nodesAfterHeading = root.children.slice(planHeadingIndex + 1);
@@ -371,6 +377,13 @@ export function toMdastPoint(editorPosition: EditorPosition) {
 }
 
 function postProcess(input: string) {
-  return input.replace(escapedSquareBracket, "[");
+  const normalizedListSpacing = input
+    .split("\n")
+    .map((line) => line.replace(dashOrNumberWithMultipleSpaces, "$1 "))
+    .join("\n");
+
+  return normalizedListSpacing
+    .replace(escapedSquareBracket, "[")
+    .replace(escapedUnderscore, "_");
 }
 /* eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. */

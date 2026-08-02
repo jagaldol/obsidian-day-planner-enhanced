@@ -10,7 +10,7 @@ import {
 } from "../../src/ui/hooks/use-edit/drag-pointer";
 import { EditMode } from "../../src/ui/hooks/use-edit/types";
 
-import { baseTask } from "./util/fixtures";
+import { baseTimeBlock } from "./util/fixtures";
 
 const settings = {
   ...defaultSettingsForTests,
@@ -21,13 +21,13 @@ const settings = {
 
 describe("drag pointer time", () => {
   test("starts all-day drags without a relative timeline origin", () => {
-    const task = {
-      ...baseTask,
+    const timeBlock = {
+      ...baseTimeBlock,
       isAllDayEvent: true,
       startTime: moment("2023-01-01 00:00"),
     };
 
-    expect(getDragStartState(task, 120)).toMatchObject({
+    expect(getDragStartState(timeBlock, 120)).toMatchObject({
       dragOriginClientY: undefined,
       pointerDateTime: {
         dateTime: moment("2023-01-01 00:00"),
@@ -37,16 +37,16 @@ describe("drag pointer time", () => {
   });
 
   test("all-day drags follow the absolute pointer position and scroll", () => {
-    const task = {
-      ...baseTask,
+    const timeBlock = {
+      ...baseTimeBlock,
       isAllDayEvent: true,
       startTime: moment("2023-01-01 00:00"),
     };
     const operation = {
       dragOriginClientY: 120,
-      dragOriginStartTime: task.startTime.clone(),
+      dragOriginStartTime: timeBlock.startTime.clone(),
       mode: EditMode.DRAG,
-      task,
+      timeBlock,
     };
     const getDateTime = (timelineOffsetY: number) =>
       getDragPointerDateTime({
@@ -79,13 +79,13 @@ describe("drag pointer time", () => {
   });
 
   test("timed drags preserve their relative pointer offset", () => {
-    const task = {
-      ...baseTask,
+    const timeBlock = {
+      ...baseTimeBlock,
       isAllDayEvent: false,
       startTime: moment("2023-01-01 10:00"),
     };
 
-    expect(getDragStartState(task, 120)).toMatchObject({
+    expect(getDragStartState(timeBlock, 120)).toMatchObject({
       dragOriginClientY: 120,
       pointerDateTime: {
         dateTime: moment("2023-01-01 10:00"),
@@ -95,9 +95,9 @@ describe("drag pointer time", () => {
 
     const operation = {
       dragOriginClientY: 120,
-      dragOriginStartTime: task.startTime.clone(),
+      dragOriginStartTime: timeBlock.startTime.clone(),
       mode: EditMode.DRAG,
-      task,
+      timeBlock,
     };
 
     expect(
@@ -112,17 +112,17 @@ describe("drag pointer time", () => {
   });
 
   test("timed drags include auto-scroll movement while the pointer is still", () => {
-    const task = {
-      ...baseTask,
+    const timeBlock = {
+      ...baseTimeBlock,
       isAllDayEvent: false,
       startTime: moment("2023-01-01 10:00"),
     };
     const operation = withDragScrollOffset(
       {
         dragOriginClientY: 120,
-        dragOriginStartTime: task.startTime.clone(),
+        dragOriginStartTime: timeBlock.startTime.clone(),
         mode: EditMode.DRAG,
-        task,
+        timeBlock,
       },
       40,
     );
@@ -141,16 +141,16 @@ describe("drag pointer time", () => {
   });
 
   test("timed drags adopt the hovered timeline day", () => {
-    const task = {
-      ...baseTask,
+    const timeBlock = {
+      ...baseTimeBlock,
       isAllDayEvent: false,
       startTime: moment("2023-01-01 10:00"),
     };
     const operation = {
       dragOriginClientY: 120,
-      dragOriginStartTime: task.startTime.clone(),
+      dragOriginStartTime: timeBlock.startTime.clone(),
       mode: EditMode.DRAG,
-      task,
+      timeBlock,
     };
 
     expect(

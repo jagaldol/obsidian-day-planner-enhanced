@@ -1,38 +1,59 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
 import { Menu } from "obsidian";
 
+import type { LogEntryEditor } from "../service/log-entry-editor";
 import type { WorkspaceFacade } from "../service/workspace-facade";
 import { type EditableTimeBlock } from "../time-block-types";
+import { runWithNoticeOnError } from "../util/effect";
 
 export function createTimeBlockMenu(props: {
   event: MouseEvent | TouchEvent;
-  task: EditableTimeBlock;
+  timeBlock: EditableTimeBlock;
+  logEntryEditor: LogEntryEditor;
   workspaceFacade: WorkspaceFacade;
   onEdit: () => void;
   onEditNestedItems: () => void;
-  onRemove: () => Promise<void>;
+  onDelete: () => Promise<void>;
 }) {
-  const { event, task, workspaceFacade, onEdit, onEditNestedItems, onRemove } =
-    props;
+  const {
+    event,
+    timeBlock,
+    workspaceFacade,
+    onEdit,
+    onEditNestedItems,
+    onDelete,
+    logEntryEditor,
+  } = props;
 
-  if (task.source === "unwritten") {
+  if (timeBlock.source === "unwritten") {
     throw new Error("Cannot show a menu for an unwritten time block");
   }
 
   const menu = new Menu();
 
   menu.addItem((item) => {
-    item.setTitle("Edit").setIcon("pencil").onClick(onEdit);
+    item
+      .setTitle("Clock in")
+      .setIcon("play")
+      .onClick(async () => {
+        await runWithNoticeOnError(logEntryEditor.clockIn(timeBlock));
+      });
   });
+
+  menu.addItem((item) =>
+    item.setTitle("Edit").setIcon("pencil").onClick(onEdit),
+  );
 
   menu.addItem((item) => {
     item
       .setTitle("Reveal task in file")
       .setIcon("file-input")
       .onClick(async () => {
-        await workspaceFacade.revealLocation(task);
+        await workspaceFacade.revealLocation(timeBlock);
       });
   });
+
+  menu.addSeparator();
 
   menu.addItem((item) => {
     item
@@ -45,10 +66,12 @@ export function createTimeBlockMenu(props: {
 
   menu.addItem((item) => {
     item
-      .setTitle("Remove")
+      .setTitle("Delete")
       .setIcon("trash-2")
       .setWarning(true)
-      .onClick(onRemove);
+      .onClick(async () => {
+        await onDelete();
+      });
   });
 
   // Obsidian works fine with touch events, but its TypeScript definitions don't reflect that.

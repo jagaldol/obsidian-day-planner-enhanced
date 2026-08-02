@@ -20,9 +20,9 @@ import {
 } from "../../util/time-block-utils";
 
 import { useEditContext } from "./use-edit/use-edit-context";
-import { useNewlyStartedTasks } from "./use-newly-started-tasks";
+import { useNewlyStartedTimeBlocks } from "./use-newly-started-time-blocks";
 
-export function useTasks(props: {
+export function useTimeBlocks(props: {
   settingsStore: Writable<DayPlannerSettings>;
   isOnline: Readable<boolean>;
   currentTime: Readable<Moment>;
@@ -30,9 +30,9 @@ export function useTasks(props: {
   onUpdate: OnUpdateFn;
   onEditAborted: OnEditAbortedFn;
   pointerDateTime: Readable<PointerDateTime>;
-  remoteTasks: Readable<RemoteTimeBlock[]>;
+  remoteTimeBlocks: Readable<RemoteTimeBlock[]>;
   periodicNotes: PeriodicNotes;
-  localTasks: Readable<EditableTimeBlock[]>;
+  localTimeBlocks: Readable<EditableTimeBlock[]>;
 }) {
   const {
     settingsStore,
@@ -42,11 +42,11 @@ export function useTasks(props: {
     pointerDateTime,
     onUpdate,
     onEditAborted,
-    remoteTasks: remoteTimeBlocks,
-    localTasks: localTimeBlocks,
+    remoteTimeBlocks,
+    localTimeBlocks,
   } = props;
 
-  const tasksWithTimeForToday = derived(
+  const timeBlocksWithTimeForToday = derived(
     [localTimeBlocks, remoteTimeBlocks, currentTime],
     ([$localTimeBlocks, $remoteTimeBlocks, $currentTime]: [
       TimeBlock[],
@@ -75,23 +75,23 @@ export function useTasks(props: {
     workspaceFacade,
     onUpdate,
     onEditAborted,
-    settings: settingsStore,
-    localTasks: localTimeBlocks,
-    remoteTasks: remoteTimeBlocks,
+    settingsStore,
+    localTimeBlocks,
+    remoteTimeBlocks,
     pointerDateTime,
     abortEditTrigger,
   });
 
-  const newlyStartedTasks = useNewlyStartedTasks({
-    settings: settingsStore,
-    tasksWithTimeForToday,
+  const newlyStartedTimeBlocks = useNewlyStartedTimeBlocks({
+    settingsStore,
+    timeBlocksWithTimeForToday,
     currentTime,
   });
 
   return {
-    tasksWithTimeForToday,
+    timeBlocksWithTimeForToday,
     editContext,
-    newlyStartedTasks,
+    newlyStartedTimeBlocks,
   };
 }
 /* eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. */

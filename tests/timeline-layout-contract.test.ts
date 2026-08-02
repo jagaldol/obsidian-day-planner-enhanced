@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import * as sass from "sass";
+import { isNotVoid } from "typed-assert";
 import { describe, expect, test } from "vitest";
 
 const compiledCss = sass.compile(path.resolve("src/styles.scss"), {
@@ -11,14 +12,21 @@ const compiledCss = sass.compile(path.resolve("src/styles.scss"), {
 }).css;
 
 function declarationsFor(selector: string) {
-  const matchingRules = [...compiledCss.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
-    .filter(([, selectorList]) =>
-      selectorList
-        .split(",")
-        .map((candidate) => candidate.trim())
-        .includes(selector),
-    )
-    .map(([, , declarations]) => declarations);
+  const matchingRules = [
+    ...compiledCss.matchAll(/([^{}]+)\{([^{}]*)\}/g),
+  ].flatMap((rule) => {
+    const [, selectorList, declarations] = rule;
+
+    isNotVoid(selectorList);
+    isNotVoid(declarations);
+
+    return selectorList
+      .split(",")
+      .map((candidate) => candidate.trim())
+      .includes(selector)
+      ? [declarations]
+      : [];
+  });
 
   expect(
     matchingRules,
@@ -26,11 +34,15 @@ function declarationsFor(selector: string) {
   ).not.toHaveLength(0);
 
   const declarations = Object.fromEntries(
-    matchingRules.flatMap((rule) =>
-      [...rule.matchAll(/([\w-]+):\s*([^;]+);/g)].map(([, property, value]) => [
-        property,
-        value.trim(),
-      ]),
+    matchingRules.flatMap((rule): [string, string][] =>
+      [...rule.matchAll(/([\w-]+):\s*([^;]+);/g)].map((match) => {
+        const [, property, value] = match;
+
+        isNotVoid(property);
+        isNotVoid(value);
+
+        return [property, value.trim()];
+      }),
     ),
   );
 
@@ -44,56 +56,17 @@ describe("single-day timeline layout contract", () => {
     });
   });
 
-  test("keeps collapsed controls intrinsic and bounds their expanded height", () => {
+  test("uses the upstream compact timeline grid", () => {
     expect(
-      declarationsFor(".planner-timeline-layout > .planner-timeline-controls"),
+      declarationsFor("[data-type=planner-timeline] .view-content"),
     ).toMatchObject({
-      flex: "0 0 auto",
-      "max-height": "100%",
-    });
-
-    expect(
-      declarationsFor(
-        ".planner-timeline-layout > .planner-timeline-controls.settings-visible",
-      ),
-    ).toMatchObject({
-      "flex-grow": "1",
-      "flex-shrink": "1",
-      "flex-basis": "0",
+      display: "grid",
+      "grid-template-rows": "auto auto minmax(0, 1fr)",
+      "grid-template-columns": "auto minmax(0, 1fr)",
     });
   });
 
-  test("assigns the timeline tree the remaining height explicitly", () => {
-    expect(
-      declarationsFor(".planner-timeline-layout > .planner-timeline-fill"),
-    ).toMatchObject({
-      "flex-grow": "1",
-      "flex-shrink": "1",
-      "flex-basis": "0",
-      "max-height": "none",
-    });
-  });
-
-  test("keeps all-day content intrinsic but shrinkable", () => {
-    expect(
-      declarationsFor(".planner-timeline-layout > .planner-timeline-all-day"),
-    ).toMatchObject({
-      flex: "0 1 auto",
-      "max-height": "100%",
-    });
-  });
-
-  test("keeps the nested timeline scroller bounded and scrollable", () => {
-    expect(declarationsFor(".planner-timeline-scrollable")).toMatchObject({
-      "flex-grow": "1",
-      "flex-shrink": "1",
-      "flex-basis": "0",
-      "min-height": "0",
-      overflow: "auto",
-    });
-  });
-
-  test("wires the layout contract to the single-day view and timeline tree", () => {
+  test("wires the compact rows to the single-day view", () => {
     const timelineView = fs.readFileSync("src/ui/timeline-view.ts", "utf8");
     const timelineWithControls = fs.readFileSync(
       "src/ui/components/timeline-with-controls.svelte",
@@ -103,9 +76,15 @@ describe("single-day timeline layout contract", () => {
     expect(timelineView).toContain(
       'contentEl.addClass("planner-timeline-layout")',
     );
-    expect(timelineWithControls).toContain('class="planner-timeline-all-day"');
-    expect(timelineWithControls).toContain('class="planner-timeline-fill"');
-    expect(timelineWithControls).toContain('"planner-timeline-scrollable"');
+    expect(timelineView).toContain("handleActiveFileChange(");
+    expect(timelineView).toContain("this.app.workspace.getActiveFile()");
+    expect(timelineWithControls).toContain('class="controls-row"');
+    expect(timelineWithControls).toContain('class="all-day-row"');
+    expect(timelineWithControls).toContain('class="ruler"');
+    expect(timelineWithControls).toContain('"timeline-row"');
+    expect(timelineWithControls).toContain("max-height: 16vh");
+    expect(timelineWithControls).not.toContain("ResizeableBox");
+    expect(timelineWithControls).not.toContain("createColumnSelectionMenu");
   });
 
   test("keeps the time tracker on its existing layout contract", () => {

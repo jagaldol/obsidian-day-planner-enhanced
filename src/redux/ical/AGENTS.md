@@ -1,18 +1,18 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-06-05 | Updated: 2026-06-05 -->
+<!-- Generated: 2026-06-05 | Updated: 2026-08-02 -->
 
 # ical
 
 ## Purpose
 
-Remote calendar integration in the store. Holds fetched iCal text and parsed remote tasks, and runs listener middleware that fetches configured calendars and parses their events into `RemoteTask`s for the visible day range.
+Remote calendar integration in the store. Holds fetched iCal text and parsed remote time blocks, and runs listener middleware that fetches configured calendars and parses their events into `RemoteTimeBlock`s for tracked date ranges.
 
 ## Key Files
 
-| File                     | Description                                                                                                                                            |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ical-slice.ts`          | `icalSlice`, `IcalState`, `RawIcal`, `SerializedRemoteTask`, `isVEvent` guard, `initialIcalState`.                                                     |
-| `init-ical-listeners.ts` | `createCachingFetcher`, `createIcalFetchListener`, `createIcalParseListener`, change predicates (`checkVisibleDaysChanged`, `checkIcalEventsChanged`). |
+| File                     | Description                                                                         |
+| ------------------------ | ----------------------------------------------------------------------------------- |
+| `ical-slice.ts`          | `icalSlice`, `IcalState`, `RawIcal`, serialized remote-block state, and `isVEvent`. |
+| `init-ical-listeners.ts` | Fetch/parse listeners plus predicates for iCal and tracked date-range changes.      |
 
 ## For AI Agents
 
@@ -35,7 +35,7 @@ Remote calendar integration in the store. Holds fetched iCal text and parsed rem
 
 - `src/util/ical.ts` - event→task conversion
 - `src/settings.ts` - `IcalConfig`
-- `src/task-types.ts` - `RemoteTask`
+- `src/time-block-types.ts` - `RemoteTimeBlock`
 
 ### External
 

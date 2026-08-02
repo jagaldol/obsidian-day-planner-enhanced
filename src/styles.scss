@@ -234,6 +234,18 @@ body:has(.modal.day-planner-nested-items-modal) .popover.hover-popover {
   --planner-time-block-shadow-on-timeline: 0px 1px 2px 0 #00000012;
 }
 
+[data-type="planner-timeline"] {
+  .view-content {
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "controls controls"
+      "corner all-day"
+      "ruler timeline";
+  }
+}
+
 [data-type="planner-weekly"] {
   .view-header {
     display: grid;
@@ -243,11 +255,11 @@ body:has(.modal.day-planner-nested-items-modal) .popover.hover-popover {
   .view-content {
     display: grid;
     grid-template-rows: auto auto 1fr;
-    grid-template-columns: auto 1fr auto auto;
+    grid-template-columns: auto 1fr;
     grid-template-areas:
-      "corner dates settings"
-      "corner multiday settings"
-      "ruler timelines settings";
+      "corner dates"
+      "corner multiday"
+      "ruler timelines";
   }
 
   .view-actions {
@@ -309,39 +321,10 @@ body:has(.modal.day-planner-nested-items-modal) .popover.hover-popover {
   min-height: 0;
 }
 
-.planner-timeline-layout > .planner-timeline-controls {
-  flex: 0 0 auto;
-  max-height: 100%;
-}
-
-.planner-timeline-layout > .planner-timeline-controls.settings-visible,
-.planner-timeline-layout > .planner-timeline-fill {
-  flex-grow: 1;
-  flex-shrink: 1;
-  flex-basis: 0;
-}
-
-.planner-timeline-layout > .planner-timeline-fill {
-  max-height: none;
-}
-
-.planner-timeline-layout > .planner-timeline-all-day {
-  flex: 0 1 auto;
-  max-height: 100%;
-}
-
 .planner-time-tracker-layout > * {
   flex: 1 1 0;
   min-height: 0;
   max-height: max-content;
-}
-
-.planner-timeline-scrollable {
-  flex-grow: 1;
-  flex-shrink: 1;
-  flex-basis: 0;
-  min-height: 0;
-  overflow: auto;
 }
 
 .planner-settings-warning {

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
 import { Notice, Plugin, WorkspaceLeaf } from "obsidian";
-import { fromStore, get, type Readable, type Writable } from "svelte/store";
+import { get, type Readable, type Writable } from "svelte/store";
 import { isNotVoid } from "typed-assert";
 
 import {
@@ -13,6 +13,7 @@ import {
   icalParseLowerLimit,
 } from "./constants";
 import {
+  createDeleteTimeBlockHandler,
   createEditLineHandler,
   createUpdateHandler,
   getTextFromUser,
@@ -20,7 +21,7 @@ import {
 import { createDumpMetadataCommand } from "./dump-metadata";
 import { VaultIndexAdapter } from "./feature/vault-index-adapter";
 import { currentTime } from "./global-store/current-time";
-import { settings } from "./global-store/settings";
+import { settingsSignal, settingsStore } from "./global-store/settings";
 import {
   clearTimelineTaskSelection,
   createTimelineTaskSelectionTarget,
@@ -34,10 +35,10 @@ import {
   toMarkdown,
   toMdastPoint,
 } from "./mdast/mdast";
-import { visibleDaysUpdated } from "./redux/global-slice";
+import type { DateRanges } from "./redux/date-ranges";
 import { icalRefreshRequested } from "./redux/ical/ical-slice";
 import { type IcalParseTaskResult } from "./redux/ical/init-ical-listeners";
-import { selectActiveLogEntries } from "./redux/index/index-slice";
+import { selectActiveLogTimeBlocks } from "./redux/index/index-selectors";
 import { settingsUpdated } from "./redux/settings-slice";
 import {
   type AppDispatch,
@@ -71,22 +72,21 @@ import type { EditableTimeBlock, RemoteTimeBlock } from "./time-block-types";
 import type { ObsidianContext, OnUpdateFn, PointerDateTime } from "./types";
 import { ClockInOnAnythingModal } from "./ui/clock-in-on-anything-modal";
 import { askForConfirmation } from "./ui/confirmation-modal";
-import { createEditTimeEntryModalCreator } from "./ui/create-edit-time-entry-modal";
 import { createNestedItemsEditModalCreator } from "./ui/create-nested-items-edit-modal";
 import { createEditorMenuCallback } from "./ui/editor-menu";
-import { useDateRanges } from "./ui/hooks/use-date-ranges";
 import { EditMode } from "./ui/hooks/use-edit/types";
-import { mountStatusBarWidget } from "./ui/hooks/use-status-bar-widget";
-import { useTasks } from "./ui/hooks/use-tasks";
-import { useVisibleDays } from "./ui/hooks/use-visible-days";
+import { useTimeBlocks } from "./ui/hooks/use-time-blocks";
+import { createLogEntryEditModalOpener } from "./ui/log-entry-edit-modal";
 import MultiDayView from "./ui/multi-day-view";
 import { DayPlannerReleaseNotesView } from "./ui/release-notes";
 import { DayPlannerSettingsTab } from "./ui/settings-tab";
+import { mountStatusBarWidget } from "./ui/status-bar-widget";
 import {
   createTimeTrackerCommandCheck,
   createTimeTrackerViewSynchronizer,
 } from "./ui/time-tracker-availability";
 import TimeTrackerView from "./ui/time-tracker-view";
+import { createTimelineSettingsModalOpener } from "./ui/timeline-settings-modal";
 import TimelineView from "./ui/timeline-view";
 import { UndoNotice } from "./ui/undo-notice";
 import { createEnvironmentHooks } from "./util/create-environment-hooks";
@@ -96,11 +96,11 @@ import {
   dayPlannerHoverLinkSource,
 } from "./util/create-show-preview";
 import { runWithNoticeOnError } from "./util/effect";
-import { notifyAboutStartedTasks } from "./util/notify-about-started-tasks";
+import { notifyAboutStartedTimeBlocks } from "./util/notify-about-started-time-blocks";
 import { createBackgroundBatchScheduler } from "./util/scheduler";
 
 export default class DayPlanner extends Plugin {
-  settings!: () => DayPlannerSettings;
+  getSettings!: () => DayPlannerSettings;
   private settingsStore!: Writable<DayPlannerSettings>;
   private workspaceFacade!: WorkspaceFacade;
   private periodicNotes!: PeriodicNotes;
@@ -118,7 +118,7 @@ export default class DayPlanner extends Plugin {
   private syncTimeTrackerView!: (enabled: boolean) => Promise<void>;
 
   private openClockInOnAnythingModal = () => {
-    if (!this.settings().enableTimeTracker) {
+    if (!this.getSettings().enableTimeTracker) {
       return;
     }
 
@@ -166,9 +166,10 @@ export default class DayPlanner extends Plugin {
       store,
       useSelector,
       listenerMiddleware,
-      remoteTasks,
-      localTasks,
+      remoteTimeBlocks,
+      localTimeBlocks,
       pointerDateTime,
+      dateRanges,
     } = createReactor({
       listPropsParser,
       indexServices,
@@ -213,10 +214,11 @@ export default class DayPlanner extends Plugin {
     this.registerViews({
       store,
       dispatch,
-      remoteTasks,
+      remoteTimeBlocks,
       pointerDateTime,
       useSelector,
-      localTasks,
+      localTimeBlocks,
+      dateRanges,
     });
 
     const timeTrackerViewSynchronizer = createTimeTrackerViewSynchronizer({
@@ -235,7 +237,7 @@ export default class DayPlanner extends Plugin {
       metadataCacheFacade: this.metadataCacheFacade,
       metadataCache,
       listPropsParser,
-      isTimeTrackerEnabled: () => this.settings().enableTimeTracker,
+      isTimeTrackerEnabled: () => this.getSettings().enableTimeTracker,
     });
 
     this.registerEvent(this.app.workspace.on("editor-menu", handleEditorMenu));
@@ -249,7 +251,7 @@ export default class DayPlanner extends Plugin {
     this.app.workspace.onLayoutReady(async () => {
       this.registerTimeTrackerSettingListener();
       await this.initLeafSilently(viewTypeTimeline);
-      await this.syncTimeTrackerView(this.settings().enableTimeTracker);
+      await this.syncTimeTrackerView(this.getSettings().enableTimeTracker);
     });
 
     const timeTrackingFeature = new VaultIndexAdapter(
@@ -288,12 +290,12 @@ export default class DayPlanner extends Plugin {
   };
 
   initTimeTrackerTab = async () => {
-    if (!this.settings().enableTimeTracker) {
+    if (!this.getSettings().enableTimeTracker) {
       return;
     }
 
     await this.enqueueTimeTrackerViewOperation(async () => {
-      if (!this.settings().enableTimeTracker) {
+      if (!this.getSettings().enableTimeTracker) {
         return;
       }
 
@@ -343,12 +345,12 @@ export default class DayPlanner extends Plugin {
   initTimelineLeaf = async () => this.initRightPanelLeaf(viewTypeTimeline);
 
   initTimeTrackerLeaf = async () => {
-    if (!this.settings().enableTimeTracker) {
+    if (!this.getSettings().enableTimeTracker) {
       return;
     }
 
     await this.enqueueTimeTrackerViewOperation(async () => {
-      if (!this.settings().enableTimeTracker) {
+      if (!this.getSettings().enableTimeTracker) {
         return;
       }
 
@@ -357,7 +359,7 @@ export default class DayPlanner extends Plugin {
   };
 
   private async handleNewPluginVersion() {
-    if (this.settings().pluginVersion === currentPluginVersion) {
+    if (this.getSettings().pluginVersion === currentPluginVersion) {
       return;
     }
 
@@ -366,7 +368,7 @@ export default class DayPlanner extends Plugin {
       pluginVersion: currentPluginVersion,
     }));
 
-    if (this.settings().releaseNotes) {
+    if (this.getSettings().releaseNotes) {
       this.app.workspace.onLayoutReady(async () => {
         await this.showReleaseNotes();
       });
@@ -377,7 +379,7 @@ export default class DayPlanner extends Plugin {
     const timeTrackerCommand = (execute: () => void) =>
       createTimeTrackerCommandCheck({
         execute,
-        isEnabled: () => this.settings().enableTimeTracker,
+        isEnabled: () => this.getSettings().enableTimeTracker,
       });
 
     this.addCommand({
@@ -496,7 +498,7 @@ export default class DayPlanner extends Plugin {
   }
 
   private registerTimeTrackerSettingListener() {
-    let previous = this.settings().enableTimeTracker;
+    let previous = this.getSettings().enableTimeTracker;
 
     this.register(
       this.settingsStore.subscribe(({ enableTimeTracker }) => {
@@ -516,10 +518,10 @@ export default class DayPlanner extends Plugin {
   }) {
     const { initialSettings, dispatch } = props;
 
-    settings.set(initialSettings);
+    settingsStore.set(initialSettings);
 
     this.register(
-      settings.subscribe(async (newValue) => {
+      settingsStore.subscribe(async (newValue) => {
         configureTimestampRegExps(newValue.timestampFormat);
         dispatch(settingsUpdated(newValue));
 
@@ -527,8 +529,8 @@ export default class DayPlanner extends Plugin {
       }),
     );
 
-    this.settingsStore = settings;
-    this.settings = () => get(settings);
+    this.settingsStore = settingsStore;
+    this.getSettings = () => get(settingsStore);
   }
 
   private async detachLeavesOfType(type: string) {
@@ -550,17 +552,19 @@ export default class DayPlanner extends Plugin {
     store: AppStore;
     dispatch: AppDispatch;
     useSelector: UseSelector<RootState>;
-    remoteTasks: Readable<RemoteTimeBlock[]>;
-    localTasks: Readable<EditableTimeBlock[]>;
+    remoteTimeBlocks: Readable<RemoteTimeBlock[]>;
+    localTimeBlocks: Readable<EditableTimeBlock[]>;
     pointerDateTime: Writable<PointerDateTime>;
+    dateRanges: DateRanges;
   }) {
     const {
       store,
       dispatch,
       useSelector,
-      remoteTasks,
-      localTasks,
+      remoteTimeBlocks,
+      localTimeBlocks,
       pointerDateTime,
+      dateRanges,
     } = props;
 
     const confirmAction: ObsidianContext["confirmAction"] = (input) =>
@@ -583,7 +587,7 @@ export default class DayPlanner extends Plugin {
     };
 
     const onUpdate: OnUpdateFn = createUpdateHandler({
-      settings: this.settings,
+      getSettings: this.getSettings,
       transactionWriter: this.transactionWriter,
       vaultFacade: this.vaultFacade,
       periodicNotes: this.periodicNotes,
@@ -609,25 +613,23 @@ export default class DayPlanner extends Plugin {
       new Notice("Tasks changed externally; edit canceled");
     };
 
-    const { isDarkMode, isOnline } = createEnvironmentHooks({
+    const { isDarkMode, isModPressed, isOnline } = createEnvironmentHooks({
       workspace: this.app.workspace,
     });
 
-    const dateRanges = useDateRanges();
-    const visibleDays = useVisibleDays(dateRanges.ranges);
-
-    const { tasksWithTimeForToday, editContext, newlyStartedTasks } = useTasks({
-      onUpdate,
-      onEditAborted,
-      periodicNotes: this.periodicNotes,
-      workspaceFacade: this.workspaceFacade,
-      isOnline,
-      settingsStore: this.settingsStore,
-      currentTime,
-      pointerDateTime,
-      remoteTasks,
-      localTasks,
-    });
+    const { timeBlocksWithTimeForToday, editContext, newlyStartedTimeBlocks } =
+      useTimeBlocks({
+        onUpdate,
+        onEditAborted,
+        periodicNotes: this.periodicNotes,
+        workspaceFacade: this.workspaceFacade,
+        isOnline,
+        settingsStore: this.settingsStore,
+        currentTime,
+        pointerDateTime,
+        remoteTimeBlocks,
+        localTimeBlocks,
+      });
 
     this.registerInterval(
       window.setInterval(() => {
@@ -645,37 +647,32 @@ export default class DayPlanner extends Plugin {
         activeDocument.body.style.cursor = bodyCursor;
       }),
     );
-    this.register(
-      visibleDays.subscribe((days) => {
-        dispatch(
-          // without the offset, an event right of UTC is going to be displayed as the previous day
-          // a visible day in my zone is 2025-04-15, but in UTC it's 2025-04-14T22:00:00, and getDayKey returns 2025-04-14
-          visibleDaysUpdated(days.map((it) => it.toISOString(true))),
-        );
-      }),
-    );
-
-    const openEditTimeEntryModal = createEditTimeEntryModalCreator(
+    const openLogEntryEditModal = createLogEntryEditModalOpener(
       this.app,
       this.logEntryEditor,
+    );
+
+    const openTimelineSettingsModal = createTimelineSettingsModalOpener(
+      this.app,
+      settingsStore,
     );
 
     const destroyStatusBarWidget = mountStatusBarWidget({
       plugin: this,
       dateRanges,
-      tasksWithTimeForToday,
+      timeBlocksWithTimeForToday,
       useSelector,
       logEntryEditor: this.logEntryEditor,
       workspaceFacade: this.workspaceFacade,
-      openEditTimeEntryModal,
+      openLogEntryEditModal,
       openClockInOnAnythingModal: this.openClockInOnAnythingModal,
     });
 
     this.register(destroyStatusBarWidget);
 
     this.register(
-      newlyStartedTasks.subscribe((value) =>
-        notifyAboutStartedTasks(value, this.settings()),
+      newlyStartedTimeBlocks.subscribe((value) =>
+        notifyAboutStartedTimeBlocks(value, this.getSettings()),
       ),
     );
     this.addCommand({
@@ -689,29 +686,23 @@ export default class DayPlanner extends Plugin {
     this.addCommand({
       id: "jump-to-active-clock",
       name: "Jump to active clock",
-      checkCallback: createTimeTrackerCommandCheck({
-        isEnabled: () => this.settings().enableTimeTracker,
-        execute: () => {
-          const currentTasksWithActiveClockProps = selectActiveLogEntries(
-            store.getState(),
-          );
+      callback: async () => {
+        const activeLogTimeBlocks = selectActiveLogTimeBlocks(
+          store.getState(),
+          window.moment(),
+        );
 
-          if (currentTasksWithActiveClockProps.length === 0) {
-            new Notice("No active clocks found");
+        if (activeLogTimeBlocks.length === 0) {
+          new Notice("No active clocks found");
+          return;
+        }
 
-            return;
-          }
+        const firstActiveLogTimeBlock = activeLogTimeBlocks[0];
 
-          const firstTaskWithActiveClockProp =
-            currentTasksWithActiveClockProps[0];
+        isNotVoid(firstActiveLogTimeBlock);
 
-          isNotVoid(firstTaskWithActiveClockProp);
-
-          void this.workspaceFacade
-            .revealLocation(firstTaskWithActiveClockProp)
-            .catch(console.error);
-        },
-      }),
+        await this.workspaceFacade.revealLocation(firstActiveLogTimeBlock);
+      },
     });
 
     if (envMode === "development") {
@@ -723,7 +714,14 @@ export default class DayPlanner extends Plugin {
     }
 
     const editLine = createEditLineHandler({
-      settings: this.settings,
+      getSettings: this.getSettings,
+      transactionWriter: this.transactionWriter,
+      onConfirmed: this.undoNotice.show,
+    });
+
+    const deleteTimeBlock = createDeleteTimeBlockHandler({
+      getSettings: this.getSettings,
+      periodicNotes: this.periodicNotes,
       transactionWriter: this.transactionWriter,
       onConfirmed: this.undoNotice.show,
     });
@@ -741,12 +739,13 @@ export default class DayPlanner extends Plugin {
         sourcePath,
       });
 
+    const reSync = () => dispatch(icalRefreshRequested());
     const openNestedItemsEditModal = createNestedItemsEditModalCreator(
       this.app,
       this.taskEntryEditor,
     );
     const removeTask: ObsidianContext["removeTask"] = (task) => {
-      const base = get(localTasks);
+      const base = get(localTimeBlocks);
 
       return onUpdate(
         base,
@@ -757,15 +756,17 @@ export default class DayPlanner extends Plugin {
 
     const defaultObsidianContext: ObsidianContext = {
       periodicNotes: this.periodicNotes,
-      openEditTimeEntryModal,
+      openLogEntryEditModal,
+      openTimelineSettingsModal,
+      openClockInOnAnythingModal: this.openClockInOnAnythingModal,
       openNestedItemsEditModal,
       removeTask,
       taskEntryEditor: this.taskEntryEditor,
       logEntryEditor: this.logEntryEditor,
       confirmAction,
-      openClockInOnAnythingModal: this.openClockInOnAnythingModal,
       editText,
       editLine,
+      deleteTimeBlock,
       workspaceFacade: this.workspaceFacade,
       initWeeklyView: this.initWeeklyLeaf,
       renderMarkdown: createRenderMarkdown(this.app),
@@ -774,11 +775,13 @@ export default class DayPlanner extends Plugin {
       showPreview: createShowPreview(this.app, {
         source: dayPlannerHoverLinkSource,
       }),
-      reSync: () => dispatch(icalRefreshRequested()),
+      reSync,
       isOnline,
       isDarkMode,
-      settings,
-      settingsSignal: fromStore(settings),
+      isModPressed,
+      settings: settingsStore,
+      settingsStore,
+      settingsSignal,
       pointerDateTime,
       dispatch,
       useSelector,
@@ -793,10 +796,14 @@ export default class DayPlanner extends Plugin {
       (leaf: WorkspaceLeaf) =>
         new TimelineView(
           leaf,
-          this.settings,
+          this.settingsStore,
           componentContext,
           dateRanges,
           this.periodicNotes,
+          this.workspaceFacade,
+          this.initWeeklyLeaf,
+          reSync,
+          openTimelineSettingsModal,
         ),
     );
 

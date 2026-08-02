@@ -3,7 +3,7 @@ import { pipe, Struct } from "effect";
 import { get } from "svelte/store";
 
 import { bullet, defaultDayFormat, emDash } from "../constants";
-import { settings } from "../global-store/settings";
+import { settingsStore } from "../global-store/settings";
 import {
   getTimeRangeMatch,
   removeTimeRangeFromLine,
@@ -259,7 +259,7 @@ export function toString(timeBlock: WithDuration<EditableTimeBlock>) {
   const updatedTimestamp = createTimestamp(
     getMinutesSinceMidnight(timeBlock.startTime),
     timeBlock.durationMinutes,
-    get(settings).timestampFormat,
+    get(settingsStore).timestampFormat,
   );
   const listTokens = createMarkdownListTokens(timeBlock);
 
@@ -338,7 +338,13 @@ export function getOneLineSummary(timeBlock: TimeBlock) {
   return pipe(timeBlock.text, getFirstLine, removeTimeRangeFromStartOfLine);
 }
 
-export function truncateToRange<T extends WithDuration<TimeBlock>>(
+/**
+ * Clips a block to the whole days covered by `range` and records which
+ * horizontal edges got cut, so the multi-day view can render the block as
+ * continuing outside the range. For plain time clamping without the render
+ * flags use {@link clampToTimeRange}.
+ */
+export function truncateToDayRange<T extends WithDuration<TimeBlock>>(
   timeBlock: T,
   range: m.Range,
 ): T {
@@ -388,11 +394,17 @@ export function isTimeEqual(a: EditableTimeBlock, b: EditableTimeBlock) {
   );
 }
 
-export function clamp<T extends WithDuration<TimeBlock>>(
+/**
+ * Pulls a block's start and end inside `range` at exact time precision. Unlike
+ * {@link truncateToDayRange} it does not snap to day boundaries and does not
+ * mark the block as truncated.
+ */
+export function clampToTimeRange<T extends WithDuration<TimeBlock>>(
   timeBlock: T,
-  start: Moment,
-  end: Moment,
+  range: m.Range,
 ): T {
+  const { start, end } = range;
+
   const clampedStartTime = timeBlock.startTime.isBefore(start)
     ? start
     : timeBlock.startTime;

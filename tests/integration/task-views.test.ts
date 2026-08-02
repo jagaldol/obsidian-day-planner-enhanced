@@ -2,8 +2,8 @@ import { get } from "svelte/store";
 import { isNotVoid } from "typed-assert";
 import { afterEach, describe, expect, test } from "vitest";
 
-import { selectPlanEntriesForDays } from "../../src/redux";
 import { configureTimestampRegExps } from "../../src/regexp";
+import { selectPlanTimeBlocksForDays } from "../../src/redux";
 import { defaultSettingsForTests } from "../../src/settings";
 import { isLocal } from "../../src/time-block-types";
 import { toRenderableMarkdown } from "../../src/util/time-block-utils";
@@ -18,7 +18,7 @@ describe("Task views", () => {
       loadedFixtures: ["2025-07-28.md"],
     });
 
-    const planEntries = selectPlanEntriesForDays(getState(), ["2025-07-28"]);
+    const planEntries = selectPlanTimeBlocksForDays(getState(), ["2025-07-28"]);
     const taskWithNestedListItems = planEntries.find((entry) =>
       entry.text.includes("Parent"),
     );
@@ -40,7 +40,7 @@ describe("Task views", () => {
       loadedFixtures: ["2025-07-19.md"],
     });
 
-    const planEntries = selectPlanEntriesForDays(getState(), ["2025-07-19"]);
+    const planEntries = selectPlanTimeBlocksForDays(getState(), ["2025-07-19"]);
     const taskWithNestedListItems = planEntries.find((entry) =>
       entry.text.includes("List item under planner heading"),
     );
@@ -299,7 +299,9 @@ describe("Task views", () => {
       },
     });
 
-    expect(selectPlanEntriesForDays(getState(), ["2025-07-19"])).toContainEqual(
+    expect(
+      selectPlanTimeBlocksForDays(getState(), ["2025-07-19"]),
+    ).toContainEqual(
       expect.objectContaining({
         text: expect.stringContaining("Task outside of planner heading"),
       }),
@@ -311,11 +313,11 @@ describe("Task views", () => {
       visibleDays: ["2025-07-19"],
     });
 
-    const displayedTasks = editContext.getDisplayedTasksForTimeline(
+    const displayedTimeBlocks = editContext.getDisplayedTimeBlocksForTimeline(
       window.moment("2025-07-19"),
     );
 
-    expect(get(displayedTasks)?.noTime).not.toContainEqual(
+    expect(get(displayedTimeBlocks)?.noTime).not.toContainEqual(
       expect.objectContaining({
         text: expect.stringContaining("Task outside of planner heading"),
       }),
@@ -327,11 +329,11 @@ describe("Task views", () => {
       visibleDays: ["2025-07-19"],
     });
 
-    const displayedTasks = editContext.getDisplayedTasksForTimeline(
+    const displayedTimeBlocks = editContext.getDisplayedTimeBlocksForTimeline(
       window.moment("2025-07-19"),
     );
 
-    const { withTime, noTime } = get(displayedTasks);
+    const { withTime, noTime } = get(displayedTimeBlocks);
 
     expect(withTime).toContainEqual(
       expect.objectContaining({
@@ -357,11 +359,11 @@ describe("Task views", () => {
       visibleDays: ["2025-07-22"],
     });
 
-    const displayedTasks = editContext.getDisplayedTasksForTimeline(
+    const displayedTimeBlocks = editContext.getDisplayedTimeBlocksForTimeline(
       window.moment("2025-07-22"),
     );
 
-    expect(get(displayedTasks).withTime).toContainEqual(
+    expect(get(displayedTimeBlocks).withTime).toContainEqual(
       expect.objectContaining({
         text: "23:00 - 00:30 Reading a Book",
         startTime: window.moment("2025-07-22 00:00"),
@@ -401,11 +403,11 @@ describe("Task views", () => {
       },
     });
 
-    const displayedTasks = editContext.getDisplayedTasksForTimeline(
+    const displayedTimeBlocks = editContext.getDisplayedTimeBlocksForTimeline(
       window.moment("2025-07-19"),
     );
 
-    const { noTime } = get(displayedTasks);
+    const { noTime } = get(displayedTimeBlocks);
 
     expect(
       noTime.filter(

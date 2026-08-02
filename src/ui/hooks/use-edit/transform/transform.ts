@@ -58,27 +58,30 @@ export function transform(
 ) {
   const result = baseline.slice();
 
-  const isInBaseline = baseline.some((task) => task.id === operation.task.id);
+  const isInBaseline = baseline.find(
+    (timeBlock) => timeBlock.id === operation.timeBlock.id,
+  );
 
   if (!isInBaseline) {
     result.push({
-      ...operation.task,
+      ...operation.timeBlock,
       startTime: pointerDateTime.dateTime,
     });
   }
 
-  const indexOfEditedTask = result.findIndex(
-    (task) => task.id === operation.task.id,
+  const indexOfEditedTimeBlock = result.findIndex(
+    (timeBlock) => timeBlock.id === operation.timeBlock.id,
   );
 
   if (pointerDateTime.type === "date") {
     // Untimed plain list items are not indexed as all-day plan entries, so
     // persist converted blocks as tasks while preserving checkbox statuses.
     const needsTaskStatus =
-      operation.task.status === undefined && operation.task.task === undefined;
+      operation.timeBlock.status === undefined &&
+      operation.timeBlock.task === undefined;
 
-    return result.with(indexOfEditedTask, {
-      ...operation.task,
+    return result.with(indexOfEditedTimeBlock, {
+      ...operation.timeBlock,
       ...(needsTaskStatus ? { status: settings.taskStatusOnCreation } : {}),
       isAllDayEvent: true,
       startTime: pointerDateTime.dateTime,
@@ -86,21 +89,21 @@ export function transform(
     });
   }
 
-  result[indexOfEditedTask] = {
-    ...operation.task,
+  result[indexOfEditedTimeBlock] = {
+    ...operation.timeBlock,
     isAllDayEvent: false,
   };
 
   const editType = getEditType(operation.mode);
   const createPointerHasNotMoved =
     operation.mode === EditMode.CREATE &&
-    pointerDateTime.dateTime.isSame(operation.task.startTime, "minute");
+    pointerDateTime.dateTime.isSame(operation.timeBlock.startTime, "minute");
 
   if (createPointerHasNotMoved) {
     return result;
   }
 
-  const idToTaskLookup = new Map(result.map((it) => [it.id, it]));
+  const idToTimeBlockLookup = new Map(result.map((it) => [it.id, it]));
 
   const editableBlocks = result
     .map((it) => ({
@@ -112,7 +115,7 @@ export function transform(
 
   const transformed = editBlocks(
     editableBlocks,
-    operation.task.id,
+    operation.timeBlock.id,
     pointerDateTime.dateTime.unix(),
     editType,
     getEditInteraction(operation.mode),
@@ -120,12 +123,12 @@ export function transform(
   );
 
   return transformed.map((it) => {
-    const task = idToTaskLookup.get(it.id);
+    const timeBlock = idToTimeBlockLookup.get(it.id);
 
-    isNotVoid(task);
+    isNotVoid(timeBlock);
 
     return {
-      ...task,
+      ...timeBlock,
       startTime: window.moment.unix(it.start),
       durationMinutes: (it.end - it.start) / 60,
     };

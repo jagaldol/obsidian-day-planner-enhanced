@@ -101,7 +101,11 @@ function applyRangeUpdate(lines: string[], rangeUpdate: RangeUpdate) {
   const count = endLine - startLine + 1;
 
   if (rangeUpdate.type === "updated") {
-    const indentation = result[startLine].substring(0, startCol);
+    const lineToUpdate = result[startLine];
+
+    isNotVoid(lineToUpdate);
+
+    const indentation = lineToUpdate.substring(0, startCol);
     const updatedLine = indentation + rangeUpdate.contents;
 
     // todo: use Array.prototype.with
@@ -210,7 +214,7 @@ export type ViewDiff = {
   added?: Array<UnwrittenTimeBlock>;
 };
 
-export function getTaskDiffFromEditState(
+export function getTimeBlockDiffFromEditState(
   base: EditableTimeBlock[],
   next: EditableTimeBlock[],
 ) {
@@ -255,16 +259,16 @@ export function getTaskDiffFromEditState(
 }
 
 function createInsertUnderHeadingUpdate(props: {
-  task: EditableTimeBlock;
+  timeBlock: EditableTimeBlock;
   contents: string;
   settings: DayPlannerSettings;
   periodicNotes: PeriodicNotes;
 }): Update {
-  const { task, contents, settings, periodicNotes } = props;
+  const { timeBlock, contents, settings, periodicNotes } = props;
 
   return {
     type: "mdast",
-    path: periodicNotes.createDailyNotePath(task.startTime),
+    path: periodicNotes.createDailyNotePath(timeBlock.startTime),
     updateFn: (root: Root) => {
       const taskRoot = fromMarkdown(contents);
       const listItemToInsert = findFirst(taskRoot, checkListItem);
@@ -282,13 +286,13 @@ function createInsertUnderHeadingUpdate(props: {
 }
 
 function mapAddedToUpdate(props: {
-  task: UnwrittenTimeBlock;
+  timeBlock: UnwrittenTimeBlock;
   settings: DayPlannerSettings;
   periodicNotes: PeriodicNotes;
 }): Update {
-  const { task, settings, periodicNotes } = props;
-  const taskTextWithUpdatedProps = t.toString(task);
-  const { destination } = task;
+  const { timeBlock, settings, periodicNotes } = props;
+  const taskTextWithUpdatedProps = t.toString(timeBlock);
+  const { destination } = timeBlock;
 
   if (destination.type === "line") {
     return {
@@ -300,7 +304,7 @@ function mapAddedToUpdate(props: {
   }
 
   return createInsertUnderHeadingUpdate({
-    task,
+    timeBlock,
     contents: taskTextWithUpdatedProps,
     settings,
     periodicNotes,
@@ -309,20 +313,20 @@ function mapAddedToUpdate(props: {
 
 function mapPersistedToUpdates(props: {
   type: "deleted" | "updated";
-  task: PlanTimeBlock;
+  timeBlock: PlanTimeBlock;
   settings: DayPlannerSettings;
   periodicNotes: PeriodicNotes;
 }): Update | Update[] {
-  const { type, task, settings, periodicNotes } = props;
-  const taskTextWithUpdatedProps = t.toString(task);
+  const { type, timeBlock, settings, periodicNotes } = props;
+  const taskTextWithUpdatedProps = t.toString(timeBlock);
 
-  const { path } = task;
-  const firstLine = task.position.start.line;
+  const { path } = timeBlock;
+  const firstLine = timeBlock.position.start.line;
   const lineSpan = taskTextWithUpdatedProps.trim().split("\n").length - 1;
   const lastLine = firstLine + lineSpan;
 
   const position = {
-    start: task.position.start,
+    start: timeBlock.position.start,
     end: { line: lastLine, col: 0 },
   };
 
@@ -336,7 +340,8 @@ function mapPersistedToUpdates(props: {
 
   const originalLocationDay = periodicNotes.getDateFromPath(path, "day");
   const needToMoveBetweenNotes =
-    originalLocationDay && !task.startTime.isSame(originalLocationDay, "day");
+    originalLocationDay &&
+    !timeBlock.startTime.isSame(originalLocationDay, "day");
 
   if (!needToMoveBetweenNotes) {
     return {
@@ -354,7 +359,7 @@ function mapPersistedToUpdates(props: {
       range: position,
     },
     createInsertUnderHeadingUpdate({
-      task,
+      timeBlock,
       contents: taskTextWithUpdatedProps,
       settings,
       periodicNotes,
@@ -365,7 +370,7 @@ function mapPersistedToUpdates(props: {
 /**
  * Turns the changes to a view into a list of updates that can be applied to the vault.
  */
-export function mapTaskDiffToUpdates(
+export function mapTimeBlockDiffToUpdates(
   diff: ViewDiff,
   settings: DayPlannerSettings,
   periodicNotes: PeriodicNotes,
@@ -373,12 +378,24 @@ export function mapTaskDiffToUpdates(
   const { deleted = [], updated = [], added = [] } = diff;
 
   return [
-    ...updated.flatMap((task) =>
-      mapPersistedToUpdates({ type: "updated", task, settings, periodicNotes }),
+    ...updated.flatMap((timeBlock) =>
+      mapPersistedToUpdates({
+        type: "updated",
+        timeBlock,
+        settings,
+        periodicNotes,
+      }),
     ),
-    ...added.map((task) => mapAddedToUpdate({ task, settings, periodicNotes })),
-    ...deleted.flatMap((task) =>
-      mapPersistedToUpdates({ type: "deleted", task, settings, periodicNotes }),
+    ...added.map((timeBlock) =>
+      mapAddedToUpdate({ timeBlock, settings, periodicNotes }),
+    ),
+    ...deleted.flatMap((timeBlock) =>
+      mapPersistedToUpdates({
+        type: "deleted",
+        timeBlock,
+        settings,
+        periodicNotes,
+      }),
     ),
   ];
 }

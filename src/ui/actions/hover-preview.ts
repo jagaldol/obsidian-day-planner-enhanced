@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
 import type { HoverParent } from "obsidian";
-import { writable } from "svelte/store";
+import { derived, writable } from "svelte/store";
 
 import { getObsidianContext } from "../../context/obsidian-context";
 import { isListItemSourced, type LocalTimeBlock } from "../../time-block-types";
@@ -191,9 +191,58 @@ export function createHoverPreview(
   };
 }
 
-export function hoverPreview(task: LocalTimeBlock) {
-  const { showPreview } = getObsidianContext();
+export function hoverPreview(timeBlock: LocalTimeBlock) {
+  const { isModPressed, showPreview } = getObsidianContext();
+  const enhancedPreview = createHoverPreview(timeBlock, { showPreview });
 
-  return createHoverPreview(task, { showPreview });
+  return (el: HTMLElement) => {
+    const enhancedAction = enhancedPreview(el);
+    const hoverParent: HoverParent = { hoverPopover: null };
+    let currentEvent: MouseEvent | undefined;
+    const hovering = writable(false);
+
+    function handleMouseEnter(event: MouseEvent) {
+      currentEvent = event;
+      hovering.set(true);
+    }
+
+    function handleMouseLeave(event: MouseEvent) {
+      currentEvent = undefined;
+      hovering.set(false);
+    }
+
+    el.addEventListener("mouseenter", handleMouseEnter);
+    el.addEventListener("mouseleave", handleMouseLeave);
+
+    const shouldShowPreview = derived(
+      [isModPressed, hovering],
+      ([$isModPressed, $hovering]) => $isModPressed && $hovering,
+    );
+
+    const unsubscribe = shouldShowPreview.subscribe((shouldShow) => {
+      if (!shouldShow || !currentEvent || timeBlock.source === "unwritten") {
+        return;
+      }
+
+      showPreview(
+        hoverParent,
+        el,
+        currentEvent,
+        timeBlock.path,
+        isListItemSourced(timeBlock)
+          ? timeBlock.position.start.line
+          : undefined,
+      );
+    });
+
+    return {
+      destroy() {
+        enhancedAction.destroy();
+        el.removeEventListener("mouseenter", handleMouseEnter);
+        el.removeEventListener("mouseleave", handleMouseLeave);
+        unsubscribe();
+      },
+    };
+  };
 }
 /* eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. */

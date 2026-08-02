@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
+import { isNotVoid } from "typed-assert";
+
 import { timeRegExp } from "../regexp";
 import type { Moment } from "../util/obsidian-moment";
 
@@ -13,6 +15,9 @@ export function parseTime(asText: string, day: Moment) {
 
   const hours = hours12h ?? hours24h;
   const minutes = minutes12h ?? minutes24h;
+
+  isNotVoid(hours);
+  isNotVoid(minutes);
 
   let parsedHours = parseInt(hours, 10);
 

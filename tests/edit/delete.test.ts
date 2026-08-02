@@ -3,18 +3,18 @@ import { describe, expect, test } from "vitest";
 
 import {
   createTransaction,
-  getTaskDiffFromEditState,
-  mapTaskDiffToUpdates,
+  getTimeBlockDiffFromEditState,
+  mapTimeBlockDiffToUpdates,
 } from "../../src/service/diff-writer";
 import type { PeriodicNotes } from "../../src/service/periodic-notes";
 import { defaultSettingsForTests } from "../../src/settings";
 
-import { baseTask } from "./util/fixtures";
+import { baseTimeBlock } from "./util/fixtures";
 
 describe("delete edits", () => {
-  test("maps a missing task to a deleted update", () => {
-    const deletedTask = {
-      ...baseTask,
+  test("maps a missing time block to a deleted update", () => {
+    const deletedTimeBlock = {
+      ...baseTimeBlock,
       id: "deleted",
       text: "09:00 - 10:00 Remove me\nnotes",
       startTime: moment("2023-01-01 09:00"),
@@ -32,8 +32,8 @@ describe("delete edits", () => {
         },
       },
     };
-    const keptTask = {
-      ...baseTask,
+    const keptTimeBlock = {
+      ...baseTimeBlock,
       id: "kept",
       text: "11:00 - 12:00 Keep me",
       startTime: moment("2023-01-01 11:00"),
@@ -52,15 +52,18 @@ describe("delete edits", () => {
       },
     };
 
-    const diff = getTaskDiffFromEditState([deletedTask, keptTask], [keptTask]);
+    const diff = getTimeBlockDiffFromEditState(
+      [deletedTimeBlock, keptTimeBlock],
+      [keptTimeBlock],
+    );
 
     expect(diff).toMatchObject({
-      deleted: [deletedTask],
+      deleted: [deletedTimeBlock],
       updated: [],
       added: [],
     });
 
-    const updates = mapTaskDiffToUpdates(
+    const updates = mapTimeBlockDiffToUpdates(
       diff,
       defaultSettingsForTests,
       {} as PeriodicNotes,

@@ -49,7 +49,10 @@ export class MiniTimeline {
           ),
         )
         .map((it) => {
-          const clamped = t.clamp(it, this.rangeStart, this.rangeEnd);
+          const clamped = t.clampToTimeRange(it, {
+            start: this.rangeStart,
+            end: this.rangeEnd,
+          });
 
           return {
             ...clamped,

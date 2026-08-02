@@ -5,23 +5,29 @@ import { test, expect, describe } from "vitest";
 import { EditMode } from "../../src/ui/hooks/use-edit/types";
 import { getUpdateTrigger } from "../../src/util/store";
 
-import { baseTask, dayKey, nextDayKey, threeTasks } from "./util/fixtures";
+import {
+  baseTimeBlock,
+  dayKey,
+  nextDayKey,
+  threeTimeBlocks,
+} from "./util/fixtures";
 import { setUp } from "./util/setup";
 
 describe("drag one & common edit mechanics", () => {
   test("after edit confirmation, tasks freeze and stop reacting to cursor", async () => {
-    const { handlers, moveCursorTo, dayToDisplayedTasks, confirmEdit } = setUp({
-      tasks: threeTasks,
-    });
+    const { handlers, moveCursorTo, dayToDisplayedTimeBlocks, confirmEdit } =
+      setUp({
+        timeBlocks: threeTimeBlocks,
+      });
 
-    handlers.handleGripMouseDown(threeTasks[1], EditMode.DRAG);
+    handlers.handleGripMouseDown(threeTimeBlocks[1], EditMode.DRAG);
     moveCursorTo(moment("2023-01-01 03:00"));
 
     await confirmEdit();
 
     moveCursorTo(moment("2023-01-02 05:00"));
 
-    expect(get(dayToDisplayedTasks)).toMatchObject({
+    expect(get(dayToDisplayedTimeBlocks)).toMatchObject({
       [dayKey]: {
         withTime: [
           { id: "1" },
@@ -34,10 +40,10 @@ describe("drag one & common edit mechanics", () => {
 
   test("Edits are interruptible", async () => {
     const { handlers, props, confirmEdit } = setUp({
-      tasks: threeTasks,
+      timeBlocks: threeTimeBlocks,
     });
 
-    handlers.handleGripMouseDown(threeTasks[1], EditMode.DRAG);
+    handlers.handleGripMouseDown(threeTimeBlocks[1], EditMode.DRAG);
     props.abortEditTrigger.set(getUpdateTrigger());
 
     await confirmEdit();
@@ -48,7 +54,7 @@ describe("drag one & common edit mechanics", () => {
   test.skip("when a task is set to its current time, nothing happens", async () => {
     const { handlers, confirmEdit, props } = setUp();
 
-    handlers.handleGripMouseDown(baseTask, EditMode.DRAG);
+    handlers.handleGripMouseDown(baseTimeBlock, EditMode.DRAG);
     await confirmEdit();
 
     expect(props.onUpdate).not.toHaveBeenCalled();
@@ -56,10 +62,10 @@ describe("drag one & common edit mechanics", () => {
 
   describe("Tasks crossing midnight", () => {
     test("Splits multi-day tasks into single-day tasks", () => {
-      const { dayToDisplayedTasks } = setUp({
-        tasks: [
+      const { dayToDisplayedTimeBlocks } = setUp({
+        timeBlocks: [
           {
-            ...baseTask,
+            ...baseTimeBlock,
             startTime: moment("2023-01-01 23:00"),
             durationMinutes: 120,
             id: "1",
@@ -67,7 +73,7 @@ describe("drag one & common edit mechanics", () => {
         ],
       });
 
-      expect(get(dayToDisplayedTasks)).toMatchObject({
+      expect(get(dayToDisplayedTimeBlocks)).toMatchObject({
         [dayKey]: {
           withTime: [
             {
@@ -101,11 +107,11 @@ describe("drag one & common edit mechanics", () => {
       });
     });
 
-    test("Does not add a next-day timeline chunk when a task ends exactly at 24:00", () => {
-      const { dayToDisplayedTasks } = setUp({
-        tasks: [
+    test("Does not add a next-day timeline chunk when a time block ends exactly at 24:00", () => {
+      const { dayToDisplayedTimeBlocks } = setUp({
+        timeBlocks: [
           {
-            ...baseTask,
+            ...baseTimeBlock,
             startTime: moment("2023-01-01 23:00"),
             durationMinutes: 60,
             id: "1",
@@ -113,7 +119,7 @@ describe("drag one & common edit mechanics", () => {
         ],
       });
 
-      expect(get(dayToDisplayedTasks)).toMatchObject({
+      expect(get(dayToDisplayedTimeBlocks)).toMatchObject({
         [dayKey]: {
           withTime: [
             {
@@ -125,28 +131,29 @@ describe("drag one & common edit mechanics", () => {
           ],
         },
       });
-      expect(get(dayToDisplayedTasks)[nextDayKey]?.withTime ?? []).toHaveLength(
-        0,
-      );
+      expect(
+        get(dayToDisplayedTimeBlocks)[nextDayKey]?.withTime ?? [],
+      ).toHaveLength(0);
     });
 
-    test("Editing the continued next-day chunk keeps the source task in the start day", async () => {
-      const task = {
-        ...baseTask,
+    test("Editing the continued next-day chunk keeps the source time block in the start day", async () => {
+      const timeBlock = {
+        ...baseTimeBlock,
         startTime: moment("2023-01-01 23:00"),
         durationMinutes: 180,
         id: "1",
       };
       const {
-        dayToDisplayedTasks,
+        dayToDisplayedTimeBlocks,
         handlers,
         moveCursorTo,
         confirmEdit,
         props,
       } = setUp({
-        tasks: [task],
+        timeBlocks: [timeBlock],
       });
-      const continuedChunk = get(dayToDisplayedTasks)[nextDayKey]?.withTime[0];
+      const continuedChunk = get(dayToDisplayedTimeBlocks)[nextDayKey]
+        ?.withTime[0];
 
       expect(continuedChunk).toMatchObject({
         id: "1",
@@ -160,7 +167,7 @@ describe("drag one & common edit mechanics", () => {
       });
 
       handlers.handleResizerMouseDown(
-        continuedChunk as typeof task,
+        continuedChunk as typeof timeBlock,
         EditMode.RESIZE,
       );
       moveCursorTo(moment("2023-01-02 04:00"));
@@ -181,26 +188,26 @@ describe("drag one & common edit mechanics", () => {
     });
 
     test("Can turn a single day task into 2 tasks if it spans midnight", async () => {
-      const task = {
-        ...baseTask,
+      const timeBlock = {
+        ...baseTimeBlock,
         startTime: moment("2023-01-01 22:00"),
         durationMinutes: 120,
         id: "1",
       };
       const {
-        dayToDisplayedTasks,
+        dayToDisplayedTimeBlocks,
         handlers,
         moveCursorTo,
         confirmEdit,
         props,
       } = setUp({
-        tasks: [task],
+        timeBlocks: [timeBlock],
       });
 
-      handlers.handleGripMouseDown(task, EditMode.DRAG);
+      handlers.handleGripMouseDown(timeBlock, EditMode.DRAG);
       moveCursorTo(moment("2023-01-01 23:00"));
 
-      expect(get(dayToDisplayedTasks)).toMatchObject({
+      expect(get(dayToDisplayedTimeBlocks)).toMatchObject({
         [dayKey]: {
           withTime: [
             {
@@ -237,18 +244,18 @@ describe("drag one & common edit mechanics", () => {
     });
 
     test("Editing the first task of a split works", async () => {
-      const task = {
-        ...baseTask,
+      const timeBlock = {
+        ...baseTimeBlock,
         startTime: moment("2023-01-01 22:00"),
         durationMinutes: 180,
         id: "1",
       };
 
       const { handlers, moveCursorTo, confirmEdit, props } = setUp({
-        tasks: [task],
+        timeBlocks: [timeBlock],
       });
 
-      handlers.handleGripMouseDown(task, EditMode.DRAG);
+      handlers.handleGripMouseDown(timeBlock, EditMode.DRAG);
       moveCursorTo(moment("2023-01-01 23:30"));
 
       await confirmEdit();
@@ -267,21 +274,21 @@ describe("drag one & common edit mechanics", () => {
     });
 
     test("Editing the second task of a split works", async () => {
-      const task = {
-        ...baseTask,
+      const timeBlock = {
+        ...baseTimeBlock,
         startTime: moment("2023-01-01 23:00"),
         durationMinutes: 120,
         id: "1",
       };
 
-      const { dayToDisplayedTasks, moveCursorTo, handlers } = setUp({
-        tasks: [task],
+      const { dayToDisplayedTimeBlocks, moveCursorTo, handlers } = setUp({
+        timeBlocks: [timeBlock],
       });
 
-      handlers.handleGripMouseDown(task, EditMode.RESIZE);
+      handlers.handleGripMouseDown(timeBlock, EditMode.RESIZE);
       moveCursorTo(moment("2023-01-02 02:00"));
 
-      expect(get(dayToDisplayedTasks)).toMatchObject({
+      expect(get(dayToDisplayedTimeBlocks)).toMatchObject({
         [dayKey]: {
           withTime: [
             {
@@ -304,27 +311,27 @@ describe("drag one & common edit mechanics", () => {
     });
 
     test("Moving a block to the day end keeps the 24:00 boundary", async () => {
-      const task = {
-        ...baseTask,
+      const timeBlock = {
+        ...baseTimeBlock,
         startTime: moment("2023-01-01 15:00"),
         durationMinutes: 40,
         id: "1",
       };
 
       const {
-        dayToDisplayedTasks,
+        dayToDisplayedTimeBlocks,
         handlers,
         moveCursorTo,
         confirmEdit,
         props,
       } = setUp({
-        tasks: [task],
+        timeBlocks: [timeBlock],
       });
 
-      handlers.handleGripMouseDown(task, EditMode.DRAG);
+      handlers.handleGripMouseDown(timeBlock, EditMode.DRAG);
       moveCursorTo(moment("2023-01-01 23:20"));
 
-      expect(get(dayToDisplayedTasks)).toMatchObject({
+      expect(get(dayToDisplayedTimeBlocks)).toMatchObject({
         [dayKey]: {
           withTime: [
             {
@@ -357,8 +364,8 @@ describe("drag one & common edit mechanics", () => {
       return days * 60 * 24;
     }
 
-    const multiDayTask = {
-      ...baseTask,
+    const multiDayTimeBlock = {
+      ...baseTimeBlock,
       isAllDayEvent: true,
       startTime: moment("2023-01-05 00:00"),
       durationMinutes: daysToMinutes(4),
@@ -369,7 +376,7 @@ describe("drag one & common edit mechanics", () => {
       {
         description:
           "Tasks that start before the range don't show their full length",
-        tasks: [multiDayTask],
+        timeBlocks: [multiDayTimeBlock],
         range: {
           start: moment("2023-01-06 00:00"),
           end: moment("2023-01-10 00:00"),
@@ -385,7 +392,7 @@ describe("drag one & common edit mechanics", () => {
       {
         description:
           "Tasks that go over the range get truncated at the end of the range (and not on the day before)",
-        tasks: [multiDayTask],
+        timeBlocks: [multiDayTimeBlock],
         range: {
           start: moment("2023-01-03 00:00"),
           end: moment("2023-01-07 00:00"),
@@ -399,14 +406,14 @@ describe("drag one & common edit mechanics", () => {
           },
         ],
       },
-    ])("$description", async ({ tasks, range, result }) => {
-      const { getDisplayedAllDayTasksForMultiDayRow } = setUp({
-        tasks,
+    ])("$description", async ({ timeBlocks, range, result }) => {
+      const { getDisplayedAllDayTimeBlocksForMultiDayRow } = setUp({
+        timeBlocks,
       });
 
-      expect(get(getDisplayedAllDayTasksForMultiDayRow)(range)).toMatchObject(
-        result,
-      );
+      expect(
+        get(getDisplayedAllDayTimeBlocksForMultiDayRow)(range),
+      ).toMatchObject(result);
     });
   });
 });

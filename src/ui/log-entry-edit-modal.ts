@@ -10,9 +10,9 @@ import { runWithNoticeOnError } from "../util/effect";
 import { getFirstLine } from "../util/markdown";
 import { getEndTime } from "../util/time-block-utils";
 
-import TimeEntryEditModal from "./components/time-entry-edit-modal.svelte";
+import LogEntryEditModal from "./components/log-entry-edit-modal.svelte";
 
-export function createEditTimeEntryModalCreator(
+export function createLogEntryEditModalOpener(
   app: App,
   logEntryEditor: LogEntryEditor,
 ) {
@@ -31,7 +31,7 @@ export function createEditTimeEntryModalCreator(
       `Edit time entry: ${getFirstLine(timeBlock.text)}`,
     );
 
-    const component = mount(TimeEntryEditModal, {
+    const component = mount(LogEntryEditModal, {
       target: modal.contentEl,
       props: {
         initialStart,
@@ -65,7 +65,7 @@ export function createEditTimeEntryModalCreator(
   };
 }
 
-export type OpenEditTimeEntryModal = ReturnType<
-  typeof createEditTimeEntryModalCreator
+export type OpenLogEntryEditModal = ReturnType<
+  typeof createLogEntryEditModalOpener
 >;
 /* eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. */

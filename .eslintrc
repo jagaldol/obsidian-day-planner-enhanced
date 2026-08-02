@@ -51,6 +51,7 @@
     }
   ],
   "rules": {
+    "no-param-reassign": "error",
     "no-constant-condition": [
       "error",
       {
@@ -122,7 +123,8 @@
           "const"
         ],
         "format": [
-          "camelCase"
+          "camelCase",
+          "PascalCase"
         ]
       }
     ]

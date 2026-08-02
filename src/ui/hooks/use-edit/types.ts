@@ -22,6 +22,6 @@ export interface EditOperation {
   dragOriginClientY?: number;
   dragOriginStartTime?: Moment;
   dragScrollOffsetY?: number;
-  task: WithDuration<EditableTimeBlock>;
+  timeBlock: WithDuration<EditableTimeBlock>;
   mode: EditMode;
 }

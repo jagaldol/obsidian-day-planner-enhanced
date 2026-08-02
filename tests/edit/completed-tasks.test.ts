@@ -4,10 +4,10 @@ import { describe, expect, test } from "vitest";
 import { defaultSettingsForTests } from "../../src/settings";
 import { isCompleted } from "../../src/util/time-block-utils";
 
-import { baseTask, day } from "./util/fixtures";
+import { baseTimeBlock, day } from "./util/fixtures";
 import { setUp } from "./util/setup";
 
-describe("completed task visibility", () => {
+describe("completed time block visibility", () => {
   test.each([
     [undefined, false],
     [" ", false],
@@ -18,44 +18,44 @@ describe("completed task visibility", () => {
     expect(isCompleted(marker)).toBe(expected);
   });
 
-  test("hides only completed checkbox tasks", () => {
-    const tasks = [
-      { ...baseTask, id: "plain", status: undefined },
+  test("hides only completed checkbox time blocks", () => {
+    const timeBlocks = [
+      { ...baseTimeBlock, id: "plain", status: undefined },
       {
-        ...baseTask,
+        ...baseTimeBlock,
         id: "unchecked",
         task: " ",
-        startTime: baseTask.startTime.clone().add(1, "hour"),
+        startTime: baseTimeBlock.startTime.clone().add(1, "hour"),
       },
       {
-        ...baseTask,
+        ...baseTimeBlock,
         id: "custom",
         task: "-",
-        startTime: baseTask.startTime.clone().add(2, "hours"),
+        startTime: baseTimeBlock.startTime.clone().add(2, "hours"),
       },
       {
-        ...baseTask,
+        ...baseTimeBlock,
         id: "completed-lower",
         task: "x",
-        startTime: baseTask.startTime.clone().add(3, "hours"),
+        startTime: baseTimeBlock.startTime.clone().add(3, "hours"),
       },
       {
-        ...baseTask,
+        ...baseTimeBlock,
         id: "completed-status-only",
         status: "X",
         task: undefined,
-        startTime: baseTask.startTime.clone().add(4, "hours"),
+        startTime: baseTimeBlock.startTime.clone().add(4, "hours"),
       },
     ];
-    const { getDisplayedTasksForTimeline } = setUp({
-      tasks,
+    const { getDisplayedTimeBlocksForTimeline } = setUp({
+      timeBlocks,
       settings: {
         ...defaultSettingsForTests,
         showCompletedTasks: false,
       },
     });
 
-    const displayed = get(getDisplayedTasksForTimeline(day));
+    const displayed = get(getDisplayedTimeBlocksForTimeline(day));
 
     expect(displayed.withTime.map(({ id }) => id).sort()).toEqual([
       "custom",

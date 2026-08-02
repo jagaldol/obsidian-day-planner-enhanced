@@ -6,23 +6,23 @@ import type { WorkspaceFacade } from "../service/workspace-facade";
 import type { LogTimeBlock } from "../time-block-types";
 import { runWithNoticeOnError } from "../util/effect";
 
-import type { OpenEditTimeEntryModal } from "./create-edit-time-entry-modal";
+import type { OpenLogEntryEditModal } from "./log-entry-edit-modal";
 
 export function createCompletedClockMenu(props: {
   event: PointerEvent | MouseEvent | TouchEvent;
-  task: LogTimeBlock;
+  timeBlock: LogTimeBlock;
   logEntry: LogEntry;
   logEntryEditor: LogEntryEditor;
   workspaceFacade: WorkspaceFacade;
-  openEditTimeEntryModal: OpenEditTimeEntryModal;
+  openLogEntryEditModal: OpenLogEntryEditModal;
 }) {
   const {
     event,
-    task,
+    timeBlock,
     logEntry,
     logEntryEditor,
     workspaceFacade,
-    openEditTimeEntryModal,
+    openLogEntryEditModal,
   } = props;
 
   const menu = new Menu();
@@ -32,7 +32,7 @@ export function createCompletedClockMenu(props: {
       .setTitle("Resume")
       .setIcon("play")
       .onClick(async () => {
-        await runWithNoticeOnError(logEntryEditor.clockIn(task));
+        await runWithNoticeOnError(logEntryEditor.clockIn(timeBlock));
       }),
   );
 
@@ -40,7 +40,7 @@ export function createCompletedClockMenu(props: {
     item
       .setTitle("Edit...")
       .setIcon("pencil")
-      .onClick(() => openEditTimeEntryModal(task, logEntry)),
+      .onClick(() => openLogEntryEditModal(timeBlock, logEntry)),
   );
 
   menu.addItem((item) => {
@@ -48,7 +48,7 @@ export function createCompletedClockMenu(props: {
       .setTitle("Reveal task in file")
       .setIcon("file-input")
       .onClick(async () => {
-        await workspaceFacade.revealLocation(task);
+        await workspaceFacade.revealLocation(timeBlock);
       });
   });
 
@@ -61,7 +61,7 @@ export function createCompletedClockMenu(props: {
       .setWarning(true)
       .onClick(async () => {
         await runWithNoticeOnError(
-          logEntryEditor.deleteClock(task, {
+          logEntryEditor.deleteClock(timeBlock, {
             logIndex: logEntry.logIndex,
             originalStart: logEntry.start,
           }),

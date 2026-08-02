@@ -8,11 +8,11 @@ import { EditMode } from "../../src/ui/hooks/use-edit/types";
 import * as t from "../../src/util/time-block-utils";
 
 import {
-  baseTask,
-  baseTasks,
+  baseTimeBlock,
+  baseTimeBlocks,
   day,
   nextDay,
-  tasksWithUnscheduledTask,
+  timeBlocksWithUnscheduledTimeBlock,
 } from "./util/fixtures";
 import { setUp } from "./util/setup";
 
@@ -22,7 +22,7 @@ describe("all-day tasks", () => {
     end: nextDay,
   };
 
-  function allDayTask(props: {
+  function allDayTimeBlock(props: {
     id: string;
     line: number;
     path: string;
@@ -38,7 +38,7 @@ describe("all-day tasks", () => {
     } = props;
 
     return {
-      ...baseTask,
+      ...baseTimeBlock,
       id,
       isAllDayEvent: true,
       path,
@@ -53,35 +53,35 @@ describe("all-day tasks", () => {
   }
 
   test("keeps all-day order stable across file reindexing", () => {
-    const dailyFirst = allDayTask({
+    const dailyFirst = allDayTimeBlock({
       id: "daily-first",
       line: 10,
       path: "fixtures/daily/2023-01-01.md",
       source: "dailyNoteDate",
       startTime: day.clone().add(1, "hour"),
     });
-    const dailySecond = allDayTask({
+    const dailySecond = allDayTimeBlock({
       id: "daily-second",
       line: 11,
       path: "fixtures/daily/2023-01-01.md",
       source: "dailyNoteDate",
     });
-    const taskAFirst = allDayTask({
-      id: "task-a-first",
+    const timeBlockAFirst = allDayTimeBlock({
+      id: "time-block-a-first",
       line: 20,
       path: "fixtures/tasks/가.md",
     });
-    const taskASecond = allDayTask({
-      id: "task-a-second",
+    const timeBlockASecond = allDayTimeBlock({
+      id: "time-block-a-second",
       line: 21,
       path: "fixtures/tasks/가.md",
     });
-    const taskBFirst = allDayTask({
-      id: "task-b-first",
+    const timeBlockBFirst = allDayTimeBlock({
+      id: "time-block-b-first",
       line: 30,
       path: "fixtures/tasks/나.md",
     });
-    const nextDayDaily = allDayTask({
+    const nextDayDaily = allDayTimeBlock({
       id: "next-day-daily",
       line: 10,
       path: "fixtures/daily/2023-01-02.md",
@@ -91,33 +91,35 @@ describe("all-day tasks", () => {
     const expectedIds = [
       "daily-first",
       "daily-second",
-      "task-a-first",
-      "task-a-second",
-      "task-b-first",
+      "time-block-a-first",
+      "time-block-a-second",
+      "time-block-b-first",
       "next-day-daily",
     ];
     const {
-      getDisplayedAllDayTasksForMultiDayRow,
-      props: { localTasks },
+      getDisplayedAllDayTimeBlocksForMultiDayRow,
+      props: { localTimeBlocks },
     } = setUp({
-      tasks: [
-        taskBFirst,
+      timeBlocks: [
+        timeBlockBFirst,
         nextDayDaily,
-        taskASecond,
+        timeBlockASecond,
         dailySecond,
-        taskAFirst,
+        timeBlockAFirst,
         dailyFirst,
       ],
     });
     const displayedIds = () =>
-      get(getDisplayedAllDayTasksForMultiDayRow)(range).map(({ id }) => id);
+      get(getDisplayedAllDayTimeBlocksForMultiDayRow)(range).map(
+        ({ id }) => id,
+      );
 
     expect(displayedIds()).toEqual(expectedIds);
 
-    localTasks.set([
-      taskAFirst,
-      taskASecond,
-      taskBFirst,
+    localTimeBlocks.set([
+      timeBlockAFirst,
+      timeBlockASecond,
+      timeBlockBFirst,
       dailyFirst,
       dailySecond,
       nextDayDaily,
@@ -127,65 +129,74 @@ describe("all-day tasks", () => {
   });
 
   test("an unscheduled task gets moved to another day", () => {
-    const { handlers, moveCursorTo, getDisplayedAllDayTasksForMultiDayRow } =
-      setUp({
-        tasks: tasksWithUnscheduledTask,
-      });
+    const {
+      handlers,
+      moveCursorTo,
+      getDisplayedAllDayTimeBlocksForMultiDayRow,
+    } = setUp({
+      timeBlocks: timeBlocksWithUnscheduledTimeBlock,
+    });
 
-    const task = tasksWithUnscheduledTask[0];
+    const timeBlock = timeBlocksWithUnscheduledTimeBlock[0];
 
-    handlers.handleGripMouseDown(task, EditMode.DRAG);
+    handlers.handleGripMouseDown(timeBlock, EditMode.DRAG);
     moveCursorTo(moment("2023-01-02 01:00"), "date");
 
-    expect(get(getDisplayedAllDayTasksForMultiDayRow)(range)).toMatchObject([
+    expect(
+      get(getDisplayedAllDayTimeBlocksForMultiDayRow)(range),
+    ).toMatchObject([
       {
-        ...task,
+        ...timeBlock,
         startTime: moment("2023-01-02 01:00"),
       },
     ]);
   });
 
   test("a scheduled task changes its type to all-day", () => {
-    const { handlers, moveCursorTo, getDisplayedAllDayTasksForMultiDayRow } =
-      setUp({
-        tasks: baseTasks,
-        settings: {
-          ...defaultSettingsForTests,
-          taskStatusOnCreation: ">",
-        },
-      });
+    const {
+      handlers,
+      moveCursorTo,
+      getDisplayedAllDayTimeBlocksForMultiDayRow,
+    } = setUp({ timeBlocks: baseTimeBlocks });
 
-    const task = baseTasks[0];
+    const timeBlock = baseTimeBlocks[0];
 
-    handlers.handleGripMouseDown(task, EditMode.DRAG);
-    moveCursorTo(task.startTime, "date");
+    handlers.handleGripMouseDown(timeBlock, EditMode.DRAG);
+    moveCursorTo(timeBlock.startTime, "date");
 
-    expect(get(getDisplayedAllDayTasksForMultiDayRow)(range)).toMatchObject([
+    expect(
+      get(getDisplayedAllDayTimeBlocksForMultiDayRow)(range),
+    ).toMatchObject([
       {
-        ...task,
+        ...timeBlock,
         isAllDayEvent: true,
       },
     ]);
   });
 
   test("a scheduled plain list item becomes a task when changed to all-day", () => {
-    const task = { ...baseTasks[0], status: undefined };
-    const { handlers, moveCursorTo, getDisplayedAllDayTasksForMultiDayRow } =
-      setUp({
-        tasks: [task],
-        settings: {
-          ...defaultSettingsForTests,
-          eventFormatOnCreation: "bullet",
-          taskStatusOnCreation: ">",
-        },
-      });
+    const timeBlock = { ...baseTimeBlocks[0], status: undefined };
+    const {
+      handlers,
+      moveCursorTo,
+      getDisplayedAllDayTimeBlocksForMultiDayRow,
+    } = setUp({
+      timeBlocks: [timeBlock],
+      settings: {
+        ...defaultSettingsForTests,
+        eventFormatOnCreation: "bullet",
+        taskStatusOnCreation: ">",
+      },
+    });
 
-    handlers.handleGripMouseDown(task, EditMode.DRAG);
-    moveCursorTo(task.startTime, "date");
+    handlers.handleGripMouseDown(timeBlock, EditMode.DRAG);
+    moveCursorTo(timeBlock.startTime, "date");
 
-    expect(get(getDisplayedAllDayTasksForMultiDayRow)(range)).toMatchObject([
+    expect(
+      get(getDisplayedAllDayTimeBlocksForMultiDayRow)(range),
+    ).toMatchObject([
       {
-        ...task,
+        ...timeBlock,
         status: ">",
         isAllDayEvent: true,
       },
@@ -193,22 +204,27 @@ describe("all-day tasks", () => {
   });
 
   test("can copy a scheduled task to all-day", () => {
-    const { handlers, moveCursorTo, getDisplayedAllDayTasksForMultiDayRow } =
-      setUp({ tasks: baseTasks });
+    const {
+      handlers,
+      moveCursorTo,
+      getDisplayedAllDayTimeBlocksForMultiDayRow,
+    } = setUp({ timeBlocks: baseTimeBlocks });
 
-    const task = baseTasks[0];
+    const timeBlock = baseTimeBlocks[0];
 
-    if (task.source === "unwritten") {
+    if (timeBlock.source === "unwritten") {
       throw new Error("The fixture task must be a written one");
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { path, position, ...taskWithoutFileLocation } = task;
+    const { path, position, ...taskWithoutFileLocation } = timeBlock;
 
-    handlers.handleGripMouseDown(t.copy(task), EditMode.DRAG);
-    moveCursorTo(task.startTime, "date");
+    handlers.handleGripMouseDown(t.copy(timeBlock), EditMode.DRAG);
+    moveCursorTo(timeBlock.startTime, "date");
 
-    expect(get(getDisplayedAllDayTasksForMultiDayRow)(range)).toMatchObject([
+    expect(
+      get(getDisplayedAllDayTimeBlocksForMultiDayRow)(range),
+    ).toMatchObject([
       {
         ...taskWithoutFileLocation,
         source: "unwritten",

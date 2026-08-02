@@ -1,22 +1,25 @@
 <script generics="T extends { id?: string }" lang="ts">
   /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
   import type { Snippet } from "svelte";
-  import { slide } from "svelte/transition";
-
-  import { createSlide } from "./defaults";
 
   const {
     list,
     match,
+    fallback,
     titleMatch,
     className,
+    onpointerup,
+    onpointermove,
   }: {
     // eslint-disable-next-line no-undef
     match: Snippet<[T]>;
+    fallback?: Snippet;
     titleMatch?: Snippet<[string]>;
     // eslint-disable-next-line no-undef
     list: Array<T> | Record<string, Array<T>>;
     className?: string;
+    onpointerup?: (event: PointerEvent) => void;
+    onpointermove?: (event: PointerEvent) => void;
   } = $props();
 </script>
 
@@ -30,20 +33,24 @@
 {#if Array.isArray(list) && list.length > 0}
   <div
     class={["search-results-scroller", className]}
-    transition:slide={createSlide({ axis: "y" })}
+    {onpointermove}
+    {onpointerup}
   >
     {@render renderList(list)}
   </div>
 {:else if Object.keys(list).length > 0}
   <div
     class={["search-results-scroller", className]}
-    transition:slide={createSlide({ axis: "y" })}
+    {onpointermove}
+    {onpointerup}
   >
     {#each Object.entries(list) as [sectionTitle, foundTimeBlocks], index (sectionTitle || index)}
       {@render titleMatch?.(sectionTitle)}
       {@render renderList(foundTimeBlocks)}
     {/each}
   </div>
+{:else}
+  {@render fallback?.()}
 {/if}
 
 <!-- eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. -->
@@ -51,6 +58,6 @@
 <style>
   .search-results-scroller {
     overflow-y: auto;
-    padding: var(--size-4-1) var(--size-4-2);
+    padding: var(--block-list-padding, var(--size-4-1) var(--size-4-2));
   }
 </style>

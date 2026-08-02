@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-06-05 | Updated: 2026-06-05 -->
+<!-- Generated: 2026-06-05 | Updated: 2026-08-02 -->
 
 # service
 
@@ -41,7 +41,7 @@ The Obsidian-facing service layer. Wraps the vault, workspace, metadata cache, a
 
 - `src/mdast/` - AST insert/sort for markdown updates
 - `src/util/markdown.ts`, `src/util/metadata.ts`
-- `src/task-types.ts` - `LocalTask`
+- `src/time-block-types.ts` - `LocalTimeBlock`
 
 ### External
 

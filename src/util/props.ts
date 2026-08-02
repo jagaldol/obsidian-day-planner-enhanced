@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
 import { Array, Either, pipe } from "effect";
 import { stringifyYaml } from "obsidian";
+import { isNotVoid } from "typed-assert";
 import { z } from "zod";
 
 import { clockFormat, codeFence } from "../constants";
@@ -114,8 +115,12 @@ export function clockOut(props: Props): Props {
     throw new Error("There is no open clock");
   }
 
+  const openClock = props.planner.log[openClockIndex];
+
+  isNotVoid(openClock);
+
   const updatedOpenClock = {
-    ...props.planner.log[openClockIndex],
+    ...openClock,
     end: window.moment().format(clockFormat),
   };
 
@@ -146,7 +151,11 @@ export function editLogEntry(
     throw new Error(`Log entry not found: ${originalStart}`);
   }
 
-  const updatedEntry = { ...log[logIndex] };
+  const entry = log[logIndex];
+
+  isNotVoid(entry);
+
+  const updatedEntry = { ...entry };
 
   if (patch.start !== undefined) {
     updatedEntry.start = patch.start;
@@ -198,7 +207,9 @@ export function editLastLogEntry(
     throw new Error("No log entries");
   }
 
-  const last = log[log.length - 1];
+  const last = log.at(-1);
+
+  isNotVoid(last);
 
   return editLogEntry(props, {
     logIndex: log.length - 1,
@@ -230,7 +241,12 @@ export function updateProp(
   }
 
   const captureGroups = match[0];
+
+  isNotVoid(captureGroups);
+
   const [, key, previousValue] = captureGroups;
+
+  isNotVoid(previousValue);
 
   return `[${key}::${updateFn(previousValue)}]`;
 }

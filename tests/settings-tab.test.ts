@@ -30,7 +30,7 @@ function createSettingsTab(settings: DayPlannerSettings) {
   const settingsStore = writable(settings);
   const plugin = {
     app: {},
-    settings: () => get(settingsStore),
+    getSettings: () => get(settingsStore),
   } as unknown as DayPlanner;
 
   return {

@@ -1,5 +1,6 @@
 import moment from "moment";
 import { get } from "svelte/store";
+import { isNotVoid } from "typed-assert";
 import { describe, expect, test } from "vitest";
 
 import type {
@@ -11,7 +12,7 @@ import type {
 } from "../../src/time-block-types";
 import { hideNestedLocalPlanTimeBlocks } from "../../src/util/time-block-utils";
 
-import { baseTask, dayKey } from "./util/fixtures";
+import { baseTimeBlock, dayKey } from "./util/fixtures";
 import { setUp } from "./util/setup";
 
 function position(line: number, col: number) {
@@ -21,7 +22,7 @@ function position(line: number, col: number) {
   };
 }
 
-function task(
+function timeBlock(
   id: string,
   text: string,
   startTime: string,
@@ -30,7 +31,7 @@ function task(
   col: number,
 ): DailyNoteDateTimeBlock {
   return {
-    ...baseTask,
+    ...baseTimeBlock,
     source: "dailyNoteDate",
     id,
     text,
@@ -45,14 +46,14 @@ type LocalTimeBlockChild = NonNullable<
   DailyNoteDateTimeBlock["children"]
 >[number];
 
-function allDayTask(
+function allDayTimeBlock(
   id: string,
   text: string,
   line: number,
   col: number,
 ): DailyNoteDateTimeBlock {
   return {
-    ...task(id, text, "2023-01-01 00:00", 30, line, col),
+    ...timeBlock(id, text, "2023-01-01 00:00", 30, line, col),
     isAllDayEvent: true,
   };
 }
@@ -73,9 +74,9 @@ function childEntry(
   };
 }
 
-describe("nested local plan tasks", () => {
-  test("hides nested timed local tasks from the timeline without hiding unrelated or remote tasks", () => {
-    const nestedChild = task(
+describe("nested local plan time blocks", () => {
+  test("hides nested timed local time blocks from the timeline without hiding unrelated or remote time blocks", () => {
+    const nestedChild = timeBlock(
       "nested-child",
       "10:20 - 11:00 Morning session",
       "2023-01-01 10:20",
@@ -83,7 +84,7 @@ describe("nested local plan tasks", () => {
       2,
       4,
     );
-    const unrelatedIndentedTask = task(
+    const unrelatedIndentedTimeBlock = timeBlock(
       "unrelated-indented",
       "12:00 - 12:30 Unrelated indented task",
       "2023-01-01 12:00",
@@ -91,7 +92,7 @@ describe("nested local plan tasks", () => {
       10,
       4,
     );
-    const topLevelSibling = task(
+    const topLevelSibling = timeBlock(
       "top-level-sibling",
       "16:10 - 17:00 Cafe",
       "2023-01-01 16:10",
@@ -99,7 +100,7 @@ describe("nested local plan tasks", () => {
       20,
       0,
     );
-    const nestedChildOutsideParentTimeRange = task(
+    const nestedChildOutsideParentTimeRange = timeBlock(
       "nested-child-outside-parent-time-range",
       "15:10 - 16:00 Late nested session",
       "2023-01-01 15:10",
@@ -107,7 +108,7 @@ describe("nested local plan tasks", () => {
       3,
       4,
     );
-    const parent = task(
+    const parent = timeBlock(
       "parent",
       "10:00 - 15:50 Conference block",
       "2023-01-01 10:00",
@@ -139,7 +140,7 @@ describe("nested local plan tasks", () => {
       },
     ];
 
-    const remoteTask = {
+    const remoteTimeBlock = {
       source: "ical",
       id: "remote",
       summary: "Remote calendar event",
@@ -154,24 +155,30 @@ describe("nested local plan tasks", () => {
       rsvpStatus: "ACCEPTED",
     } satisfies WithDuration<RemoteTimeBlock>;
 
-    const { dayToDisplayedTasks } = setUp({
-      tasks: [
+    const { dayToDisplayedTimeBlocks } = setUp({
+      timeBlocks: [
         parent,
         nestedChild,
         nestedChildOutsideParentTimeRange,
-        unrelatedIndentedTask,
+        unrelatedIndentedTimeBlock,
         topLevelSibling,
       ],
-      remoteTasks: [remoteTask],
+      remoteTimeBlocks: [remoteTimeBlock],
     });
 
-    expect(
-      get(dayToDisplayedTasks)[dayKey].withTime.map((it) => it.id),
-    ).toEqual(["remote", "parent", "unrelated-indented", "top-level-sibling"]);
+    const displayedForDay = get(dayToDisplayedTimeBlocks)[dayKey];
+
+    isNotVoid(displayedForDay);
+    expect(displayedForDay.withTime.map((it) => it.id)).toEqual([
+      "remote",
+      "parent",
+      "unrelated-indented",
+      "top-level-sibling",
+    ]);
   });
 
   test("hides untimed descendants from single-day and multi-day all-day views", () => {
-    const timedParent = task(
+    const timedParent = timeBlock(
       "timed-parent",
       "09:00 - 11:00 Work",
       "2023-01-01 09:00",
@@ -179,13 +186,13 @@ describe("nested local plan tasks", () => {
       1,
       0,
     );
-    const nestedUntimedChild = allDayTask(
+    const nestedUntimedChild = allDayTimeBlock(
       "nested-untimed-child",
       "Draft",
       2,
       4,
     );
-    const nestedUntimedGrandchild = allDayTask(
+    const nestedUntimedGrandchild = allDayTimeBlock(
       "nested-untimed-grandchild",
       "Review",
       3,
@@ -195,8 +202,13 @@ describe("nested local plan tasks", () => {
       childEntry(nestedUntimedChild, [childEntry(nestedUntimedGrandchild)]),
     ];
 
-    const allDayParent = allDayTask("all-day-parent", "Take supplements", 5, 0);
-    const nestedAllDayChild = allDayTask(
+    const allDayParent = allDayTimeBlock(
+      "all-day-parent",
+      "Take supplements",
+      5,
+      0,
+    );
+    const nestedAllDayChild = allDayTimeBlock(
       "nested-all-day-child",
       "Vitamin D",
       6,
@@ -204,14 +216,14 @@ describe("nested local plan tasks", () => {
     );
     allDayParent.children = [childEntry(nestedAllDayChild)];
 
-    const unrelatedIndentedTask = allDayTask(
+    const unrelatedIndentedTimeBlock = allDayTimeBlock(
       "unrelated-indented",
       "Unrelated indented task",
       10,
       4,
     );
 
-    const remoteAllDayTask = {
+    const remoteAllDayTimeBlock = {
       source: "ical",
       id: "remote-all-day",
       summary: "Remote all-day event",
@@ -226,21 +238,24 @@ describe("nested local plan tasks", () => {
       rsvpStatus: "ACCEPTED",
     } satisfies WithDuration<RemoteTimeBlock>;
 
-    const { dayToDisplayedTasks, getDisplayedAllDayTasksForMultiDayRow } =
-      setUp({
-        tasks: [
-          timedParent,
-          nestedUntimedChild,
-          nestedUntimedGrandchild,
-          allDayParent,
-          nestedAllDayChild,
-          unrelatedIndentedTask,
-        ],
-        remoteTasks: [remoteAllDayTask],
-      });
+    const {
+      dayToDisplayedTimeBlocks,
+      getDisplayedAllDayTimeBlocksForMultiDayRow,
+    } = setUp({
+      timeBlocks: [
+        timedParent,
+        nestedUntimedChild,
+        nestedUntimedGrandchild,
+        allDayParent,
+        nestedAllDayChild,
+        unrelatedIndentedTimeBlock,
+      ],
+      remoteTimeBlocks: [remoteAllDayTimeBlock],
+    });
 
-    const displayedForDay = get(dayToDisplayedTasks)[dayKey];
+    const displayedForDay = get(dayToDisplayedTimeBlocks)[dayKey];
 
+    isNotVoid(displayedForDay);
     expect(displayedForDay.noTime.map((it) => it.id)).toEqual([
       "remote-all-day",
       "all-day-parent",
@@ -259,7 +274,7 @@ describe("nested local plan tasks", () => {
     );
 
     expect(
-      get(getDisplayedAllDayTasksForMultiDayRow)({
+      get(getDisplayedAllDayTimeBlocksForMultiDayRow)({
         start: moment("2023-01-01"),
         end: moment("2023-01-01"),
       }).map((it) => it.id),
@@ -283,7 +298,7 @@ describe("nested local plan tasks", () => {
   });
 
   test("keeps log and frontmatter records independent", () => {
-    const parent = task(
+    const parent = timeBlock(
       "parent",
       "09:00 - 11:00 Work",
       "2023-01-01 09:00",
@@ -291,7 +306,7 @@ describe("nested local plan tasks", () => {
       1,
       0,
     );
-    const nestedSourceLine = task(
+    const nestedSourceLine = timeBlock(
       "nested-source-line",
       "09:30 - 10:00 Logged work",
       "2023-01-01 09:30",
@@ -305,6 +320,7 @@ describe("nested local plan tasks", () => {
       ...nestedSourceLine,
       id: "list-item-log",
       source: "listItemLog",
+      isRunning: false,
     } satisfies WithDuration<ListItemLogTimeBlock>;
     const frontmatterLog = {
       source: "frontmatterLog",
@@ -314,6 +330,7 @@ describe("nested local plan tasks", () => {
       path: "nested.md",
       startTime: moment("2023-01-01 10:00"),
       durationMinutes: 30,
+      isRunning: false,
     } satisfies WithDuration<FrontmatterLogTimeBlock>;
 
     expect(

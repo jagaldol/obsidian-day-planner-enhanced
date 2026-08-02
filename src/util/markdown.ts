@@ -141,6 +141,8 @@ function findHeadingInLine(line: string) {
 
   const [, tokens] = headingMatch;
 
+  isNotVoid(tokens);
+
   return { level: tokens.length };
 }
 
@@ -159,6 +161,9 @@ function findHeading(text: string, headingText: string) {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+
+    isNotVoid(line);
+
     const heading = findHeadingInLine(line);
     const insideHeading = result.start !== undefined;
 

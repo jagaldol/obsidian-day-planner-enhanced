@@ -1,13 +1,11 @@
 import { describe, expect, test } from "vitest";
 
 import {
-  selectLogEntriesForDay,
-  selectRecentLogEntries,
+  selectActiveLogTimeBlocks,
+  selectLogTimeBlocksForDay,
+  selectRecentLogTimeBlocks,
 } from "../../src/redux";
-import {
-  fileDeleted,
-  selectActiveLogEntries,
-} from "../../src/redux/index/index-slice";
+import { fileDeleted } from "../../src/redux/index/index-slice";
 import { strictParse } from "../../src/util/moment";
 
 import { setUp } from "./util/setup";
@@ -26,7 +24,7 @@ describe("Frontmatter log indexing", () => {
     const { getState } = await setUp({ loadedFixtures: [closedLogFixture] });
 
     expect(
-      selectLogEntriesForDay(getState(), dayKey, strictParse(dayKey)),
+      selectLogTimeBlocksForDay(getState(), dayKey, strictParse(dayKey)),
     ).toContainEqual(
       expect.objectContaining({
         text: closedLogBasename,
@@ -39,7 +37,7 @@ describe("Frontmatter log indexing", () => {
   test("Surfaces frontmatter logs among recent log entries", async () => {
     const { getState } = await setUp({ loadedFixtures: [closedLogFixture] });
 
-    expect(selectRecentLogEntries(getState())).toContainEqual(
+    expect(selectRecentLogTimeBlocks(getState())).toContainEqual(
       expect.objectContaining({ text: closedLogBasename }),
     );
   });
@@ -47,10 +45,13 @@ describe("Frontmatter log indexing", () => {
   test("Surfaces an open frontmatter clock as an active log entry", async () => {
     const { getState } = await setUp({ loadedFixtures: [openLogFixture] });
 
-    expect(selectActiveLogEntries(getState())).toContainEqual(
+    expect(
+      selectActiveLogTimeBlocks(getState(), window.moment("2025-07-19 13:30")),
+    ).toContainEqual(
       expect.objectContaining({
         text: openLogBasename,
         startTime: window.moment("2025-07-19 12:00"),
+        durationMinutes: 90,
       }),
     );
   });
@@ -61,13 +62,13 @@ describe("Frontmatter log indexing", () => {
     });
 
     expect(
-      selectLogEntriesForDay(getState(), dayKey, strictParse(dayKey)),
+      selectLogTimeBlocksForDay(getState(), dayKey, strictParse(dayKey)),
     ).toHaveLength(1);
 
     dispatch(fileDeleted({ path: closedLogPath }));
 
     expect(
-      selectLogEntriesForDay(getState(), dayKey, strictParse(dayKey)),
+      selectLogTimeBlocksForDay(getState(), dayKey, strictParse(dayKey)),
     ).toEqual([]);
   });
 

@@ -2,7 +2,7 @@
   /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
   import type { Snippet } from "svelte";
 
-  import { settings } from "../../global-store/settings";
+  import { settingsStore } from "../../global-store/settings";
   import type {
     TimeBlock,
     WithPlacing,
@@ -13,28 +13,28 @@
     useColoredTimeline,
     useStylesForRelationToNow,
   } from "../hooks/use-color.svelte";
-  import { useTaskVisuals } from "../hooks/use-task-visuals";
+  import { useTimeBlockVisuals } from "../hooks/use-time-block-visuals";
 
   const {
     children,
-    task,
+    timeBlock,
     showBottomSeparator = true,
     showTopSeparator = true,
   }: {
     children: Snippet;
     showBottomSeparator?: boolean;
     showTopSeparator?: boolean;
-    task: WithPlacing<WithDuration<TimeBlock>>;
+    timeBlock: WithPlacing<WithDuration<TimeBlock>>;
     use?: ActionArray;
   } = $props();
 
   const { height, offset, width, left } = $derived(
-    useTaskVisuals(task, { settings }),
+    useTimeBlockVisuals(timeBlock, { settingsStore }),
   );
 
-  const relationToNow = $derived(useStylesForRelationToNow(task));
+  const relationToNow = $derived(useStylesForRelationToNow(timeBlock));
 
-  const coloredTimeline = $derived(useColoredTimeline(task));
+  const coloredTimeline = $derived(useColoredTimeline(timeBlock));
   const { normal, muted, faint } = $derived(
     coloredTimeline.properContrastColors,
   );

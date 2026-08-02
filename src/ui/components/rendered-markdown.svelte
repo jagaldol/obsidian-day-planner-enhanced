@@ -17,60 +17,64 @@
   import TimeBlockContentLayout from "./time-block-content-layout.svelte";
 
   const {
-    task,
+    timeBlock,
     bottomDecoration,
-  }: { task: LocalTimeBlock; bottomDecoration?: Snippet } = $props();
+  }: { timeBlock: LocalTimeBlock; bottomDecoration?: Snippet } = $props();
 
-  const { renderMarkdown, toggleCheckboxInFile, settings } =
+  const { renderMarkdown, toggleCheckboxInFile, settingsStore } =
     getObsidianContext();
 
   type NestedListItem = NonNullable<LocalTimeBlock["children"]>[number];
 
   const onCheckboxLineClick = $derived(
-    isListItemSourced(task)
-      ? (line: number) => toggleCheckboxInFile(task.path, line)
+    isListItemSourced(timeBlock)
+      ? (line: number) => toggleCheckboxInFile(timeBlock.path, line)
       : undefined,
   );
 
   const { listItem, nestedListItems } = $derived(
-    toRenderableMarkdown(task, {
-      hideTasksMetadata: $settings.hideTasksMetadata,
+    toRenderableMarkdown(timeBlock, {
+      hideTasksMetadata: $settingsStore.hideTasksMetadata,
     }),
   );
-  const sourcePath = $derived(task.source === "unwritten" ? "/" : task.path);
+  const sourcePath = $derived(
+    timeBlock.source === "unwritten" ? "/" : timeBlock.path,
+  );
 
   const timeRange = $derived.by(() => {
-    if (task.isAllDayEvent) {
+    if (timeBlock.isAllDayEvent) {
       return undefined;
     }
 
     const sourceStartTime =
-      task.timelineSegment?.sourceStartTime ?? task.startTime;
+      timeBlock.timelineSegment?.sourceStartTime ?? timeBlock.startTime;
     const sourceDurationMinutes =
-      task.timelineSegment?.sourceDurationMinutes ?? task.durationMinutes;
+      timeBlock.timelineSegment?.sourceDurationMinutes ??
+      timeBlock.durationMinutes;
     const timeParts = createTimestampParts(
       getMinutesSinceMidnight(sourceStartTime),
       sourceDurationMinutes,
-      $settings.timestampFormat,
+      $settingsStore.timestampFormat,
     );
 
     return {
       end: timeParts.end,
-      highlightEnd: task.timelineSegment?.continuesAfterSegment === true,
-      highlightStart: task.timelineSegment?.startsBeforeSegment === true,
+      highlightEnd: timeBlock.timelineSegment?.continuesAfterSegment === true,
+      highlightStart: timeBlock.timelineSegment?.startsBeforeSegment === true,
       start: timeParts.start,
     };
   });
 
   const compactThresholdMinutes = $derived(
-    $settings.zoomLevel <= 2
-      ? 80 / 2 ** $settings.zoomLevel
-      : $settings.zoomLevel <= 4
+    $settingsStore.zoomLevel <= 2
+      ? 80 / 2 ** $settingsStore.zoomLevel
+      : $settingsStore.zoomLevel <= 4
         ? 10
         : 0,
   );
   const isCompact = $derived(
-    !task.isAllDayEvent && task.durationMinutes <= compactThresholdMinutes,
+    !timeBlock.isAllDayEvent &&
+      timeBlock.durationMinutes <= compactThresholdMinutes,
   );
 
   function flatten(entries: NestedListItem[] = []): NestedListItem[] {
@@ -81,11 +85,15 @@
   }
 
   const nestedItems = $derived(
-    $settings.showSubtasksInTaskBlocks ? flatten(task.children ?? []) : [],
+    $settingsStore.showSubtasksInTaskBlocks
+      ? flatten(timeBlock.children ?? [])
+      : [],
   );
   const nestedItemCount = $derived(nestedItems.length);
   const blockHeightPx = $derived(
-    task.isAllDayEvent ? 0 : task.durationMinutes * $settings.zoomLevel,
+    timeBlock.isAllDayEvent
+      ? 0
+      : timeBlock.durationMinutes * $settingsStore.zoomLevel,
   );
 
   // Keep the header on one line when a stacked header would crowd nested items.
@@ -99,12 +107,12 @@
     !isCompact && blockHeightPx >= stackedHeaderRequiredHeightPx,
   );
   const hideTimeRange = $derived(
-    $settings.hideTimeRangeInSingleLine && !useStackedHeader,
+    $settingsStore.hideTimeRangeInSingleLine && !useStackedHeader,
   );
 
-  const completed = $derived(isCompleted(task.task ?? task.status));
+  const completed = $derived(isCompleted(timeBlock.task ?? timeBlock.status));
   const listItemLine = $derived(
-    isListItemSourced(task) ? task.position.start.line : undefined,
+    isListItemSourced(timeBlock) ? timeBlock.position.start.line : undefined,
   );
   const nestedListItemLines = $derived(
     nestedItems
@@ -174,7 +182,7 @@
   {/snippet}
 
   {#snippet contents()}
-    {#if $settings.showSubtasksInTaskBlocks && nestedListItems}
+    {#if $settingsStore.showSubtasksInTaskBlocks && nestedListItems}
       <div
         class={[
           "markdown-wrapper",

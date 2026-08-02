@@ -1,17 +1,17 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-06-05 | Updated: 2026-06-05 -->
+<!-- Generated: 2026-06-05 | Updated: 2026-08-02 -->
 
 # use-edit
 
 ## Purpose
 
-The task-editing engine. Manages an edit operation (drag, resize, create, schedule) from gesture start to commit: tracks the active `EditOperation`, transforms the task set as the pointer moves, exposes edit handlers/actions, and drives cursor feedback. This is the source of truth for interactive timeline edits.
+The time-block editing engine. Manages an edit operation (drag, resize, create, schedule) from gesture start to commit: tracks the active `EditOperation`, transforms the block set as the pointer moves, exposes edit handlers/actions, and drives cursor feedback. This is the source of truth for interactive timeline edits.
 
 ## Key Files
 
 | File                      | Description                                                                              |
 | ------------------------- | ---------------------------------------------------------------------------------------- |
-| `use-edit-context.ts`     | `useEditContext` - top-level editing context wiring tasks, settings, and handlers.       |
+| `use-edit-context.ts`     | `useEditContext` - top-level editing context wiring time blocks, settings, and handlers. |
 | `create-edit-handlers.ts` | `createEditHandlers` - handlers for starting/applying/confirming edits (`EditHandlers`). |
 | `use-edit-actions.ts`     | `useEditActions` - actions exposed to components/menus.                                  |
 | `types.ts`                | `EditMode` enum and `EditOperation` interface.                                           |
@@ -19,9 +19,9 @@ The task-editing engine. Manages an edit operation (drag, resize, create, schedu
 
 ## Subdirectories
 
-| Directory    | Purpose                                                                        |
-| ------------ | ------------------------------------------------------------------------------ |
-| `transform/` | Pure functions that apply an edit to the task list (see `transform/AGENTS.md`) |
+| Directory    | Purpose                                                                         |
+| ------------ | ------------------------------------------------------------------------------- |
+| `transform/` | Pure functions that apply an edit to the block list (see `transform/AGENTS.md`) |
 
 ## For AI Agents
 
@@ -36,7 +36,7 @@ The task-editing engine. Manages an edit operation (drag, resize, create, schedu
 
 ### Common Patterns
 
-- Operation object describes the edit; `transform` maps `tasks + cursorTime → tasks`.
+- Operation object describes the edit; `transform` maps `timeBlocks + cursorTime → timeBlocks`.
 
 ## Dependencies
 

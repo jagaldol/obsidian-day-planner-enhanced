@@ -5,15 +5,15 @@ import { isNotVoid } from "typed-assert";
 import { sortListsRecursivelyInMarkdown } from "./mdast/mdast";
 import {
   createTransaction,
-  getTaskDiffFromEditState,
-  mapTaskDiffToUpdates,
+  getTimeBlockDiffFromEditState,
+  mapTimeBlockDiffToUpdates,
   TransactionWriter,
   type Update,
 } from "./service/diff-writer";
 import type { PeriodicNotes } from "./service/periodic-notes";
 import type { VaultFacade } from "./service/vault-facade";
 import type { DayPlannerSettings } from "./settings";
-import type { UnwrittenTimeBlock } from "./time-block-types";
+import type { PlanTimeBlock, UnwrittenTimeBlock } from "./time-block-types";
 import type { OnUpdateFn } from "./types";
 import { type ConfirmationModalProps } from "./ui/confirmation-modal";
 import { EditMode } from "./ui/hooks/use-edit/types";
@@ -44,7 +44,7 @@ export async function getTextFromUser(props: {
 
 export const createEditLineHandler =
   (props: {
-    settings: () => DayPlannerSettings;
+    getSettings: () => DayPlannerSettings;
     transactionWriter: TransactionWriter;
     onConfirmed: () => void;
   }) =>
@@ -62,7 +62,32 @@ export const createEditLineHandler =
 
     const transaction = createTransaction({
       updates: [update],
-      settings: props.settings(),
+      settings: props.getSettings(),
+    });
+
+    await props.transactionWriter.writeTransaction(transaction);
+
+    props.onConfirmed();
+  };
+
+// todo: merge with the other
+export const createDeleteTimeBlockHandler =
+  (props: {
+    getSettings: () => DayPlannerSettings;
+    periodicNotes: PeriodicNotes;
+    transactionWriter: TransactionWriter;
+    onConfirmed: () => void;
+  }) =>
+  async (timeBlock: PlanTimeBlock) => {
+    const updates = mapTimeBlockDiffToUpdates(
+      { deleted: [timeBlock] },
+      props.getSettings(),
+      props.periodicNotes,
+    );
+
+    const transaction = createTransaction({
+      updates,
+      settings: props.getSettings(),
     });
 
     await props.transactionWriter.writeTransaction(transaction);
@@ -71,7 +96,7 @@ export const createEditLineHandler =
   };
 
 export const createUpdateHandler = (props: {
-  settings: () => DayPlannerSettings;
+  getSettings: () => DayPlannerSettings;
   transactionWriter: TransactionWriter;
   vaultFacade: VaultFacade;
   periodicNotes: PeriodicNotes;
@@ -83,7 +108,7 @@ export const createUpdateHandler = (props: {
   getConfirmationInput: (input: ConfirmationModalProps) => Promise<boolean>;
 }): OnUpdateFn => {
   const {
-    settings,
+    getSettings,
     transactionWriter,
     vaultFacade,
     onEditCanceled,
@@ -104,7 +129,7 @@ export const createUpdateHandler = (props: {
   }
 
   return async (base, next, mode) => {
-    const diff = getTaskDiffFromEditState(base, next);
+    const diff = getTimeBlockDiffFromEditState(base, next);
     let createdTask: UnwrittenTimeBlock | undefined;
 
     if (mode === EditMode.CREATE) {
@@ -126,21 +151,26 @@ export const createUpdateHandler = (props: {
       diff.added[0] = createdTask;
     }
 
-    const updates = mapTaskDiffToUpdates(diff, settings(), periodicNotes);
+    const updates = mapTimeBlockDiffToUpdates(
+      diff,
+      getSettings(),
+      periodicNotes,
+    );
 
-    const afterEach = settings().sortTasksInPlanAfterEdit
+    const afterEach = getSettings().sortTasksInPlanAfterEdit
       ? (contents: string) =>
           applyScopedUpdates(
             contents,
-            settings().plannerHeading,
+            getSettings().plannerHeading,
             sortListsRecursivelyInMarkdown,
           )
       : undefined;
 
     const transaction = createTransaction({
       updates,
+      // todo: delete
       afterEach,
-      settings: settings(),
+      settings: getSettings(),
     });
 
     const updatePaths = [...new Set([...transaction.map(({ path }) => path)])];

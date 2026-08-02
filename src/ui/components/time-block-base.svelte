@@ -10,7 +10,7 @@
   interface Props {
     children: Snippet;
     blockEndDecoration?: Snippet;
-    task: TimeBlock;
+    timeBlock: TimeBlock;
     use?: ActionArray;
     onpointerup?: (event: PointerEvent) => void;
   }
@@ -19,17 +19,17 @@
     onpointerup,
     children,
     blockEndDecoration,
-    task,
+    timeBlock,
     use = [],
   }: Props = $props();
 
   const {
     properContrastColors: { normal, muted, faint },
     backgroundColor,
-  } = $derived(useColorOverrides({ task }));
+  } = $derived(useColorOverrides({ timeBlock }));
 
   const continuationTitle = $derived.by(() => {
-    const { timelineSegment } = task;
+    const { timelineSegment } = timeBlock;
 
     if (!timelineSegment) {
       return undefined;
@@ -62,18 +62,19 @@
     style:--time-block-bg-color={backgroundColor}
     class={[
       "content",
-      task.timelineSegment?.startsBeforeSegment &&
+      timeBlock.timelineSegment?.startsBeforeSegment &&
         "continues-from-previous-day",
-      task.timelineSegment?.continuesAfterSegment && "continues-to-next-day",
-      task.truncated?.includes("left") && "truncated-left",
-      task.truncated?.includes("right") && "truncated-right",
-      task.truncated?.includes("bottom") && "truncated-bottom",
+      timeBlock.timelineSegment?.continuesAfterSegment &&
+        "continues-to-next-day",
+      timeBlock.truncated?.includes("left") && "truncated-left",
+      timeBlock.truncated?.includes("right") && "truncated-right",
+      timeBlock.truncated?.includes("bottom") && "truncated-bottom",
     ]}
     {onpointerup}
     title={continuationTitle}
     use:useActions={use}
   >
-    {#if task.timelineSegment?.startsBeforeSegment}
+    {#if timeBlock.timelineSegment?.startsBeforeSegment}
       <span class="continuation-cap continuation-cap-top" aria-hidden="true"
       ></span>
     {/if}
@@ -82,7 +83,7 @@
 
     {@render blockEndDecoration?.()}
 
-    {#if task.timelineSegment?.continuesAfterSegment}
+    {#if timeBlock.timelineSegment?.continuesAfterSegment}
       <span class="continuation-cap continuation-cap-bottom" aria-hidden="true"
       ></span>
     {/if}

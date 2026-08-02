@@ -13,6 +13,10 @@ export function getMinutesSinceMidnight(moment: Moment) {
   return moment.diff(moment.clone().startOf("day"), "minutes");
 }
 
+export function toMinutePrecision(moment: Moment) {
+  return moment.clone().startOf("minute");
+}
+
 export function toMinutes(time: string) {
   const parsed = moment(time, defaultTimestampFormat);
 
@@ -27,7 +31,7 @@ export function getMomentFromDayOfWeek(
   startingDay: Moment,
   firstDayOFWeek: DayPlannerSettings["firstDayOfWeek"],
 ) {
-  const startOfIsoWeek = startingDay.startOf("isoWeek");
+  const startOfIsoWeek = startingDay.clone().startOf("isoWeek");
   const subtractDays: Record<DayPlannerSettings["firstDayOfWeek"], number> = {
     monday: 0,
     sunday: 1,
@@ -169,5 +173,11 @@ export function getDayKeysInRangeEndExclusive(start: Moment, end: Moment) {
 
 export function strictParse(value: string) {
   return window.moment(value, window.moment.ISO_8601, true);
+}
+
+export function minutesToTimestamp(minutes: number) {
+  return window.moment
+    .utc(window.moment.duration(minutes, "minutes").asMilliseconds())
+    .format("HH:mm");
 }
 /* eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. */

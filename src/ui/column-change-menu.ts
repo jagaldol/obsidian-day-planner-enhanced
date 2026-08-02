@@ -6,11 +6,11 @@ import type { DayPlannerSettings } from "../settings";
 
 export function createColumnChangeMenu(props: {
   event: MouseEvent;
-  settings: Writable<DayPlannerSettings>;
+  settingsStore: Writable<DayPlannerSettings>;
 }) {
-  const { event, settings } = props;
+  const { event, settingsStore } = props;
 
-  const currentMode = get(settings).multiDayRange;
+  const currentMode = get(settingsStore).multiDayRange;
   const menu = new Menu();
 
   menu.addItem((item) =>
@@ -18,7 +18,7 @@ export function createColumnChangeMenu(props: {
       .setTitle("Full week")
       .setChecked(currentMode === "full-week")
       .onClick(() => {
-        settings.update((previous) => ({
+        settingsStore.update((previous) => ({
           ...previous,
           multiDayRange: "full-week",
         }));
@@ -29,7 +29,7 @@ export function createColumnChangeMenu(props: {
       .setTitle("Work week")
       .setChecked(currentMode === "work-week")
       .onClick(() => {
-        settings.update((previous) => ({
+        settingsStore.update((previous) => ({
           ...previous,
           multiDayRange: "work-week",
         }));
@@ -40,7 +40,7 @@ export function createColumnChangeMenu(props: {
       .setTitle("3 days")
       .setChecked(currentMode === "3-days")
       .onClick(() => {
-        settings.update((previous) => ({
+        settingsStore.update((previous) => ({
           ...previous,
           multiDayRange: "3-days",
         }));

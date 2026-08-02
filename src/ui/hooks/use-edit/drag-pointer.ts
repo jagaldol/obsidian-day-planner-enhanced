@@ -15,18 +15,18 @@ import type { Moment } from "../../../util/obsidian-moment";
 import type { EditOperation } from "./types";
 
 export function getDragStartState(
-  task: WithDuration<EditableTimeBlock>,
+  timeBlock: WithDuration<EditableTimeBlock>,
   clientY: number,
 ): {
   dragOriginClientY?: number;
   pointerDateTime: PointerDateTime;
 } {
-  const isAllDayDrag = task.isAllDayEvent === true;
+  const isAllDayDrag = timeBlock.isAllDayEvent === true;
 
   return {
     dragOriginClientY: isAllDayDrag ? undefined : clientY,
     pointerDateTime: {
-      dateTime: task.startTime.clone(),
+      dateTime: timeBlock.startTime.clone(),
       type: isAllDayDrag ? "date" : "dateTime",
     },
   };
@@ -75,7 +75,7 @@ export function isRelativeDragOperation(
   dragOriginStartTime: Moment;
 } {
   return (
-    operation.task.isAllDayEvent !== true &&
+    operation.timeBlock.isAllDayEvent !== true &&
     operation.dragOriginClientY !== undefined &&
     operation.dragOriginStartTime !== undefined
   );

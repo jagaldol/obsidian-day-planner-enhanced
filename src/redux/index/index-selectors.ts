@@ -3,40 +3,42 @@ import { isNotVoid } from "typed-assert";
 
 import { addHorizontalPlacing } from "../../overlap/overlap";
 import type { LogTimeBlock } from "../../time-block-types";
-import { strictParse } from "../../util/moment";
+import { strictParse, toMinutePrecision } from "../../util/moment";
 import type { Moment } from "../../util/obsidian-moment";
-import { clamp, getDayKey } from "../../util/time-block-utils";
+import { clampToTimeRange } from "../../util/time-block-utils";
 import { createAppSelector } from "../create-app-selector";
-import { selectVisibleDays } from "../global-slice";
+import { selectVisibleDays } from "../date-ranges-slice";
 
 import {
-  isListItemEntry,
-  type FileSystemEntry,
+  closedLogEntryToTimeBlock,
+  logEntryToTimeBlock,
+  planEntryToTimeBlock,
+} from "./entry-to-time-block";
+import {
   type ListItemEntry,
   type ListItemEntryWithChildren,
-  entryToTimeBlock,
   selectFileEntriesById,
   selectLogEntriesByDay,
   selectLogEntriesById,
   selectPlanEntriesByDay,
   selectPlanEntriesById,
-  selectTaskEntriesById,
+  selectListItemEntriesById,
   type ClosedLogEntry,
 } from "./index-slice";
 
-export const selectLogEntriesForDay = createAppSelector(
+export const selectLogTimeBlocksForDay = createAppSelector(
   [
     selectLogEntriesByDay,
     selectLogEntriesById,
-    selectTaskEntriesById,
+    selectListItemEntriesById,
     selectFileEntriesById,
     (state, dayKey: string) => dayKey,
     (state, dayKey, currentTime: Moment) => currentTime,
   ],
-  (byDay, byId, taskEntriesById, fileEntriesById, dayKey, currentTime) => {
+  (byDay, byId, listItemEntriesById, fileEntriesById, dayKey, currentTime) => {
     const parsedDay = strictParse(dayKey);
     const startOfDay = parsedDay.clone().startOf("day");
-    const endOfDay = startOfDay.clone().add(1, "day");
+    const endOfDay = toMinutePrecision(parsedDay.clone().endOf("day"));
     const isDayKeyForToday = parsedDay.isSame(currentTime, "day");
 
     const uniqueLogEntryIds = Object.keys(byDay[dayKey] || {});
@@ -50,71 +52,70 @@ export const selectLogEntriesForDay = createAppSelector(
           `Inconsistent store state: expected to find log entry by id ${logEntryId}`,
         );
 
-        // todo: remove once we have noUncheckedIndexedAccess
-        //  the state types are imprecise: lookups by id may return
-        //  undefined, so the union has to be spelled out for narrowing to work
-        const entry: ListItemEntry | FileSystemEntry | undefined =
-          taskEntriesById[logEntry.parentId] ??
+        const entry =
+          listItemEntriesById[logEntry.parentId] ??
           fileEntriesById[logEntry.parentId];
 
         isNotVoid(
           entry,
-          `Inconsistent store state: task entry not found for ID: ${logEntryId}`,
+          `Inconsistent store state: parent entry not found for log entry ${logEntryId}`,
         );
 
-        const parsedStart = strictParse(logEntry.start);
-        const parsedEnd = logEntry.end
-          ? strictParse(logEntry.end)
-          : currentTime;
-        const isActiveLogRecordForToday = isDayKeyForToday && !logEntry.end;
+        const timeBlock = logEntryToTimeBlock({
+          logEntry,
+          parentEntry: entry,
+          currentTime,
+        });
 
-        // todo: use adapter: logEntryToLocalTask
-        const base = {
-          id: logEntry.id,
-          text: entry.text,
-          startTime: parsedStart,
-          symbol: "-",
-          durationMinutes: parsedEnd.diff(parsedStart, "minutes"),
-          ...(isActiveLogRecordForToday
-            ? { truncated: ["bottom" as const] }
-            : {}),
-        };
+        const clamped = clampToTimeRange(timeBlock, {
+          start: startOfDay,
+          end: endOfDay,
+        });
 
-        let timeBlock: LogTimeBlock;
-
-        if (isListItemEntry(entry)) {
-          if (logEntry.source === "frontmatterLog") {
-            throw new Error(
-              "Inconsistent store state: a frontmatter log entry cannot be attached to a list item",
-            );
-          }
-
-          timeBlock = {
-            ...base,
-            source: logEntry.source,
-            status: entry.task,
-            path: entry.path,
-            position: entry.position,
-          };
-        } else {
-          if (logEntry.source !== "frontmatterLog") {
-            throw new Error(
-              "Inconsistent store state: only frontmatter log entries can be attached to file entries",
-            );
-          }
-
-          timeBlock = {
-            ...base,
-            source: logEntry.source,
-            path: entry.path,
-          };
-        }
-
-        return clamp(timeBlock, startOfDay, endOfDay);
+        return timeBlock.isRunning && isDayKeyForToday
+          ? { ...clamped, truncated: ["bottom" as const] }
+          : clamped;
       },
     );
 
     return addHorizontalPlacing(inflatedTimeBlocksWithoutActiveClocks);
+  },
+);
+
+const selectOpenLogEntries = createAppSelector(
+  [selectLogEntriesById],
+  (logEntriesById) => Object.values(logEntriesById).filter((it) => !it.end),
+);
+
+const emptyActiveLogTimeBlocks: LogTimeBlock[] = [];
+
+export const selectActiveLogTimeBlocks = createAppSelector(
+  [
+    selectOpenLogEntries,
+    selectListItemEntriesById,
+    selectFileEntriesById,
+    (state, currentTime: Moment) => toMinutePrecision(currentTime).valueOf(),
+  ],
+  (openLogEntries, listItemEntriesById, fileEntriesById, minuteTimestamp) => {
+    if (openLogEntries.length === 0) {
+      return emptyActiveLogTimeBlocks;
+    }
+
+    const currentTime = window.moment(minuteTimestamp);
+
+    return openLogEntries.map((logEntry) => {
+      const entry =
+        listItemEntriesById[logEntry.parentId] ??
+        fileEntriesById[logEntry.parentId];
+
+      isNotVoid(entry, "Inconsistent store state");
+
+      return logEntryToTimeBlock({
+        logEntry,
+        parentEntry: entry,
+        currentTime,
+      });
+    });
   },
 );
 
@@ -134,21 +135,23 @@ const selectLatestClosedLogEntryByParentId = createAppSelector(
   },
 );
 
-export const selectRecentLogEntries = createAppSelector(
+export const selectRecentLogTimeBlocks = createAppSelector(
   [
     selectLatestClosedLogEntryByParentId,
-    selectTaskEntriesById,
+    selectListItemEntriesById,
     selectFileEntriesById,
   ],
-  (latestClosedLogEntryByParentId, taskEntriesById, fileEntriesById) => {
+  (latestClosedLogEntryByParentId, listItemEntriesById, fileEntriesById) => {
     return [...latestClosedLogEntryByParentId].map(
-      ([taskEntryId, logEntry]) => {
+      ([listItemEntryId, logEntry]) => {
         const entry =
-          taskEntriesById[taskEntryId] ?? fileEntriesById[taskEntryId];
+          listItemEntriesById[listItemEntryId] ??
+          fileEntriesById[listItemEntryId];
 
         isNotVoid(entry, "Inconsistent store state");
 
-        return entryToTimeBlock(logEntry, entry);
+        // todo: filter out active clocks
+        return closedLogEntryToTimeBlock({ logEntry, parentEntry: entry });
       },
     );
   },
@@ -165,24 +168,21 @@ export const selectLatestClosedLogEndByParentId = createAppSelector(
   },
 );
 
-export const selectPlanEntriesForVisibleDays = createAppSelector(
+export const selectPlanTimeBlocksForVisibleDays = createAppSelector(
   [
     selectPlanEntriesByDay,
     selectPlanEntriesById,
-    selectTaskEntriesById,
+    selectListItemEntriesById,
     selectVisibleDays,
   ],
   // todo: copy-pasta. Can we re-use it without breaking caching?
-  (planEntriesByDay, planEntriesById, listItemEntriesById, dayKeysFull) => {
-    const uniqueTaskIds = new Set(
-      dayKeysFull
-        // todo: do not store full timestamp in store
-        .map((key) => getDayKey(strictParse(key)))
-        .flatMap((dayKey) => Object.keys(planEntriesByDay[dayKey] || {})),
+  (planEntriesByDay, planEntriesById, listItemEntriesById, dayKeys) => {
+    const uniquePlanEntryIds = new Set(
+      dayKeys.flatMap((dayKey) => Object.keys(planEntriesByDay[dayKey] || {})),
     );
 
     return (
-      [...uniqueTaskIds]?.map((id) => {
+      [...uniquePlanEntryIds]?.map((id) => {
         const planEntry = planEntriesById[id];
 
         isNotVoid(planEntry, "Inconsistent index state");
@@ -196,26 +196,30 @@ export const selectPlanEntriesForVisibleDays = createAppSelector(
           listItemEntriesById,
         );
 
-        return entryToTimeBlock(planEntry, listItemEntry, withChildren);
+        return planEntryToTimeBlock({
+          planEntry,
+          parentEntry: listItemEntry,
+          listItemEntryWithChildren: withChildren,
+        });
       }) || []
     );
   },
 );
 
-export const selectPlanEntriesForDays = createAppSelector(
+export const selectPlanTimeBlocksForDays = createAppSelector(
   [
     selectPlanEntriesByDay,
     selectPlanEntriesById,
-    selectTaskEntriesById,
+    selectListItemEntriesById,
     (state, dayKeys: string[]) => dayKeys,
   ],
   (planEntriesByDay, planEntriesById, listItemEntriesById, dayKeys) => {
-    const uniqueListItemIds = new Set(
+    const uniquePlanEntryIds = new Set(
       dayKeys.flatMap((dayKey) => Object.keys(planEntriesByDay[dayKey] || {})),
     );
 
     return (
-      [...uniqueListItemIds]?.map((id) => {
+      [...uniquePlanEntryIds]?.map((id) => {
         const planEntry = planEntriesById[id];
 
         isNotVoid(planEntry, "Inconsistent index state");
@@ -229,7 +233,11 @@ export const selectPlanEntriesForDays = createAppSelector(
           listItemEntriesById,
         );
 
-        return entryToTimeBlock(planEntry, listItemEntry, withChildren);
+        return planEntryToTimeBlock({
+          planEntry,
+          parentEntry: listItemEntry,
+          listItemEntryWithChildren: withChildren,
+        });
       }) || []
     );
   },

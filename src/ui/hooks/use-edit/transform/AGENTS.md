@@ -1,18 +1,18 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-06-05 | Updated: 2026-06-05 -->
+<!-- Generated: 2026-06-05 | Updated: 2026-08-02 -->
 
 # transform
 
 ## Purpose
 
-Pure transformation functions that compute the next task list for an in-progress edit. Given the current tasks, the active operation, and a cursor time, they return updated tasks without touching Obsidian or the DOM — making edit behavior deterministic and unit-testable.
+Pure transformation functions that compute the next time-block list for an in-progress edit. Given the current blocks, the active operation, and a cursor time, they return updated blocks without touching Obsidian or the DOM — making edit behavior deterministic and unit-testable.
 
 ## Key Files
 
-| File             | Description                                                                                    |
-| ---------------- | ---------------------------------------------------------------------------------------------- |
-| `transform.ts`   | `transform` - dispatches an `EditOperation` to the right block edit and returns updated tasks. |
-| `edit-blocks.ts` | `editBlocks` - applies drag/resize/create math to affected blocks.                             |
+| File             | Description                                                                                     |
+| ---------------- | ----------------------------------------------------------------------------------------------- |
+| `transform.ts`   | `transform` - dispatches an `EditOperation` to the right block edit and returns updated blocks. |
+| `edit-blocks.ts` | `editBlocks` - applies drag/resize/create math to affected blocks.                              |
 
 ## For AI Agents
 
@@ -27,7 +27,7 @@ Pure transformation functions that compute the next task list for an in-progress
 
 ### Common Patterns
 
-- `(tasks, operation, cursorTime) => tasks`; immutable updates.
+- `(timeBlocks, operation, cursorTime) => timeBlocks`; immutable updates.
 
 ## Dependencies
 

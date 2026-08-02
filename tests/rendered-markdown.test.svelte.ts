@@ -7,7 +7,7 @@ import { defaultSettingsForTests } from "../src/settings";
 import type { ObsidianContext } from "../src/types";
 import RenderedMarkdown from "../src/ui/components/rendered-markdown.svelte";
 
-import { baseTask } from "./edit/util/fixtures";
+import { baseTimeBlock } from "./edit/util/fixtures";
 
 afterEach(() => {
   document.body.innerHTML = "";
@@ -37,18 +37,14 @@ describe("RenderedMarkdown", () => {
     },
   ])(
     "renders the time range visible=$expectedVisible for a $durationMinutes-minute block when hideTimeRangeInSingleLine=$hideTimeRangeInSingleLine",
-    ({
-      durationMinutes,
-      hideTimeRangeInSingleLine,
-      expectedVisible,
-    }) => {
+    ({ durationMinutes, hideTimeRangeInSingleLine, expectedVisible }) => {
       const target = document.createElement("div");
       const context = new Map<string, unknown>([
         [
           obsidianContextKey,
           {
             renderMarkdown: vi.fn(() => vi.fn()),
-            settings: writable({
+            settingsStore: writable({
               ...defaultSettingsForTests,
               hideTimeRangeInSingleLine,
             }),
@@ -62,8 +58,8 @@ describe("RenderedMarkdown", () => {
       const component = mount(RenderedMarkdown, {
         context,
         props: {
-          task: {
-            ...baseTask,
+          timeBlock: {
+            ...baseTimeBlock,
             durationMinutes,
           },
         },
@@ -80,7 +76,7 @@ describe("RenderedMarkdown", () => {
     },
   );
 
-  test("renders task markdown relative to its source file", () => {
+  test("renders time block markdown relative to its source file", () => {
     const target = document.createElement("div");
     const renderMarkdown = vi.fn(() => vi.fn());
     const sourcePath = "fixtures/daily/2023-01-01.md";
@@ -89,7 +85,7 @@ describe("RenderedMarkdown", () => {
         obsidianContextKey,
         {
           renderMarkdown,
-          settings: writable(defaultSettingsForTests),
+          settingsStore: writable(defaultSettingsForTests),
           toggleCheckboxInFile: vi.fn(),
         } as unknown as ObsidianContext,
       ],
@@ -100,8 +96,8 @@ describe("RenderedMarkdown", () => {
     const component = mount(RenderedMarkdown, {
       context,
       props: {
-        task: {
-          ...baseTask,
+        timeBlock: {
+          ...baseTimeBlock,
           path: sourcePath,
           text: "10:00 - 11:00 Review [[Project]]",
         },
@@ -134,7 +130,7 @@ describe("RenderedMarkdown", () => {
         obsidianContextKey,
         {
           renderMarkdown,
-          settings,
+          settingsStore: settings,
           toggleCheckboxInFile: vi.fn(),
         } as unknown as ObsidianContext,
       ],
@@ -145,8 +141,8 @@ describe("RenderedMarkdown", () => {
     const component = mount(RenderedMarkdown, {
       context,
       props: {
-        task: {
-          ...baseTask,
+        timeBlock: {
+          ...baseTimeBlock,
           path: sourcePath,
           text: "10:00 - 11:00 Review proposal ⏳ 2026-07-27 📅 2026-08-07",
         },

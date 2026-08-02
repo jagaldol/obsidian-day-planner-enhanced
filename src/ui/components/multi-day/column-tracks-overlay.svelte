@@ -32,7 +32,7 @@
     );
   }
 
-  .border {
+  .border:not(:last-child) {
     border-right: var(--border-base);
   }
 </style>

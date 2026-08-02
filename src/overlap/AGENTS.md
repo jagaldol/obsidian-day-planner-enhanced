@@ -1,18 +1,18 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-06-05 | Updated: 2026-06-05 -->
+<!-- Generated: 2026-06-05 | Updated: 2026-08-02 -->
 
 # overlap
 
 ## Purpose
 
-Computes how overlapping timed tasks share horizontal space on the timeline. Determines overlap groups and assigns each task a column span so concurrent blocks render side-by-side without covering each other.
+Computes how overlapping time blocks share horizontal space on the timeline. Determines overlap groups and assigns each block a column span so concurrent blocks render side-by-side without covering each other.
 
 ## Key Files
 
-| File                    | Description                                                                                                         |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `overlap.ts`            | `computeOverlap` (groups overlapping tasks) and `addHorizontalPlacing` (annotates `WithTime` tasks with placement). |
-| `horizontal-placing.ts` | `getHorizontalPlacing(overlap)` → `{ widthPercent, xOffsetPercent }`-style placement; `HorizontalPlacing` type.     |
+| File                    | Description                                                                                                     |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `overlap.ts`            | `computeOverlap` groups `TimeInterval`s and `addHorizontalPlacing` annotates blocks with placement.             |
+| `horizontal-placing.ts` | `getHorizontalPlacing(overlap)` → `{ widthPercent, xOffsetPercent }`-style placement; `HorizontalPlacing` type. |
 
 ## For AI Agents
 
@@ -27,13 +27,13 @@ Computes how overlapping timed tasks share horizontal space on the timeline. Det
 
 ### Common Patterns
 
-- Tasks carry `WithTime<BaseTask>`; placement attached as an `Overlap` (see `src/types.ts`).
+- Inputs satisfy `TimeInterval`; outputs carry `WithPlacing<T>` and use `Overlap` geometry.
 
 ## Dependencies
 
 ### Internal
 
 - `src/types.ts` - `Overlap`
-- `src/task-types.ts` - `WithTime`, `BaseTask`
+- `src/time-block-types.ts` - `TimeInterval`, `WithPlacing`
 
 <!-- MANUAL: Any manually added notes below this line are preserved on regeneration -->

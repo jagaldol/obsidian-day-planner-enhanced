@@ -9,11 +9,14 @@ import { createInMemoryFile, type InMemoryFile } from "../../util/fakes";
 
 const { join } = path.posix;
 
+// NOTE: The plugin relies on obsidian-daily-notes-interface to tell it, which
+// files are daily notes, so during tests we have to tell it explicitly.
 const dailyNoteFileNames = [
   "2025-07-19",
   "2025-07-20",
   "2025-07-21",
   "2025-07-28",
+  "2025-07-29",
 ];
 
 const fixturesDirPath = "fixtures";

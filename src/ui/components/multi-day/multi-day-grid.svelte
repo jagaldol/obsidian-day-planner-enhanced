@@ -1,8 +1,5 @@
 <script lang="ts">
   /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
-  import { get } from "svelte/store";
-  import { slide } from "svelte/transition";
-
   import { getDateRangeContext } from "../../../context/date-range-context";
   import { getObsidianContext } from "../../../context/obsidian-context";
   import { isToday } from "../../../global-store/current-time";
@@ -23,7 +20,6 @@
   import { createColumnChangeMenu } from "../../column-change-menu";
   import { createColumnSelectionMenu } from "../../column-selection-menu";
   import ControlButton from "../control-button.svelte";
-  import { createSlide } from "../defaults";
   import ErrorBoundary from "../error-boundary.svelte";
   import {
     Settings,
@@ -36,7 +32,6 @@
   } from "../lucide";
   import Ruler from "../ruler.svelte";
   import Scroller from "../scroller.svelte";
-  import SettingsControls from "../settings-controls.svelte";
   import Timeline from "../timeline.svelte";
 
   import ColumnTracksOverlay from "./column-tracks-overlay.svelte";
@@ -44,16 +39,14 @@
 
   const {
     workspaceFacade,
-    settings,
+    settingsStore,
     pointerDateTime,
     editContext,
     settingsSignal,
+    openTimelineSettingsModal,
   } = getObsidianContext();
   const dateRange = getDateRangeContext();
 
-  type SideControls = "none" | "settings";
-
-  let visibleSideControls = $state<SideControls>("none");
   let timelineInternalColumnCount = $derived.by(() => {
     const columnFlags = Object.values(
       getAvailableTimelineColumns(settingsSignal.current),
@@ -61,11 +54,6 @@
 
     return columnFlags.filter(Boolean).length;
   });
-
-  function toggleSideControls(toggledControls: SideControls) {
-    visibleSideControls =
-      visibleSideControls === toggledControls ? "none" : toggledControls;
-  }
 
   function getColumnBackgroundColor(day: Moment) {
     return isOnWeekend(day) ? "var(--background-primary)" : "";
@@ -103,7 +91,7 @@
       return;
     }
 
-    const currentDateRange = get(dateRange);
+    const currentDateRange = dateRange.current;
 
     const viewportToElOffsetX = multiDayRowRef.getBoundingClientRect().left;
     const containerWidth = multiDayRowRef.scrollWidth;
@@ -115,8 +103,14 @@
         pixelsPerDay,
     );
 
+    const dayHoveredOver = currentDateRange[indexOfDayHoveredOver];
+
+    if (!dayHoveredOver) {
+      return;
+    }
+
     pointerDateTime.set({
-      dateTime: currentDateRange[indexOfDayHoveredOver],
+      dateTime: dayHoveredOver,
       type: "date",
     });
   }
@@ -125,7 +119,7 @@
 </script>
 
 <div class="corner">
-  {#if $settings.showUncheduledTasks}
+  {#if $settingsStore.showUncheduledTasks}
     <GripHorizontal
       class="horizontal-grip"
       onmousedown={startResizing}
@@ -137,7 +131,7 @@
 <div bind:this={rulerRef} class="ruler">
   <Ruler
     --ruler-box-shadow="var(--shadow-right)"
-    visibleHours={getVisibleHours($settings)}
+    visibleHours={getVisibleHours($settingsStore)}
   />
   <div class="scrollbar-filler"></div>
 </div>
@@ -147,7 +141,7 @@
   style:--timeline-internal-column-count={timelineInternalColumnCount}
   class={["planner-header-row", "day-buttons"]}
 >
-  {#each $dateRange as day}
+  {#each dateRange.current as day}
     <div class="header-cell">
       <ControlButton
         --border-radius="0"
@@ -160,13 +154,13 @@
           🔵
         {/if}
 
-        {day.format($settings.timelineDateFormat)}
+        {day.format($settingsStore.timelineDateFormat)}
       </ControlButton>
     </div>
   {/each}
 </div>
 
-{#if $settings.showUncheduledTasks}
+{#if $settingsStore.showUncheduledTasks}
   <div
     style:--timeline-internal-column-count={timelineInternalColumnCount}
     class={["planner-header-row", "horizontal-resize-box-wrapper"]}
@@ -182,27 +176,16 @@
       <MultiDayRow />
     </div>
     <ColumnTracksOverlay
-      columnCount={$dateRange.length}
+      columnCount={dateRange.current.length}
       bind:el={columnTrackOverlayEl}
     />
-  </div>
-{/if}
-
-{#if visibleSideControls !== "none"}
-  <div
-    class="side-controls-wrapper"
-    transition:slide={createSlide({ axis: "x" })}
-  >
-    {#if visibleSideControls === "settings"}
-      <SettingsControls />
-    {/if}
   </div>
 {/if}
 
 <ErrorBoundary>
   <div class="multi-day-main-content">
     <Scroller class="planner-multi-day-scroller" onscroll={handleScroll}>
-      {#each $dateRange as day}
+      {#each dateRange.current as day}
         <Timeline
           --column-background-color={getColumnBackgroundColor(day)}
           autoScrollBlocked={true}
@@ -212,23 +195,20 @@
     </Scroller>
 
     <div class="controls-sidebar">
-      <ControlButton
-        isActive={visibleSideControls === "settings"}
-        onclick={() => toggleSideControls("settings")}
-      >
+      <ControlButton label="Settings" onclick={openTimelineSettingsModal}>
         <Settings />
       </ControlButton>
 
       <ControlButton
         label="Change columns"
-        onclick={(event) => createColumnChangeMenu({ event, settings })}
+        onclick={(event) => createColumnChangeMenu({ event, settingsStore })}
       >
         <Columns3 />
       </ControlButton>
 
       <ControlButton
         label="Configure columns"
-        onclick={(event) => createColumnSelectionMenu({ event, settings })}
+        onclick={(event) => createColumnSelectionMenu({ event, settingsStore })}
       >
         <TableColumnsSplit />
       </ControlButton>
@@ -237,7 +217,10 @@
         label="Show current period"
         onclick={() => {
           dateRange.set(
-            r.createRange($settings.multiDayRange, $settings.firstDayOfWeek),
+            r.createRange(
+              $settingsStore.multiDayRange,
+              $settingsStore.firstDayOfWeek,
+            ),
           );
         }}
       >
@@ -248,8 +231,8 @@
         label="Show next period"
         onclick={() => {
           dateRange.update(
-            $settings.multiDayRange === "work-week"
-              ? ([firstDay]) => getNextWorkWeek(firstDay)
+            $settingsStore.multiDayRange === "work-week"
+              ? () => getNextWorkWeek(dateRange.first)
               : getNextAdjacentRange,
           );
         }}
@@ -261,8 +244,8 @@
         label="Show previous period"
         onclick={() => {
           dateRange.update(
-            $settings.multiDayRange === "work-week"
-              ? ([firstDay]) => getPreviousWorkWeek(firstDay)
+            $settingsStore.multiDayRange === "work-week"
+              ? () => getPreviousWorkWeek(dateRange.first)
               : getPreviousAdjacentRange,
           );
         }}
@@ -393,12 +376,5 @@
   .header-cell:last-of-type {
     flex: 1 0 calc(var(--cell-flex-basis) + var(--scrollbar-width));
     border-right: none;
-  }
-
-  .side-controls-wrapper {
-    grid-area: settings;
-    width: min(320px, 50vw);
-    padding-inline: var(--size-4-3);
-    border-left: var(--border-base);
   }
 </style>

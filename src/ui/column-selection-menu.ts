@@ -3,25 +3,85 @@ import { Menu } from "obsidian";
 import { get, type Writable } from "svelte/store";
 
 import { getAvailableTimelineColumns } from "../global-store/derived-settings";
-import type { DayPlannerSettings, TimelineColumns } from "../settings";
+import type {
+  DayPlannerSettings,
+  TimelineColumnType,
+  TimelineColumns,
+} from "../settings";
+
+const columnTitles: Record<TimelineColumnType, string> = {
+  planner: "Show planner",
+  timeTracker: "Show time tracker",
+};
+
+export function addColumnSelectionItems(props: {
+  menu: Menu;
+  settingsStore: Writable<DayPlannerSettings>;
+  section?: string;
+}) {
+  const { menu, settingsStore, section } = props;
+
+  const currentColumns = get(settingsStore).timelineColumns;
+  const visibleColumnCount =
+    Object.values(currentColumns).filter(Boolean).length;
+
+  Object.entries(columnTitles).forEach(([column, title]) => {
+    const isVisible = currentColumns[column as TimelineColumnType];
+    const isLastVisibleColumn = isVisible && visibleColumnCount === 1;
+
+    menu.addItem((item) => {
+      if (section) {
+        item.setSection(section);
+      }
+
+      item
+        .setTitle(title)
+        .setChecked(isVisible)
+        .setDisabled(isLastVisibleColumn)
+        .onClick(() => {
+          if (isLastVisibleColumn) {
+            return;
+          }
+
+          settingsStore.update((previous) => ({
+            ...previous,
+            timelineColumns: {
+              ...previous.timelineColumns,
+              [column]: !isVisible,
+            },
+          }));
+        });
+    });
+  });
+}
 
 export function createColumnSelectionMenu(props: {
-  settings: Writable<DayPlannerSettings>;
+  settingsStore?: Writable<DayPlannerSettings>;
+  settings?: Writable<DayPlannerSettings>;
   event: MouseEvent;
 }) {
-  const { settings, event } = props;
+  const { event } = props;
+  const candidateSettingsStore = props.settingsStore ?? props.settings;
 
-  const currentSettings = get(settings);
+  if (!candidateSettingsStore) {
+    return;
+  }
+
+  const settingsStore = candidateSettingsStore;
+
+  const menu = new Menu();
+
+  const currentSettings = get(settingsStore);
   const { planner, timeTracker } = getAvailableTimelineColumns(currentSettings);
 
   function updateColumns(next: TimelineColumns) {
-    settings.update((previous) => ({
+    settingsStore.update((previous) => ({
       ...previous,
       timelineColumns: next,
     }));
   }
 
-  const menu = new Menu().addItem((item) =>
+  menu.addItem((item) =>
     item
       .setTitle("Show Planner")
       .setChecked(planner && !timeTracker)

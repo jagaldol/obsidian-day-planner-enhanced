@@ -6,7 +6,9 @@ Day Planner Enhanced is a community plugin for [Obsidian](https://obsidian.md/).
 
 <p align="center"><em>Nested timed and untimed child items stay readable inside the parent timeline block.</em></p>
 
-This plugin is an independent MIT-licensed fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner).
+This plugin is an independent MIT-licensed fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), currently aligned with upstream 0.35.1.
+
+The upstream 0.34.0–0.35.1 improvements include a week-strip timeline header, a compact All Day row, a shared **Timeline settings** modal, timeline clock-in actions, and current-time/status-bar fixes. Enhanced retains its readable nested schedules and independent identity.
 
 ## What Enhanced adds
 
@@ -18,7 +20,7 @@ Timed and untimed child items render inside the parent timeline block instead of
 
 ### 2. Timeline actions include nested editing and removal
 
-Right-click a timeline block to edit the parent item, reveal it in the source file, manage nested items, or remove the whole planner item with its nested subtree.
+Right-click a timeline block to edit the parent item, reveal it in the source file, manage nested items, or delete the whole planner item with its nested subtree.
 
 <img src="./assets/nested-items-context-menu-demo.png" alt="Day Planner Enhanced timeline context menu with Edit nested items action" width="100%">
 

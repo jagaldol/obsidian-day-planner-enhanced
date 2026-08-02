@@ -1,26 +1,15 @@
-/* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
-import { mount, unmount } from "svelte";
 import { derived, type Readable } from "svelte/store";
 
 import { statusBarTextLimit } from "../../constants";
 import { currentTime } from "../../global-store/current-time";
-import type DayPlanner from "../../main";
-import type { RootState } from "../../redux/store";
-import type { UseSelector } from "../../redux/use-selector";
-import type { LogEntryEditor } from "../../service/log-entry-editor";
-import type { WorkspaceFacade } from "../../service/workspace-facade";
 import type { TimeBlock, WithDuration } from "../../time-block-types";
 import { ellipsis } from "../../util/ellipsis";
-import { getDiffInMinutes } from "../../util/moment";
+import { getDiffInMinutes, minutesToTimestamp } from "../../util/moment";
 import type { Moment } from "../../util/obsidian-moment";
 import { getEndTime, getOneLineSummary } from "../../util/time-block-utils";
-import StatusBarWidget from "../components/status-bar-widget.svelte";
-import type { OpenEditTimeEntryModal } from "../create-edit-time-entry-modal";
-
-import type { DateRanges } from "./use-date-ranges";
 
 interface UseStatusBarWidgetProps {
-  tasksWithTimeForToday: Readable<Array<WithDuration<TimeBlock>>>;
+  timeBlocksWithTimeForToday: Readable<Array<WithDuration<TimeBlock>>>;
 }
 
 interface Widget {
@@ -36,78 +25,24 @@ interface Widget {
   };
 }
 
-export function minutesToTimestamp(minutes: number) {
-  return window.moment
-    .utc(window.moment.duration(minutes, "minutes").asMilliseconds())
-    .format("HH:mm");
-}
-
-export function mountStatusBarWidget(props: {
-  plugin: DayPlanner;
-  dateRanges: DateRanges;
-  tasksWithTimeForToday: Readable<Array<WithDuration<TimeBlock>>>;
-  useSelector: UseSelector<RootState>;
-  logEntryEditor: LogEntryEditor;
-  workspaceFacade: WorkspaceFacade;
-  openEditTimeEntryModal: OpenEditTimeEntryModal;
-  openClockInOnAnythingModal: () => void;
-}) {
-  const {
-    plugin,
-    tasksWithTimeForToday,
-    dateRanges,
-    useSelector,
-    logEntryEditor,
-    workspaceFacade,
-    openEditTimeEntryModal,
-    openClockInOnAnythingModal,
-  } = props;
-
-  const statusBarWidgetContainer = plugin.addStatusBarItem();
-
-  statusBarWidgetContainer.removeClasses(["status-bar-item"]);
-  statusBarWidgetContainer.addClass("planner-status-bar-widget-root");
-
-  const { untrack } = dateRanges.trackRange([window.moment()]);
-
-  const component = mount(StatusBarWidget, {
-    target: statusBarWidgetContainer,
-    props: {
-      onClick: plugin.initTimelineLeaf,
-      tasksWithTimeForToday,
-      useSelector,
-      logEntryEditor,
-      workspaceFacade,
-      openEditTimeEntryModal,
-      openClockInOnAnythingModal,
-    },
-  });
-
-  return async () => {
-    untrack();
-
-    await unmount(component);
-  };
-}
-
 export function useStatusBarWidget({
-  tasksWithTimeForToday,
+  timeBlocksWithTimeForToday,
 }: UseStatusBarWidgetProps) {
   return derived(
-    [tasksWithTimeForToday, currentTime],
-    ([$tasksWithTimeForToday, $currentTime]) => {
-      const currentItem = $tasksWithTimeForToday.find(
+    [timeBlocksWithTimeForToday, currentTime],
+    ([$timeBlocksWithTimeForToday, $currentTime]) => {
+      const currentItem = $timeBlocksWithTimeForToday.find(
         (item) =>
           item.startTime.isBefore($currentTime) &&
           getEndTime(item).isAfter($currentTime),
       );
 
       // TODO: add tests
-      const nextItem = $tasksWithTimeForToday
+      const nextItem = $timeBlocksWithTimeForToday
         .slice()
         // todo: remote dupilcation
         .sort((a, b) => a.startTime.diff(b.startTime))
-        .find((task) => task.startTime.isAfter($currentTime));
+        .find((timeBlock) => timeBlock.startTime.isAfter($currentTime));
 
       const widget: Widget = {};
 
@@ -154,4 +89,3 @@ export function useStatusBarWidget({
     },
   );
 }
-/* eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. */

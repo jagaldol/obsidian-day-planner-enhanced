@@ -32,17 +32,18 @@
   }
 
   const {
-    task,
     timeBlock,
+    content,
   }: {
-    task: EditableTimeBlock;
+    timeBlock: EditableTimeBlock;
     class?: string;
-    timeBlock: Snippet<[TimeBlockProps]>;
+    content: Snippet<[TimeBlockProps]>;
   } = $props();
 
   const {
     editContext: { editOperation },
     workspaceFacade,
+    logEntryEditor,
     openNestedItemsEditModal,
     removeTask: removeTaskFromPlan,
     editText,
@@ -50,18 +51,18 @@
   } = getObsidianContext();
 
   async function editTaskSummary() {
-    if (task.source === "unwritten") {
+    if (timeBlock.source === "unwritten") {
       throw new Error("Cannot edit the summary of an unwritten time block");
     }
 
     // todo: replace with getOnelineSummary()
-    const firstLine = getFirstLine(task.text);
+    const firstLine = getFirstLine(timeBlock.text);
     const timestampMatch = getTimeRangeMatch(firstLine);
     const summary = removeTimeRangeFromLine(firstLine).trim();
 
     const next = await editText({
       initialText: summary,
-      sourcePath: task.path,
+      sourcePath: timeBlock.path,
       getDescriptionText: (value) =>
         value.trim().length === 0
           ? "Start typing to update task text"
@@ -77,32 +78,34 @@
       : next;
 
     await editLine({
-      path: task.path,
-      position: task.position.start,
-      contents: `${createMarkdownListTokens(task)} ${updatedFirstLine}`,
+      path: timeBlock.path,
+      position: timeBlock.position.start,
+      contents: `${createMarkdownListTokens(timeBlock)} ${updatedFirstLine}`,
     });
   }
 
   async function removeTask() {
-    await removeTaskFromPlan(task);
+    await removeTaskFromPlan(timeBlock);
   }
 
   const autoSelect = $derived(
     $pendingTimelineTaskSelection !== undefined &&
-      isTimelineTaskSelectionMatch(task, $pendingTimelineTaskSelection),
+      isTimelineTaskSelectionMatch(timeBlock, $pendingTimelineTaskSelection),
   );
   const startsBeforeSegment = $derived(
-    task.timelineSegment?.startsBeforeSegment === true,
+    timeBlock.timelineSegment?.startsBeforeSegment === true,
   );
   const continuesAfterSegment = $derived(
-    task.timelineSegment?.continuesAfterSegment === true,
+    timeBlock.timelineSegment?.continuesAfterSegment === true,
   );
-  const disabledFloatingControls = $derived(getDisabledFloatingControls(task));
+  const disabledFloatingControls = $derived(
+    getDisabledFloatingControls(timeBlock),
+  );
 
   function handleAutoSelect() {
     const target = $pendingTimelineTaskSelection;
 
-    if (target && isLocatedTimelineTaskSelectionMatch(task, target)) {
+    if (target && isLocatedTimelineTaskSelectionMatch(timeBlock, target)) {
       clearTimelineTaskSelection();
     }
   }
@@ -114,11 +117,12 @@
   onSecondarySelect={(event) =>
     createTimeBlockMenu({
       event,
-      task,
+      timeBlock,
       workspaceFacade,
+      logEntryEditor,
       onEdit: editTaskSummary,
-      onEditNestedItems: () => openNestedItemsEditModal(task),
-      onRemove: removeTask,
+      onEditNestedItems: () => openNestedItemsEditModal(timeBlock),
+      onDelete: removeTask,
     })}
   selectionBlocked={Boolean($editOperation)}
 >
@@ -128,7 +132,7 @@
       disabled={disabledFloatingControls}
     >
       {#snippet anchor(floatingControls)}
-        {@render timeBlock({
+        {@render content({
           isActive: selectable.state !== "none",
           onPointerUp: selectable.onpointerup,
           use: [...selectable.use, ...floatingControls.actions],
@@ -140,19 +144,25 @@
           --expanding-controls-position="absolute"
           {isActive}
           {setIsActive}
-          {task}
+          {timeBlock}
         />
       {/snippet}
 
       {#snippet bottom({ isActive, setIsActive })}
-        {#if !task.isAllDayEvent && !continuesAfterSegment}
-          <ResizeControls {isActive} reverse {setIsActive} {task} />
+        {#if !timeBlock.isAllDayEvent && !continuesAfterSegment}
+          <ResizeControls {isActive} reverse {setIsActive} {timeBlock} />
         {/if}
       {/snippet}
 
       {#snippet top({ isActive, setIsActive })}
-        {#if !task.isAllDayEvent && !startsBeforeSegment}
-          <ResizeControls fromTop {isActive} reverse {setIsActive} {task} />
+        {#if !timeBlock.isAllDayEvent && !startsBeforeSegment}
+          <ResizeControls
+            fromTop
+            {isActive}
+            reverse
+            {setIsActive}
+            {timeBlock}
+          />
         {/if}
       {/snippet}
     </FloatingControls>

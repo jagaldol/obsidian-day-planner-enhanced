@@ -1,5 +1,5 @@
 <!-- Parent: ../AGENTS.md -->
-<!-- Generated: 2026-06-05 | Updated: 2026-06-05 -->
+<!-- Generated: 2026-06-05 | Updated: 2026-08-02 -->
 
 # hooks
 
@@ -11,13 +11,10 @@ Reactive hooks that compose store selectors and global stores into view-ready da
 
 | File                                                        | Description                                                                                                       |
 | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `use-tasks.ts`                                              | `useTasks` - the displayed task set for the current view.                                                         |
-| `use-task-visuals.ts`                                       | `useTaskVisuals` - derive visual props for a task.                                                                |
+| `use-time-blocks.ts`                                        | `useTimeBlocks` - the displayed time-block set for the current view.                                              |
+| `use-time-block-visuals.ts`                                 | `useTimeBlockVisuals` - derive layout props for a time block.                                                     |
 | `use-color.svelte.ts`                                       | `useStylesForRelationToNow`, `useColoredTimeline`, `useColorOverrides` - past/present/future + override coloring. |
-| `get-color-override.ts`                                     | `getColorOverride` - resolve a color override for a task.                                                         |
-| `use-date-ranges.ts`                                        | `useDateRanges` - manage active/visible date ranges (`DateRanges`).                                               |
-| `use-visible-days.ts`                                       | `useVisibleDays` - days currently shown.                                                                          |
-| `use-newly-started-tasks.ts`                                | `useNewlyStartedTasks` - detect tasks crossing into "now".                                                        |
+| `use-newly-started-time-blocks.ts`                          | Detect plan time blocks crossing into "now".                                                                      |
 | `use-status-bar-widget.ts`                                  | `useStatusBarWidget`, `mountStatusBarWidget`, `minutesToTimestamp`.                                               |
 | `use-floating-ui.ts`                                        | `useFloatingUi` - popover positioning.                                                                            |
 | `use-is-online.ts`, `use-key-down.ts`, `use-mod-pressed.ts` | Environment/input hooks.                                                                                          |
@@ -37,7 +34,7 @@ Reactive hooks that compose store selectors and global stores into view-ready da
 
 ### Testing Requirements
 
-- `tests/use-task-visuals.test.ts` and integration suites; add tests when changing task selection or coloring.
+- `tests/use-time-block-visuals.test.ts` and integration suites; add tests when changing time-block selection or coloring.
 
 ### Common Patterns
 

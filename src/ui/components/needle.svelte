@@ -1,13 +1,12 @@
 <script lang="ts">
   /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
   import { currentTimeSignal } from "../../global-store/current-time";
-  import { timeToTimelineOffset } from "../../global-store/derived-settings";
-  import { settings } from "../../global-store/settings";
+  import { momentToTimelineOffset } from "../../global-store/derived-settings";
+  import { settingsStore } from "../../global-store/settings";
   import {
     canAutoScrollToNow,
     timelineSelectionActive,
   } from "../../global-store/timeline-auto-scroll";
-  import { getMinutesSinceMidnight } from "../../util/moment";
 
   interface Props {
     autoScrollBlocked?: boolean;
@@ -17,17 +16,14 @@
 
   let el: HTMLDivElement;
   const coords = $derived(
-    timeToTimelineOffset(
-      getMinutesSinceMidnight(currentTimeSignal.current),
-      $settings,
-    ),
+    momentToTimelineOffset(currentTimeSignal.current, $settingsStore),
   );
 
   function scrollIntoView() {
     if (
       canAutoScrollToNow({
         autoScrollBlocked,
-        centerNeedle: $settings.centerNeedle,
+        centerNeedle: $settingsStore.centerNeedle,
         selectionActive: $timelineSelectionActive,
       })
     ) {

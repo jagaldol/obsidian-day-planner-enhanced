@@ -49,12 +49,12 @@ Guidance for AI agents working in the `Day Planner Enhanced` repository.
 
 ## Important Source Areas
 
-- Timeline task selection and grouping:
+- Timeline time-block selection and grouping:
   - `src/ui/hooks/use-edit/use-edit-context.ts`
-  - `src/util/task-utils.ts`
-  - `combinedTasks`
-  - `dayToDisplayedTasks`
-  - `getDisplayedTasksForTimeline`
+  - `src/util/time-block-utils.ts`
+  - `combinedTimeBlocks`
+  - `dayToDisplayedTimeBlocks`
+  - `getDisplayedTimeBlocksForTimeline`
 - Rendered markdown and nested schedule content:
   - `src/ui/components/rendered-markdown.svelte`
   - `src/util/markdown.ts`

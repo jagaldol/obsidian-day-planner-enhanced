@@ -1,3 +1,4 @@
+import { Function } from "effect";
 import type { Moment } from "moment";
 import { type CachedMetadata, MetadataCache, type Vault } from "obsidian";
 import { derived, get, writable } from "svelte/store";
@@ -6,12 +7,12 @@ import { expect, onTestFinished, vi } from "vitest";
 
 import { icalParseLowerLimit } from "../../../src/constants";
 import { createUpdateHandler } from "../../../src/create-update-handler";
-import { initialState } from "../../../src/redux/global-slice";
+import { initialState } from "../../../src/redux/date-ranges-slice";
 import { type IcalParseTaskResult } from "../../../src/redux/ical/init-ical-listeners";
 import {
   indexRequested,
   selectFileEntriesById,
-  selectTaskEntriesById,
+  selectListItemEntriesById,
 } from "../../../src/redux/index/index-slice";
 import { createReactor, type RootState } from "../../../src/redux/store";
 import { TransactionWriter } from "../../../src/service/diff-writer";
@@ -33,7 +34,7 @@ import {
   type EditableTimeBlock,
   type TimeBlock,
 } from "../../../src/time-block-types";
-import { useTasks } from "../../../src/ui/hooks/use-tasks";
+import { useTimeBlocks } from "../../../src/ui/hooks/use-time-blocks";
 import { createBackgroundBatchScheduler } from "../../../src/util/scheduler";
 import { getOneLineSummary } from "../../../src/util/time-block-utils";
 import {
@@ -45,8 +46,6 @@ import {
 } from "../../util/fakes";
 
 import { loadMetadataDump } from "./metadata-dump";
-
-const noop = () => undefined;
 
 function initTestServices(props: {
   inMemoryFiles: InMemoryFile[];
@@ -141,9 +140,9 @@ export async function setUp(props?: {
   const onEditCanceled = vi.fn();
   const onEditConfirmed = vi.fn();
   const defaultPreloadedStateForTests: Partial<RootState> = {
-    obsidian: {
+    dateRanges: {
       ...initialState,
-      visibleDays,
+      ranges: { testRange: visibleDays },
     },
     settings: { settings },
   };
@@ -153,21 +152,16 @@ export async function setUp(props?: {
       timeRemainingLowerLimit: icalParseLowerLimit,
     });
 
+  onTestFinished(() => icalParseScheduler.cancelTasks());
+
   const {
     useSelector,
     store,
-    listenerMiddleware,
-    remoteTasks,
-    localTasks,
+    remoteTimeBlocks,
+    localTimeBlocks,
     pointerDateTime,
   } = createReactor({
-    preloadedState: {
-      ...defaultPreloadedStateForTests,
-      obsidian: {
-        ...initialState,
-        visibleDays,
-      },
-    },
+    preloadedState: defaultPreloadedStateForTests,
     listPropsParser,
     indexServices,
     vault: vault as unknown as Vault,
@@ -175,10 +169,6 @@ export async function setUp(props?: {
     periodicNotes,
     settings,
     icalParseScheduler,
-  });
-  onTestFinished(() => {
-    listenerMiddleware.clearListeners();
-    icalParseScheduler.cancelTasks();
   });
 
   const { getState, dispatch } = store;
@@ -208,7 +198,7 @@ export async function setUp(props?: {
   });
 
   const onUpdate = createUpdateHandler({
-    settings: () => settings,
+    getSettings: () => settings,
     transactionWriter,
     vaultFacade,
     periodicNotes,
@@ -218,31 +208,32 @@ export async function setUp(props?: {
     getConfirmationInput: () => Promise.resolve(true),
   });
 
-  const { tasksWithTimeForToday, editContext, newlyStartedTasks } = useTasks({
-    onUpdate,
-    onEditAborted: () => {},
-    periodicNotes,
-    workspaceFacade,
-    isOnline,
-    settingsStore,
-    currentTime,
-    pointerDateTime,
-    remoteTasks,
-    localTasks,
-  });
+  const { timeBlocksWithTimeForToday, editContext, newlyStartedTimeBlocks } =
+    useTimeBlocks({
+      onUpdate,
+      onEditAborted: () => {},
+      periodicNotes,
+      workspaceFacade,
+      isOnline,
+      settingsStore,
+      currentTime,
+      pointerDateTime,
+      remoteTimeBlocks,
+      localTimeBlocks,
+    });
 
-  const allTasks = derived(
-    editContext.dayToDisplayedTasks,
-    ($dayToDisplayedTasks) => {
-      return Object.values($dayToDisplayedTasks).flatMap(
-        ({ withTime, noTime }) => [...withTime, ...noTime],
+  const allTimeBlocks = derived(
+    editContext.dayToDisplayedTimeBlocks,
+    ($dayToDisplayedTimeBlocks) => {
+      return Object.values($dayToDisplayedTimeBlocks).flatMap(
+        ({ withTime, noTime }) => withTime.concat(noTime),
       );
     },
   );
 
   // this prevents the store from resetting;
-  allTasks.subscribe(noop);
-  localTasks.subscribe(noop);
+  allTimeBlocks.subscribe(Function.constVoid);
+  localTimeBlocks.subscribe(Function.constVoid);
 
   function moveCursorTo(
     dateTime: Moment,
@@ -254,8 +245,8 @@ export async function setUp(props?: {
     });
   }
 
-  function findTask(predicate: (task: TimeBlock) => boolean) {
-    const found = get(allTasks).filter(isLocal).find(predicate) as
+  function findTimeBlock(predicate: (timeBlock: TimeBlock) => boolean) {
+    const found = get(allTimeBlocks).filter(isLocal).find(predicate) as
       | EditableTimeBlock
       | undefined;
 
@@ -265,34 +256,34 @@ export async function setUp(props?: {
   }
 
   function findByText(text: string) {
-    return findTask((it) => getOneLineSummary(it).includes(text));
+    return findTimeBlock((it) => getOneLineSummary(it).includes(text));
   }
 
   await vi.waitFor(() => {
     // todo: replace with explicit `index.state === 'warm'`
-    const taskEntries = selectTaskEntriesById(store.getState());
+    const listItemEntries = selectListItemEntriesById(store.getState());
     const fileEntries = selectFileEntriesById(store.getState());
 
-    const taskEntriesCount = Object.keys(taskEntries).length;
+    const listItemEntriesCount = Object.keys(listItemEntries).length;
     const fileEntriesCount = Object.keys(fileEntries).length;
 
-    expect(taskEntriesCount + fileEntriesCount).toBeGreaterThan(0);
+    expect(listItemEntriesCount + fileEntriesCount).toBeGreaterThan(0);
   });
 
   return {
     useSelector,
     getState,
     dispatch,
-    tasksWithTimeForToday,
+    timeBlocksWithTimeForToday,
     editContext,
-    newlyStartedTasks,
+    newlyStartedTimeBlocks,
     periodicNotes,
     moveCursorTo,
     onUpdate,
     vault,
-    findTask,
+    findTimeBlock,
     findByText,
-    allTasks,
+    allTimeBlocks,
     transactionWriter,
     currentTime,
     metadataCache,

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getHourSize } from "../../global-store/derived-settings";
-  import { settings } from "../../global-store/settings";
+  import { settingsStore } from "../../global-store/settings";
   import { hoursToMoment } from "../../util/moment";
 
   export let visibleHours: number[];
@@ -8,8 +8,8 @@
 
 <div class="hours-container">
   {#each visibleHours as hour}
-    <div style:flex-basis="{getHourSize($settings)}px" class="hour">
-      {hoursToMoment(hour).format($settings.hourFormat)}
+    <div style:flex-basis="{getHourSize($settingsStore)}px" class="hour">
+      {hoursToMoment(hour).format($settingsStore.hourFormat)}
     </div>
   {/each}
 </div>
@@ -40,7 +40,9 @@
     font-size: var(--font-ui-smaller);
     font-weight: var(--font-semibold);
     color: var(--text-muted);
+  }
 
+  .hour:not(:last-child) {
     border-bottom: var(--border-base);
   }
 </style>

@@ -6,21 +6,21 @@ import type { WorkspaceFacade } from "../service/workspace-facade";
 import type { LogTimeBlock } from "../time-block-types";
 import { runWithNoticeOnError } from "../util/effect";
 
-import type { OpenEditTimeEntryModal } from "./create-edit-time-entry-modal";
+import type { OpenLogEntryEditModal } from "./log-entry-edit-modal";
 
 export function createActiveClockMenu(props: {
   event: PointerEvent | MouseEvent | TouchEvent;
-  task: LogTimeBlock;
+  timeBlock: LogTimeBlock;
   logEntryEditor: LogEntryEditor;
   workspaceFacade: WorkspaceFacade;
-  openEditTimeEntryModal: OpenEditTimeEntryModal;
+  openLogEntryEditModal: OpenLogEntryEditModal;
 }) {
   const {
     event,
-    task,
+    timeBlock,
     logEntryEditor,
     workspaceFacade,
-    openEditTimeEntryModal,
+    openLogEntryEditModal,
   } = props;
 
   const menu = new Menu();
@@ -32,7 +32,7 @@ export function createActiveClockMenu(props: {
         .setIcon("square")
         // todo: code started drifting: pass onClockOut and so on
         .onClick(async () => {
-          await runWithNoticeOnError(logEntryEditor.clockOut(task));
+          await runWithNoticeOnError(logEntryEditor.clockOut(timeBlock));
         })
     );
   });
@@ -41,7 +41,7 @@ export function createActiveClockMenu(props: {
     item
       .setTitle("Edit...")
       .setIcon("pencil")
-      .onClick(() => openEditTimeEntryModal(task)),
+      .onClick(() => openLogEntryEditModal(timeBlock)),
   );
 
   menu.addItem((item) => {
@@ -49,7 +49,7 @@ export function createActiveClockMenu(props: {
       .setTitle("Reveal task in file")
       .setIcon("file-input")
       .onClick(async () => {
-        await workspaceFacade.revealLocation(task);
+        await workspaceFacade.revealLocation(timeBlock);
       });
   });
 
@@ -61,7 +61,7 @@ export function createActiveClockMenu(props: {
       .setIcon("trash-2")
       .setWarning(true)
       .onClick(async () => {
-        await runWithNoticeOnError(logEntryEditor.cancelClock(task));
+        await runWithNoticeOnError(logEntryEditor.cancelClock(timeBlock));
       });
   });
 

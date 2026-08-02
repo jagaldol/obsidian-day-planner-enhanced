@@ -17,7 +17,7 @@ afterEach(() => configureTimestampRegExps("HH:mm"));
 test("roundtripping doesn't mess up Obsidian-styled markdown", () => {
   const input = `# [[Heading]]
 
-- [!] This is ![[custom syntax]] all #over the place ^block-id
+- [!] This is ![[custom_syntax]] all #over the place ^block-id
   \`\`\`js
   console.log("this is a code block");
   \`\`\`
@@ -99,6 +99,7 @@ test("Sort lists recursively", () => {
   const tree = fromMarkdown(input);
   const list = tree.children[0];
 
+  isNotVoid(list);
   isList(list);
 
   const actual = toMarkdown(sortListsRecursively(list));
@@ -130,6 +131,7 @@ test("Sorts timed groups while preserving attached untimed items", () => {
   const tree = fromMarkdown(input);
   const list = tree.children[0];
 
+  isNotVoid(list);
   isList(list);
 
   const actual = toMarkdown(sortListsRecursivelyByTimestamp(list));
@@ -149,6 +151,7 @@ test("Keeps numeric-leading text untimed when sorting with HH:mm", () => {
   const tree = fromMarkdown(input);
   const list = tree.children[0];
 
+  isNotVoid(list);
   isList(list);
 
   expect(toMarkdown(sortListsRecursivelyByTimestamp(list))).toBe(expected);
@@ -168,6 +171,7 @@ test("Sorts compact timed ranges with HHmm", () => {
   const tree = fromMarkdown(input);
   const list = tree.children[0];
 
+  isNotVoid(list);
   isList(list);
 
   expect(toMarkdown(sortListsRecursivelyByTimestamp(list))).toBe(expected);
@@ -197,6 +201,7 @@ test("Sorts timed groups recursively at each nested level", () => {
   const tree = fromMarkdown(input);
   const list = tree.children[0];
 
+  isNotVoid(list);
   isList(list);
 
   const actual = toMarkdown(sortListsRecursivelyByTimestamp(list));
@@ -218,6 +223,7 @@ test("Does not sort embedded clock text as a timed group", () => {
   const tree = fromMarkdown(input);
   const list = tree.children[0];
 
+  isNotVoid(list);
   isList(list);
 
   const actual = toMarkdown(sortListsRecursivelyByTimestamp(list));
@@ -241,6 +247,7 @@ test("Sorts single times and ranges after leading tags without sorting tagged in
   const tree = fromMarkdown(input);
   const list = tree.children[0];
 
+  isNotVoid(list);
   isList(list);
 
   expect(toMarkdown(sortListsRecursivelyByTimestamp(list))).toBe(expected);
@@ -262,6 +269,7 @@ test("Sorts compact single times only when they immediately follow leading tags"
   const tree = fromMarkdown(input);
   const list = tree.children[0];
 
+  isNotVoid(list);
   isList(list);
 
   expect(toMarkdown(sortListsRecursivelyByTimestamp(list))).toBe(expected);
@@ -325,6 +333,7 @@ test("Does not throw errors on empty lists", () => {
   const tree = fromMarkdown(input);
   const list = tree.children[0];
 
+  isNotVoid(list);
   isList(list);
 
   expect(() => toMarkdown(sortListsRecursively(list))).not.toThrow();

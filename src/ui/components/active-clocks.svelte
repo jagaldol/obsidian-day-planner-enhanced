@@ -10,13 +10,12 @@
 
   import { getObsidianContext } from "../../context/obsidian-context";
   import { currentTimeSignal } from "../../global-store/current-time";
-  import { settings } from "../../global-store/settings";
-  import { selectActiveLogEntries } from "../../redux/index/index-slice";
+  import { settingsStore } from "../../global-store/settings";
+  import { selectActiveLogTimeBlocks } from "../../redux/index/index-selectors";
   import type { LogTimeBlock } from "../../time-block-types";
   import { runWithNoticeOnError } from "../../util/effect";
   import { removeMarkdownExtension } from "../../util/markdown";
   import * as m from "../../util/moment";
-  import { getDiffInMinutes } from "../../util/moment";
   import { createActiveClockMenu } from "../active-clock-menu";
 
   import BlockControls from "./block-controls.svelte";
@@ -30,33 +29,25 @@
   const {
     workspaceFacade,
     logEntryEditor,
-    openEditTimeEntryModal,
+    openLogEntryEditModal,
     useSelector,
   } = getObsidianContext();
 
-  const activeLogRecords = useSelector(selectActiveLogEntries);
-  // todo: duplication?
-  const activeLogRecordsCompat = $derived(
-    activeLogRecords.current.map((it) => ({
-      ...it,
-      durationMinutes: getDiffInMinutes(
-        it.startTime,
-        currentTimeSignal.current,
-      ),
-    })),
+  const activeLogRecords = useSelector((state) =>
+    selectActiveLogTimeBlocks(state, currentTimeSignal.current),
   );
 </script>
 
-<BlockList list={activeLogRecordsCompat}>
-  {#snippet match(task: LogTimeBlock)}
+<BlockList list={activeLogRecords.current}>
+  {#snippet match(timeBlock: LogTimeBlock)}
     <Selectable
       onSecondarySelect={(event) =>
         createActiveClockMenu({
           event,
-          task,
+          timeBlock,
           logEntryEditor,
           workspaceFacade,
-          openEditTimeEntryModal,
+          openLogEntryEditModal,
         })}
     >
       {#snippet children({ use, onpointerup, state })}
@@ -64,14 +55,16 @@
           --time-block-border-color-override="var(--color-accent)"
           isActive={state === "secondary"}
           {onpointerup}
-          {task}
+          {timeBlock}
           {use}
         >
           {#snippet blockEndDecoration()}
             <BlockControls>
               <ControlButton
                 onclick={async () => {
-                  await runWithNoticeOnError(logEntryEditor.clockOut(task));
+                  await runWithNoticeOnError(
+                    logEntryEditor.clockOut(timeBlock),
+                  );
                 }}
               >
                 {#snippet icon()}
@@ -82,11 +75,11 @@
               <ControlButton
                 onclick={(event: MouseEvent) => {
                   createActiveClockMenu({
-                    task,
+                    timeBlock,
                     event,
                     logEntryEditor,
                     workspaceFacade,
-                    openEditTimeEntryModal,
+                    openLogEntryEditModal,
                   });
                 }}
               >
@@ -101,19 +94,21 @@
               <Pill
                 key={File}
                 onclick={async () => {
-                  await workspaceFacade.revealLocation(task);
+                  await workspaceFacade.revealLocation(timeBlock);
                 }}
-                value={removeMarkdownExtension(task.path)}
+                value={removeMarkdownExtension(timeBlock.path)}
               />
               <Pill
                 key={Play}
-                value={task.startTime.format($settings.timestampFormat)}
+                value={timeBlock.startTime.format(
+                  $settingsStore.timestampFormat,
+                )}
               />
               <Pill
                 key={Hourglass}
                 value={m
-                  .fromDiff(task.startTime, currentTimeSignal.current)
-                  .format($settings.timestampFormat)}
+                  .fromDiff(timeBlock.startTime, currentTimeSignal.current)
+                  .format($settingsStore.timestampFormat)}
               />
             </Properties>
           {/snippet}

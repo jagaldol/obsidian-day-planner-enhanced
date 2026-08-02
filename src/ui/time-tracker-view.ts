@@ -2,6 +2,7 @@
 import { ItemView, WorkspaceLeaf } from "obsidian";
 import { mount, unmount } from "svelte";
 import type { Component } from "svelte";
+import { isNotVoid } from "typed-assert";
 
 import { viewTypeTimeTracker } from "../constants";
 import type { ComponentContext } from "../types";
@@ -33,6 +34,7 @@ export default class TimeTrackerView extends ItemView {
   async onOpen() {
     const contentEl = this.containerEl.children[1];
 
+    isNotVoid(contentEl);
     contentEl.addClass("planner-time-tracker-layout");
 
     // @ts-expect-error

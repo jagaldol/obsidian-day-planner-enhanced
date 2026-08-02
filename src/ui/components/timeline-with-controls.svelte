@@ -3,146 +3,165 @@
   import { fromStore } from "svelte/store";
 
   import { getDateRangeContext } from "../../context/date-range-context";
+  import { getIsInSidebarContext } from "../../context/is-in-sidebar-context";
   import { getObsidianContext } from "../../context/obsidian-context";
-  import {
-    getAvailableTimelineColumns,
-    getVisibleHours,
-  } from "../../global-store/derived-settings";
-  import { settings } from "../../global-store/settings";
+  import { getVisibleHours } from "../../global-store/derived-settings";
   import type { TimelineTimeBlock } from "../../time-block-types";
-  import { createColumnSelectionMenu } from "../column-selection-menu";
 
   import BlockList from "./block-list.svelte";
-  import ControlButton from "./control-button.svelte";
   import ErrorBoundary from "./error-boundary.svelte";
-  import Tree from "./obsidian/tree.svelte";
-  import ResizeHandle from "./resize-handle.svelte";
-  import ResizeableBox from "./resizeable-box.svelte";
   import Ruler from "./ruler.svelte";
   import Scroller from "./scroller.svelte";
   import TimelineControls from "./timeline-controls.svelte";
   import Timeline from "./timeline.svelte";
   import UnscheduledTimeBlock from "./unscheduled-time-block.svelte";
 
-  const { editContext, pointerDateTime } = getObsidianContext();
+  const { editContext, pointerDateTime, settingsStore } = getObsidianContext();
+  const isInSidebar = getIsInSidebarContext();
 
-  const getDisplayedAllDayTasksForMultiDayRow = fromStore(
-    editContext.getDisplayedAllDayTasksForMultiDayRow,
+  const getDisplayedAllDayTimeBlocksForMultiDayRow = fromStore(
+    editContext.getDisplayedAllDayTimeBlocksForMultiDayRow,
   );
-  const editOperation = fromStore(editContext.editOperation);
 
-  const dateRange = fromStore(getDateRangeContext());
-  const firstDayInRange = $derived(dateRange.current[0]);
+  const dateRange = getDateRangeContext();
+  const firstDayInRange = $derived(dateRange.first);
+  const lastDayInRange = $derived(dateRange.last);
+  const showTimeline = $derived(
+    !$isInSidebar || $settingsStore.showTimelineInSidebar,
+  );
 
-  const displayedAllDayTasks = $derived(
-    getDisplayedAllDayTasksForMultiDayRow.current({
+  const displayedAllDayTimeBlocks = $derived(
+    getDisplayedAllDayTimeBlocksForMultiDayRow.current({
       start: firstDayInRange,
-      end: dateRange.current[dateRange.current.length - 1],
+      end: lastDayInRange,
     }),
   );
 
-  function handleResizeableBoxPointerMove() {
+  let rulerRef: HTMLDivElement | undefined = $state();
+
+  function handleAllDayEventsPointerMove() {
     pointerDateTime.set({
-      dateTime: dateRange.current[0],
+      dateTime: firstDayInRange,
       type: "date",
     });
   }
 
-  const { timeTracker, planner } = $derived(
-    getAvailableTimelineColumns($settings),
-  );
+  function handleScroll(event: Event) {
+    if (!(event.target instanceof Element)) {
+      return;
+    }
+
+    if (rulerRef) {
+      rulerRef.scrollTop = event.target.scrollTop;
+    }
+  }
 </script>
 
 <ErrorBoundary>
-  <TimelineControls />
+  <div class="controls-row">
+    <TimelineControls />
+  </div>
 
-  {#if $settings.showUncheduledTasks}
-    <Tree
-      class="planner-timeline-all-day"
-      onpointermove={handleResizeableBoxPointerMove}
-      onpointerup={editContext.confirmEdit}
-      title="All day events"
-    >
-      {#snippet flair()}
-        {#if editOperation.current}
-          Drag here to schedule all-day events
-        {:else}
-          {String(displayedAllDayTasks.length)}
-        {/if}
-      {/snippet}
-      {#if displayedAllDayTasks.length > 0}
-        <ResizeableBox class="unscheduled-task-container">
-          {#snippet children(startEdit)}
-            <BlockList list={displayedAllDayTasks}>
-              {#snippet match(task: TimelineTimeBlock)}
-                <UnscheduledTimeBlock
-                  --time-block-padding="var(--size-2-1) 0"
-                  {task}
-                />
-              {/snippet}
-            </BlockList>
-            <ResizeHandle on:mousedown={startEdit} />
-          {/snippet}
-        </ResizeableBox>
-      {/if}
-    </Tree>
+  {#if showTimeline || $settingsStore.showUncheduledTasks}
+    <div class="corner"></div>
   {/if}
 
-  {#if $settings.showTimelineInSidebar}
-    <Tree class="planner-timeline-fill" title="Timeline">
-      {#snippet controls()}
-        <ControlButton
-          --border-radius="0"
-          label="Timeline Settings"
-          onclick={(event) => {
-            createColumnSelectionMenu({ settings, event });
-          }}
-        >
-          <span class="control-text">
-            {#if planner && timeTracker}
-              Planner | Tracker
-            {:else if planner}
-              Planner
-            {:else if timeTracker}
-              Tracker
-            {/if}
-          </span>
-        </ControlButton>
-      {/snippet}
-      <Scroller
-        class={["planner-timeline-scroller", "planner-timeline-scrollable"]}
+  {#if $settingsStore.showUncheduledTasks}
+    <div
+      class="all-day-row"
+      onpointermove={handleAllDayEventsPointerMove}
+      onpointerup={editContext.confirmEdit}
+    >
+      <BlockList
+        --block-list-padding="var(--size-2-1) 3px 0"
+        className="all-day-events"
+        list={displayedAllDayTimeBlocks}
       >
-        {#snippet children(autoScrollBlocked)}
-          <Ruler visibleHours={getVisibleHours($settings)} />
-          <Timeline {autoScrollBlocked} day={firstDayInRange} />
+        {#snippet match(timeBlock: TimelineTimeBlock)}
+          <UnscheduledTimeBlock {timeBlock} />
         {/snippet}
-      </Scroller>
-    </Tree>
+        {#snippet fallback()}
+          <div class="empty-all-day-events">No all day events</div>
+        {/snippet}
+      </BlockList>
+    </div>
+  {/if}
+
+  {#if showTimeline}
+    <div bind:this={rulerRef} class="ruler">
+      <Ruler visibleHours={getVisibleHours($settingsStore)} />
+      <div class="scrollbar-filler"></div>
+    </div>
+
+    <Scroller
+      class={["planner-timeline-scroller", "timeline-row"]}
+      onscroll={handleScroll}
+    >
+      {#snippet children(autoScrollBlocked)}
+        <Timeline {autoScrollBlocked} day={firstDayInRange} />
+      {/snippet}
+    </Scroller>
   {/if}
 </ErrorBoundary>
 
 <!-- eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. -->
 
 <style>
-  :global(svg.svg-icon.planner-settings-icon) {
-    width: var(--icon-s);
-    height: var(--icon-s);
+  .corner {
+    grid-area: corner;
+    background-color: var(--background-primary);
+    border-block: var(--border-base);
+    border-inline-end: var(--border-base);
+  }
+
+  .ruler {
+    overflow-y: hidden;
+    grid-area: ruler;
+    box-shadow: var(--shadow-right);
+  }
+
+  .scrollbar-filler {
+    height: var(--scrollbar-width);
+    background-color: var(--background-primary);
+  }
+
+  .controls-row {
+    grid-area: controls;
+  }
+
+  .all-day-row {
+    overflow: auto;
+    grid-area: all-day;
+
+    max-height: 16vh;
+
+    background-color: var(--background-primary);
+    border-block-end: var(--border-base);
+  }
+
+  :global(.timeline-row) {
+    grid-area: timeline;
   }
 
   :global(.planner-timeline-scroller) {
-    border-top: var(--border-base);
-  }
-
-  :global(.unscheduled-task-container) {
     overflow: auto;
+    min-height: 0;
   }
 
-  .control-text {
+  .empty-all-day-events {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding-block: var(--size-4-2);
+
     font-size: var(--font-ui-small);
     color: var(--text-faint);
   }
 
-  .control-text:hover {
-    color: var(--text-muted);
+  :global(.all-day-events),
+  .empty-all-day-events {
+    background-color: var(--background-primary);
+    border-top: 1px solid var(--background-modifier-border);
   }
 </style>

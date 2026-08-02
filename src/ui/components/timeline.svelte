@@ -10,7 +10,7 @@
     getVisibleHours,
     snap,
   } from "../../global-store/derived-settings";
-  import { selectLogEntriesForDay } from "../../redux";
+  import { selectLogTimeBlocksForDay } from "../../redux";
   import { selectLogEntriesById } from "../../redux/index/index-slice";
   import type {
     LogTimeBlock,
@@ -60,11 +60,11 @@
   }: { autoScrollBlocked?: boolean; day: Moment } = $props();
 
   const {
-    settings,
+    settingsStore,
     editContext: {
       confirmEdit,
       handlers: { handleContainerMouseDown },
-      getDisplayedTasksForTimeline,
+      getDisplayedTimeBlocksForTimeline,
       editOperation,
     },
     pointerDateTime,
@@ -72,15 +72,17 @@
     useSelector,
     logEntryEditor,
     workspaceFacade,
-    openEditTimeEntryModal,
+    openLogEntryEditModal,
   } = getObsidianContext();
 
-  const displayedTasksForTimeline = $derived(getDisplayedTasksForTimeline(day));
+  const displayedTimeBlocksForTimeline = $derived(
+    getDisplayedTimeBlocksForTimeline(day),
+  );
   const dayKey = $derived(getDayKey(day));
-  const timelineColumns = $derived(getAvailableTimelineColumns($settings));
+  const timelineColumns = $derived(getAvailableTimelineColumns($settingsStore));
 
   const logEntriesForDay = useSelector((state) =>
-    selectLogEntriesForDay(state, dayKey, currentTimeSignal.current),
+    selectLogTimeBlocksForDay(state, dayKey, currentTimeSignal.current),
   );
   const logEntriesById = useSelector(selectLogEntriesById);
 
@@ -98,21 +100,21 @@
     if (isCompleted) {
       createCompletedClockMenu({
         event,
-        task: timeBlockView,
+        timeBlock: timeBlockView,
         logEntry: logEntry,
         logEntryEditor,
         workspaceFacade,
-        openEditTimeEntryModal,
+        openLogEntryEditModal,
       });
     } else {
       createActiveClockMenu({
         event,
-        task: timeBlockView,
+        timeBlock: timeBlockView,
         logEntryEditor,
         workspaceFacade,
         // pass the raw entry so "Edit..." targets the real (unclamped) entry
-        openEditTimeEntryModal: (timeBlock) =>
-          openEditTimeEntryModal(timeBlock, logEntry),
+        openLogEntryEditModal: (timeBlock) =>
+          openLogEntryEditModal(timeBlock, logEntry),
       });
     }
   }
@@ -191,7 +193,7 @@
   }
 
   const plannerSeparatorVisibility = $derived(
-    createSeparatorVisibilityLookup($displayedTasksForTimeline.withTime),
+    createSeparatorVisibilityLookup($displayedTimeBlocksForTimeline.withTime),
   );
   const logEntrySeparatorVisibility = $derived(
     createSeparatorVisibilityLookup(logEntriesForDay.current),
@@ -210,7 +212,7 @@
   function updatePointerDateTime(event: MouseEvent | TouchEvent) {
     isNotVoid(el);
 
-    const newOffsetY = snap(getPointerOffsetY(el, event), $settings);
+    const newOffsetY = snap(getPointerOffsetY(el, event), $settingsStore);
     const minutesSinceMidnight = offsetYToMinutes(
       newOffsetY,
       settingsSignal.current.zoomLevel,
@@ -298,7 +300,7 @@
 {#if timelineColumns.planner}
   <Column
     --timeline-column-z-index={$isToday(day) ? "6" : "auto"}
-    visibleHours={getVisibleHours($settings)}
+    visibleHours={getVisibleHours($settingsStore)}
   >
     {#if $isToday(day)}
       <Needle {autoScrollBlocked} />
@@ -319,18 +321,18 @@
       use:timelineGestures
       use:updateDragPointerOnAutoScroll
     >
-      {#each $displayedTasksForTimeline.withTime as task (getRenderKey(task))}
+      {#each $displayedTimeBlocksForTimeline.withTime as timeBlock (getRenderKey(timeBlock))}
         {@const separatorVisibility = plannerSeparatorVisibility.get(
-          getRenderKey(task),
+          getRenderKey(timeBlock),
         )}
         <PositionedTimeBlock
           showBottomSeparator={separatorVisibility?.showBottomSeparator}
           showTopSeparator={separatorVisibility?.showTopSeparator}
-          {task}
+          {timeBlock}
         >
-          <UnscheduledTimeBlock {task}>
+          <UnscheduledTimeBlock {timeBlock}>
             {#snippet bottomDecoration()}
-              {getBlockProps(task, settingsSignal.current)}
+              {getBlockProps(timeBlock, settingsSignal.current)}
             {/snippet}
           </UnscheduledTimeBlock>
         </PositionedTimeBlock>
@@ -342,34 +344,34 @@
 {#if timelineColumns.timeTracker}
   <Column
     --timeline-column-z-index={$isToday(day) ? "6" : "auto"}
-    visibleHours={getVisibleHours($settings)}
+    visibleHours={getVisibleHours($settingsStore)}
   >
     {#if $isToday(day)}
       <Needle {autoScrollBlocked} />
     {/if}
 
     <div class="tasks absolute-stretch-x">
-      {#each logEntriesForDay.current as task (task.id)}
+      {#each logEntriesForDay.current as timeBlock (timeBlock.id)}
         {@const separatorVisibility = logEntrySeparatorVisibility.get(
-          getRenderKey(task),
+          getRenderKey(timeBlock),
         )}
         <PositionedTimeBlock
           showBottomSeparator={separatorVisibility?.showBottomSeparator}
           showTopSeparator={separatorVisibility?.showTopSeparator}
-          {task}
+          {timeBlock}
         >
           <Selectable
-            onSecondarySelect={(event) => showLogBlockMenu(event, task)}
+            onSecondarySelect={(event) => showLogBlockMenu(event, timeBlock)}
           >
             {#snippet children({ use, onpointerup, state })}
               <LocalTimeBlock
                 isActive={state === "secondary"}
                 {onpointerup}
-                {task}
+                {timeBlock}
                 {use}
               >
                 {#snippet bottomDecoration()}
-                  {getBlockProps(task, settingsSignal.current)}
+                  {getBlockProps(timeBlock, settingsSignal.current)}
                 {/snippet}
               </LocalTimeBlock>
             {/snippet}

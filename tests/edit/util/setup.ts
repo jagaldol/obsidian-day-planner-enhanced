@@ -1,3 +1,4 @@
+import { Function } from "effect";
 import type { Moment } from "moment/moment";
 import moment from "moment/moment";
 import { writable } from "svelte/store";
@@ -16,17 +17,15 @@ import type {
 import type { PointerDateTime } from "../../../src/types";
 import { useEditContext } from "../../../src/ui/hooks/use-edit/use-edit-context";
 
-import { baseTasks } from "./fixtures";
-
-const noop = () => undefined;
+import { baseTimeBlocks } from "./fixtures";
 
 function createProps({
-  remoteTasks,
-  tasks,
+  timeBlocks,
+  remoteTimeBlocks,
   settings,
 }: {
-  remoteTasks: RemoteTimeBlock[];
-  tasks: EditableTimeBlock[];
+  timeBlocks: EditableTimeBlock[];
+  remoteTimeBlocks: RemoteTimeBlock[];
   settings: DayPlannerSettings;
 }) {
   const onUpdate = vi.fn().mockResolvedValue(true);
@@ -34,13 +33,13 @@ function createProps({
   const workspaceFacade = vi.fn() as unknown as WorkspaceFacade;
 
   return {
-    settings: writable(settings),
+    settingsStore: writable(settings),
     onUpdate,
     onEditAborted,
     workspaceFacade,
     abortEditTrigger: writable(),
-    localTasks: writable(tasks),
-    remoteTasks: writable(remoteTasks),
+    localTimeBlocks: writable(timeBlocks),
+    remoteTimeBlocks: writable(remoteTimeBlocks),
     pointerDateTime: writable<PointerDateTime>({
       dateTime: moment("2023-01-01 00:00"),
       type: "dateTime",
@@ -56,26 +55,26 @@ function createProps({
 }
 
 export function setUp({
-  remoteTasks = [],
-  tasks = baseTasks,
+  timeBlocks = baseTimeBlocks,
+  remoteTimeBlocks = [],
   settings = defaultSettingsForTests,
 }: {
-  remoteTasks?: RemoteTimeBlock[];
-  tasks?: EditableTimeBlock[];
+  timeBlocks?: EditableTimeBlock[];
+  remoteTimeBlocks?: RemoteTimeBlock[];
   settings?: DayPlannerSettings;
 } = {}) {
-  const props = createProps({ remoteTasks, tasks, settings });
+  const props = createProps({ timeBlocks, remoteTimeBlocks, settings });
   const {
     handlers,
-    dayToDisplayedTasks,
-    getDisplayedTasksForTimeline,
-    getDisplayedAllDayTasksForMultiDayRow,
+    dayToDisplayedTimeBlocks,
+    getDisplayedTimeBlocksForTimeline,
+    getDisplayedAllDayTimeBlocksForMultiDayRow,
     confirmEdit,
   } = useEditContext(props);
 
   // this prevents the store from resetting;
-  dayToDisplayedTasks.subscribe(noop);
-  getDisplayedAllDayTasksForMultiDayRow.subscribe(noop);
+  dayToDisplayedTimeBlocks.subscribe(Function.constVoid);
+  getDisplayedAllDayTimeBlocksForMultiDayRow.subscribe(Function.constVoid);
 
   function moveCursorTo(
     dateTime: Moment,
@@ -90,9 +89,9 @@ export function setUp({
   return {
     handlers,
     moveCursorTo,
-    dayToDisplayedTasks,
-    getDisplayedTasksForTimeline,
-    getDisplayedAllDayTasksForMultiDayRow,
+    dayToDisplayedTimeBlocks,
+    getDisplayedTimeBlocksForTimeline,
+    getDisplayedAllDayTimeBlocksForMultiDayRow,
     confirmEdit,
     props,
   };

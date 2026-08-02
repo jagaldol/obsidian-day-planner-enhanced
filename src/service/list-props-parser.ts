@@ -7,6 +7,7 @@ import {
   type Vault,
 } from "obsidian";
 import type { Pos } from "obsidian";
+import { isNotVoid } from "typed-assert";
 
 import { codeFence } from "../constants";
 import { type Props, propsSchema } from "../util/props";
@@ -75,6 +76,9 @@ export class ListPropsParser {
   getListPropsFromListItem(listItem: ListItemCache, listItemText: string) {
     const listLines = listItemText.split("\n");
     const firstLine = listLines[0];
+
+    isNotVoid(firstLine);
+
     const openingLine = listLines.at(1);
 
     if (!openingLine?.trimStart().startsWith(codeFence + "yaml")) {
@@ -93,6 +97,8 @@ export class ListPropsParser {
     }
 
     const closingLine = linesAfterSecond[closingLineIndex];
+
+    isNotVoid(closingLine);
     const linesInsideCodeBlock = linesAfterSecond.slice(0, closingLineIndex);
     const textInsideCodeBlock = linesInsideCodeBlock.join("\n");
 

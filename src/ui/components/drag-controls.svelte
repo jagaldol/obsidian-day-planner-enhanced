@@ -19,7 +19,7 @@
 
   export let isActive: boolean;
   export let setIsActive: (value: boolean) => void;
-  export let task: EditableTimeBlock;
+  export let timeBlock: EditableTimeBlock;
   let dragStarted = false;
 
   const {
@@ -50,15 +50,15 @@
   }
 
   function handleMoveStart(event: MouseEvent | TouchEvent, mode: EditMode) {
-    startDrag(event, task, mode);
+    startDrag(event, timeBlock, mode);
   }
 
   function handleMove(event: MouseEvent | TouchEvent, mode: EditMode) {
-    startDrag(event, task, mode);
+    startDrag(event, timeBlock, mode);
   }
 
   function handleCopyStart(event: MouseEvent | TouchEvent) {
-    startDrag(event, t.copy(task), EditMode.DRAG);
+    startDrag(event, t.copy(timeBlock), EditMode.DRAG);
   }
 
   function handleCopy(event: MouseEvent | TouchEvent) {
@@ -95,7 +95,7 @@
       <Copy class="svg-icon" />
     </BlockControlButton>
 
-    {#if !task.isAllDayEvent}
+    {#if !timeBlock.isAllDayEvent}
       <BlockControlButton
         cursor="grab"
         label="Move block and push neighboring blocks"

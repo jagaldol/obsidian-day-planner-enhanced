@@ -3,7 +3,7 @@ import { get } from "svelte/store";
 import { isNotVoid } from "typed-assert";
 import { test, expect, describe } from "vitest";
 
-import { dayKey, emptyTasks } from "./util/fixtures";
+import { dayKey, emptyTimeBlocks } from "./util/fixtures";
 import { setUp } from "./util/setup";
 
 function createUserInputPromise() {
@@ -19,16 +19,21 @@ function createUserInputPromise() {
 }
 
 describe("create", () => {
-  test("when creating without dragging, task starts at the click time", async () => {
-    const { handlers, moveCursorTo, dayToDisplayedTasks, confirmEdit, props } =
-      setUp({
-        tasks: emptyTasks,
-      });
+  test("when creating without dragging, time block starts at the click time", async () => {
+    const {
+      handlers,
+      moveCursorTo,
+      dayToDisplayedTimeBlocks,
+      confirmEdit,
+      props,
+    } = setUp({
+      timeBlocks: emptyTimeBlocks,
+    });
 
     moveCursorTo(moment("2023-01-01 01:00"));
     handlers.handleContainerMouseDown();
 
-    expect(get(dayToDisplayedTasks)).toMatchObject({
+    expect(get(dayToDisplayedTimeBlocks)).toMatchObject({
       [dayKey]: {
         withTime: [
           {
@@ -53,16 +58,16 @@ describe("create", () => {
     );
   });
 
-  test("when creating and dragging, task duration changes", () => {
-    const { handlers, moveCursorTo, dayToDisplayedTasks } = setUp({
-      tasks: emptyTasks,
+  test("when creating and dragging, time block duration changes", () => {
+    const { handlers, moveCursorTo, dayToDisplayedTimeBlocks } = setUp({
+      timeBlocks: emptyTimeBlocks,
     });
 
     moveCursorTo(moment("2023-01-01 01:00"));
     handlers.handleContainerMouseDown();
     moveCursorTo(moment("2023-01-01 02:00"));
 
-    expect(get(dayToDisplayedTasks)).toMatchObject({
+    expect(get(dayToDisplayedTimeBlocks)).toMatchObject({
       [dayKey]: {
         withTime: [
           {
@@ -79,10 +84,10 @@ describe("create", () => {
       const {
         handlers,
         moveCursorTo,
-        dayToDisplayedTasks,
+        dayToDisplayedTimeBlocks,
         confirmEdit,
         props,
-      } = setUp({ tasks: emptyTasks });
+      } = setUp({ timeBlocks: emptyTimeBlocks });
 
       const userInputPromise = createUserInputPromise();
       props.onUpdate.mockReturnValueOnce(userInputPromise.promise);
@@ -93,7 +98,7 @@ describe("create", () => {
 
       const pendingConfirm = confirmEdit();
 
-      expect(get(dayToDisplayedTasks)).toMatchObject({
+      expect(get(dayToDisplayedTimeBlocks)).toMatchObject({
         [dayKey]: {
           withTime: [
             expect.objectContaining({
@@ -112,10 +117,10 @@ describe("create", () => {
       const {
         handlers,
         moveCursorTo,
-        dayToDisplayedTasks,
+        dayToDisplayedTimeBlocks,
         confirmEdit,
         props,
-      } = setUp({ tasks: emptyTasks });
+      } = setUp({ timeBlocks: emptyTimeBlocks });
 
       const userInputPromise = createUserInputPromise();
       props.onUpdate.mockReturnValueOnce(userInputPromise.promise);
@@ -128,7 +133,7 @@ describe("create", () => {
       userInputPromise.resolve(false);
       await pendingConfirm;
 
-      const withTime = get(dayToDisplayedTasks)[dayKey]?.withTime ?? [];
+      const withTime = get(dayToDisplayedTimeBlocks)[dayKey]?.withTime ?? [];
       expect(withTime).toHaveLength(0);
     });
   });

@@ -7,12 +7,6 @@ import type {
   FileIndexContribution,
   IndexService,
 } from "../../service/index/index-service";
-import type {
-  IndexedTimeBlock,
-  LogTimeBlock,
-  PlanTimeBlock,
-} from "../../time-block-types";
-import { getDiffInMinutes, strictParse } from "../../util/moment";
 import { createAppSlice } from "../create-app-slice";
 import type { AppListenerEffect } from "../store";
 
@@ -51,6 +45,7 @@ export interface LogEntry {
   source: "listItemLog" | "frontmatterLog";
 }
 
+// todo: add RunningLogEntry
 export interface ClosedLogEntry extends LogEntry {
   end: string;
 }
@@ -61,13 +56,13 @@ export interface PlanEntry {
   id: string;
   parentId: string;
   start: string;
-  end?: string;
+  end: string;
   dayKeys: string[];
   source: "dailyNoteDate" | "tasksPluginProp";
 }
 
 interface IndexSliceState {
-  taskEntries: {
+  listItemEntries: {
     byId: Record<string, ListItemEntry>;
     byPath: Record<string, string[]>;
   };
@@ -88,7 +83,7 @@ interface IndexSliceState {
 }
 
 const initialState: IndexSliceState = {
-  taskEntries: { byPath: {}, byId: {} },
+  listItemEntries: { byPath: {}, byId: {} },
   fileEntries: { byPath: {}, byId: {} },
   logEntries: {
     byPath: {},
@@ -104,7 +99,7 @@ const initialState: IndexSliceState = {
 
 interface FileIndex {
   path: string;
-  taskEntries?: ListItemEntry[];
+  listItemEntries?: ListItemEntry[];
   fileEntries?: FileSystemEntry[];
   logEntries?: LogEntry[];
   planEntries?: PlanEntry[];
@@ -125,13 +120,13 @@ export const indexSlice = createAppSlice({
       (state, action: PayloadAction<FileDeletedPayload>) => {
         const { path } = action.payload;
 
-        const taskEntryIds = state.taskEntries.byPath[path] || [];
+        const listItemEntryIds = state.listItemEntries.byPath[path] || [];
 
-        taskEntryIds.forEach((id) => {
-          delete state.taskEntries.byId[id];
+        listItemEntryIds.forEach((id) => {
+          delete state.listItemEntries.byId[id];
         });
 
-        delete state.taskEntries.byPath[path];
+        delete state.listItemEntries.byPath[path];
 
         const fileEntryIds = state.fileEntries.byPath[path] || [];
 
@@ -195,22 +190,30 @@ export const indexSlice = createAppSlice({
         const fileIndexes = action.payload;
 
         fileIndexes.forEach((fileIndex) => {
-          const { path, taskEntries, fileEntries, logEntries, planEntries } =
-            fileIndex;
+          const {
+            path,
+            listItemEntries,
+            fileEntries,
+            logEntries,
+            planEntries,
+          } = fileIndex;
 
           // todo: repeat for logEntries
-          const previousTaskEntryIds = state.taskEntries.byPath[path] || [];
+          const previousListItemEntryIds =
+            state.listItemEntries.byPath[path] || [];
 
-          previousTaskEntryIds.forEach((id) => {
-            delete state.taskEntries.byId[id];
+          previousListItemEntryIds.forEach((id) => {
+            delete state.listItemEntries.byId[id];
           });
 
           // todo: copy pasta
-          if (taskEntries) {
-            state.taskEntries.byPath[path] = taskEntries.map((it) => it.id);
+          if (listItemEntries) {
+            state.listItemEntries.byPath[path] = listItemEntries.map(
+              (it) => it.id,
+            );
 
-            taskEntries.forEach((it) => {
-              state.taskEntries.byId[it.id] = it;
+            listItemEntries.forEach((it) => {
+              state.listItemEntries.byId[it.id] = it;
             });
           }
 
@@ -306,39 +309,25 @@ export const indexSlice = createAppSlice({
   }),
   selectors: {
     selectEntriesForPath: (state, path) => {
-      return state.taskEntries.byPath[path]?.map(
-        (it) => state.taskEntries.byId[it],
+      return state.listItemEntries.byPath[path]?.map(
+        (it) => state.listItemEntries.byId[it],
       );
     },
-    // todo: should be memoized or stored in the index
-    selectActiveLogEntries: (state) =>
-      Object.values(state.logEntries.byId)
-        .flat()
-        .filter((it) => !it.end)
-        .map((logEntry) => {
-          const entry =
-            state.taskEntries.byId[logEntry.parentId] ??
-            state.fileEntries.byId[logEntry.parentId];
-
-          isNotVoid(entry, "Inconsistent store state");
-
-          return entryToTimeBlock(logEntry, entry);
-        }),
     selectListPropsPosition: (state, path: string, line: number) => {
-      const taskEntriesForFile = state.taskEntries.byPath[path]?.map(
-        (it) => state.taskEntries.byId[it],
+      const listItemEntriesForFile = state.listItemEntries.byPath[path]?.map(
+        (it) => state.listItemEntries.byId[it],
       );
 
-      const taskEntryAtLine = taskEntriesForFile?.find(
+      const listItemEntryAtLine = listItemEntriesForFile?.find(
         // todo: redux should not keep explicit undefined here
         (it) => it?.position.start.line === line,
       );
 
-      return taskEntryAtLine?.propsPosition;
+      return listItemEntryAtLine?.propsPosition;
     },
     selectLogEntriesByDay: (state) => state.logEntries.byDay,
     selectLogEntriesById: (state) => state.logEntries.byId,
-    selectTaskEntriesById: (state) => state.taskEntries.byId,
+    selectListItemEntriesById: (state) => state.listItemEntries.byId,
     selectFileEntriesById: (state) => state.fileEntries.byId,
     selectPlanEntriesByDay: (state) => state.planEntries.byDay,
     selectPlanEntriesById: (state) => state.planEntries.byId,
@@ -352,90 +341,16 @@ export type ListItemEntryWithChildren = Omit<
   children?: ListItemEntryWithChildren[];
 };
 
-export function isListItemEntry(
-  entry: ListItemEntry | FileSystemEntry,
-): entry is ListItemEntry {
-  return "position" in entry;
-}
-
-export function entryToTimeBlock(
-  derivedEntry: PlanEntry,
-  parentEntry: ListItemEntry,
-  listItemEntryWithChildren?: ListItemEntryWithChildren,
-): PlanTimeBlock;
-
-export function entryToTimeBlock(
-  derivedEntry: LogEntry,
-  parentEntry: ListItemEntry | FileSystemEntry,
-  listItemEntryWithChildren?: ListItemEntryWithChildren,
-): LogTimeBlock;
-
-export function entryToTimeBlock(
-  derivedEntry: PlanEntry | LogEntry,
-  parentEntry: ListItemEntry | FileSystemEntry,
-  // todo: it duplicates the previous one, but for files it's not needed
-  listItemEntryWithChildren?: ListItemEntryWithChildren,
-): IndexedTimeBlock {
-  const startTime = strictParse(derivedEntry.start);
-  const durationMinutes = derivedEntry.end
-    ? getDiffInMinutes(strictParse(derivedEntry.end), startTime)
-    : // todo: use settings OR logic from dataview code
-      30;
-
-  const base = {
-    text: parentEntry.text,
-    startTime,
-    durationMinutes,
-    id: derivedEntry.id,
-    // todo: no need to use duck typing here?
-    isAllDayEvent:
-      "isAllDay" in derivedEntry ? derivedEntry.isAllDay : undefined,
-    children: listItemEntryWithChildren?.children,
-  };
-
-  if (isListItemEntry(parentEntry)) {
-    if (derivedEntry.source === "frontmatterLog") {
-      throw new Error(
-        "Inconsistent store state: a frontmatter log entry cannot be attached to a list item",
-      );
-    }
-
-    return {
-      ...base,
-      source: derivedEntry.source,
-      status: parentEntry.task,
-      task: parentEntry.task,
-      path: parentEntry.path,
-      position: parentEntry.position,
-      symbol: parentEntry.symbol,
-    };
-  }
-
-  if (derivedEntry.source !== "frontmatterLog") {
-    throw new Error(
-      "Inconsistent store state: only frontmatter log entries can be attached to file entries",
-    );
-  }
-
-  return {
-    ...base,
-    source: derivedEntry.source,
-    path: parentEntry.path,
-    symbol: "-",
-  };
-}
-
 export const { filesIndexed, indexRequested, fileDeleted } = indexSlice.actions;
 
 export const {
   selectEntriesForPath,
-  selectActiveLogEntries,
   selectLogEntriesByDay,
   selectLogEntriesById,
   selectListPropsPosition,
   selectPlanEntriesById,
   selectPlanEntriesByDay,
-  selectTaskEntriesById,
+  selectListItemEntriesById,
   selectFileEntriesById,
 } = indexSlice.selectors;
 
@@ -447,7 +362,7 @@ export function createId(...args: (string | number)[]) {
   return args.join(idSeparator);
 }
 
-export function createTaskEntryId(path: string, line: number) {
+export function createListItemEntryId(path: string, line: number) {
   return createId(path, line);
 }
 
@@ -462,9 +377,9 @@ function mergeContributions(
   return contributions.reduce<FileIndex>(
     (acc, contribution) => ({
       path,
-      taskEntries: [
-        ...(acc.taskEntries ?? []),
-        ...(contribution.taskEntries ?? []),
+      listItemEntries: [
+        ...(acc.listItemEntries ?? []),
+        ...(contribution.listItemEntries ?? []),
       ],
       fileEntries: [
         ...(acc.fileEntries ?? []),

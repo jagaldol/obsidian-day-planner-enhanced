@@ -5,22 +5,22 @@
   import type { RemoteTimeBlock } from "../../time-block-types";
 
   const {
-    task,
+    timeBlock,
     bottomDecoration,
-  }: { task: RemoteTimeBlock; bottomDecoration?: Snippet } = $props();
+  }: { timeBlock: RemoteTimeBlock; bottomDecoration?: Snippet } = $props();
 
-  const tentative = $derived(task.rsvpStatus === "TENTATIVE");
-  const declined = $derived(task.rsvpStatus === "DECLINED");
+  const tentative = $derived(timeBlock.rsvpStatus === "TENTATIVE");
+  const declined = $derived(timeBlock.rsvpStatus === "DECLINED");
 </script>
 
-<div class="remote-task-content">
+<div class="remote-time-block-content">
   <div
-    style:--ribbon-color={task.calendar.color}
+    style:--ribbon-color={timeBlock.calendar.color}
     class={["ribbon", { declined, tentative }]}
   ></div>
   <div class="planner-sticky-block-content">
     <span class={["summary", { declined }]}>
-      {task.summary}
+      {timeBlock.summary}
     </span>
     <div>
       {@render bottomDecoration?.()}
@@ -31,7 +31,7 @@
 <!-- eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. -->
 
 <style>
-  .remote-task-content {
+  .remote-time-block-content {
     display: flex;
     flex: 1 0 0;
     flex-direction: column;

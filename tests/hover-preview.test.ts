@@ -6,9 +6,9 @@ import {
 } from "../src/ui/actions/hover-preview";
 import type { LocalTimeBlock } from "../src/time-block-types";
 
-import { baseTask, unscheduledTask } from "./edit/util/fixtures";
+import { baseTimeBlock, unscheduledTimeBlock } from "./edit/util/fixtures";
 
-function setUp(task: LocalTimeBlock = baseTask) {
+function setUp(timeBlock: LocalTimeBlock = baseTimeBlock) {
   const showPreview = vi.fn();
   const block = document.createElement("div");
   const link = document.createElement("a");
@@ -25,7 +25,7 @@ function setUp(task: LocalTimeBlock = baseTask) {
   block.append(timeRange, link, blockText);
   document.body.appendChild(block);
 
-  const action = createHoverPreview(task, { showPreview })(block);
+  const action = createHoverPreview(timeBlock, { showPreview })(block);
 
   return {
     action,
@@ -110,7 +110,7 @@ describe("hoverPreview", () => {
 
   test("does not preview an all-day source location", () => {
     const { action, block, blockText, showPreview, timeText } =
-      setUp(unscheduledTask);
+      setUp(unscheduledTimeBlock);
     const event = new MouseEvent("mouseover", { bubbles: true });
 
     try {
@@ -125,7 +125,8 @@ describe("hoverPreview", () => {
   });
 
   test("previews an all-day wikilink without a modifier key", () => {
-    const { action, block, linkText, showPreview } = setUp(unscheduledTask);
+    const { action, block, linkText, showPreview } =
+      setUp(unscheduledTimeBlock);
     const event = new MouseEvent("mouseover", { bubbles: true });
     const renderedLinkHover = vi.fn();
     linkText.parentElement?.addEventListener("mouseover", renderedLinkHover);

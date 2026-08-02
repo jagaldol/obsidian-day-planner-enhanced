@@ -10,7 +10,7 @@ import * as t from "../../util/time-block-utils";
 import { getOneLineSummary } from "../../util/time-block-utils";
 
 interface UseColorProps {
-  task: TimeBlock;
+  timeBlock: TimeBlock;
 }
 
 const currentTimeColor = "var(--planner-current-time-color, #10b981)";
@@ -88,7 +88,7 @@ export function useStylesForRelationToNow(task: TimeBlock) {
   };
 }
 
-export function useColoredTimeline(task: TimeBlock) {
+export function useColoredTimeline(timeBlock: TimeBlock) {
   const { settingsSignal } = getObsidianContext();
 
   const colorScale = $derived.by(() => {
@@ -101,7 +101,8 @@ export function useColoredTimeline(task: TimeBlock) {
     const { timelineColored, startHour } = settingsSignal.current;
 
     if (timelineColored) {
-      const scaleKey = (task.startTime.hour() - startHour) / (24 - startHour);
+      const scaleKey =
+        (timeBlock.startTime.hour() - startHour) / (24 - startHour);
 
       return colorScale(scaleKey).hex();
     }
@@ -131,14 +132,14 @@ export function useColoredTimeline(task: TimeBlock) {
   };
 }
 
-export function useColorOverrides({ task }: UseColorProps) {
+export function useColorOverrides({ timeBlock }: UseColorProps) {
   const { settingsSignal, isDarkMode } = getObsidianContext();
 
   const colorOverride = $derived.by(() => {
     const { colorOverrides } = settingsSignal.current;
 
     return colorOverrides.find((override) =>
-      getOneLineSummary(task).includes(override.text),
+      getOneLineSummary(timeBlock).includes(override.text),
     );
   });
 
