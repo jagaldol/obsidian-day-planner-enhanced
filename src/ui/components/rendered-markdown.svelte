@@ -65,16 +65,14 @@
     };
   });
 
-  const compactThresholdMinutes = $derived(
-    $settingsStore.zoomLevel <= 2
-      ? 80 / 2 ** $settingsStore.zoomLevel
-      : $settingsStore.zoomLevel <= 4
-        ? 10
-        : 0,
+  const blockHeightPx = $derived(
+    timeBlock.isAllDayEvent
+      ? 0
+      : timeBlock.durationMinutes * $settingsStore.zoomLevel,
   );
+  const compactMaxHeightPx = 20;
   const isCompact = $derived(
-    !timeBlock.isAllDayEvent &&
-      timeBlock.durationMinutes <= compactThresholdMinutes,
+    !timeBlock.isAllDayEvent && blockHeightPx <= compactMaxHeightPx,
   );
 
   function flatten(entries: NestedListItem[] = []): NestedListItem[] {
@@ -90,12 +88,6 @@
       : [],
   );
   const nestedItemCount = $derived(nestedItems.length);
-  const blockHeightPx = $derived(
-    timeBlock.isAllDayEvent
-      ? 0
-      : timeBlock.durationMinutes * $settingsStore.zoomLevel,
-  );
-
   // Keep the header on one line when a stacked header would crowd nested items.
   const stackedHeaderBaseHeightPx = 58;
   const nestedItemEstimatedLineHeightPx = 22;
@@ -123,9 +115,11 @@
 
 <TimeBlockContentLayout
   --time-block-content-layout-gap="var(--rendered-markdown-gap)"
-  --time-block-content-layout-padding={isCompact
-    ? "3px 11px"
-    : "var(--rendered-markdown-padding, 9px 11px 7px)"}
+  --time-block-content-layout-padding={timeBlock.isAllDayEvent
+    ? "var(--rendered-markdown-padding, 9px 11px 7px)"
+    : isCompact
+      ? "var(--rendered-markdown-compact-padding, 3px 11px)"
+      : "var(--rendered-markdown-timed-padding, 6px 11px 5px)"}
   class="rendered-markdown planner-sticky-block-content"
   {bottomDecoration}
   {completed}
@@ -218,9 +212,11 @@
   }
 
   .time-summary-row {
+    --time-summary-line-height: 1.25;
+
     display: flex;
-    gap: 8px;
-    align-items: baseline;
+    gap: 4px;
+    align-items: flex-start;
     min-width: 0;
   }
 
@@ -252,7 +248,7 @@
   .time-block-range {
     overflow: hidden;
     display: inline-flex;
-    flex: 0 1 auto;
+    flex: 0 0 auto;
     align-items: baseline;
 
     min-width: 0;
@@ -261,7 +257,7 @@
     font-size: 0.86em;
     font-weight: var(--font-medium);
     font-variant-numeric: tabular-nums;
-    line-height: 1.25;
+    line-height: var(--time-summary-line-height);
     color: var(--text-muted);
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -290,13 +286,18 @@
       --planner-time-block-summary-font-weight,
       var(--font-semibold)
     );
-    line-height: 1.28;
+    line-height: var(--time-summary-line-height);
     color: var(--planner-time-block-summary-color, var(--text-normal));
   }
 
   .first-line-wrapper :global(p) {
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .first-line-wrapper :global(p),
+  .first-line-wrapper :global(li) {
+    line-height: var(--time-summary-line-height);
     white-space: nowrap;
   }
 
@@ -317,7 +318,8 @@
     width: 100%;
   }
 
-  .first-line-wrapper.is-stacked-header :global(p) {
+  .first-line-wrapper.is-stacked-header :global(p),
+  .first-line-wrapper.is-stacked-header :global(li) {
     white-space: normal;
   }
 
@@ -499,24 +501,26 @@
   }
 
   .time-summary-row.is-compact {
-    gap: 7px;
-    align-items: center;
+    gap: 4px;
+    align-items: flex-start;
   }
 
   .time-summary-row.is-compact .time-block-range {
     flex: 0 0 auto;
     margin-block-end: 0;
-    line-height: 1.2;
   }
 
   .first-line-wrapper.is-compact {
     flex: 1 1 auto;
-    line-height: 1.2;
   }
 
   .first-line-wrapper.is-compact :global(p) {
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .first-line-wrapper.is-compact :global(p),
+  .first-line-wrapper.is-compact :global(li) {
     white-space: nowrap;
   }
 </style>

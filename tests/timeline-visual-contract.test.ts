@@ -33,6 +33,10 @@ const timeBlockBase = fs.readFileSync(
   "src/ui/components/time-block-base.svelte",
   "utf8",
 );
+const renderedMarkdown = fs.readFileSync(
+  "src/ui/components/rendered-markdown.svelte",
+  "utf8",
+);
 const unscheduledTimeBlock = fs.readFileSync(
   "src/ui/components/unscheduled-time-block.svelte",
   "utf8",
@@ -64,6 +68,46 @@ describe("timeline visual contract", () => {
     expect(timeline).toContain(".tasks {");
     expect(timeline).toContain("z-index: 2;");
     expect(timeline).not.toContain("--timeline-column-z-index=");
+  });
+
+  test("keeps short time-block headers readable with long task titles", () => {
+    expect(renderedMarkdown).toContain("const compactMaxHeightPx = 20;");
+    expect(renderedMarkdown).toContain(
+      "!timeBlock.isAllDayEvent && blockHeightPx <= compactMaxHeightPx",
+    );
+    expect(renderedMarkdown).toContain(
+      '? "var(--rendered-markdown-compact-padding, 3px 11px)"',
+    );
+    expect(renderedMarkdown).toContain(
+      ': "var(--rendered-markdown-timed-padding, 6px 11px 5px)"',
+    );
+    expect(renderedMarkdown).toMatch(
+      /\.time-summary-row\s*\{[^}]*--time-summary-line-height:\s*1\.25;[^}]*gap:\s*4px;[^}]*align-items:\s*flex-start;/,
+    );
+    expect(renderedMarkdown).toMatch(
+      /\.time-block-range\s*\{[^}]*flex:\s*0 0 auto;[^}]*line-height:\s*var\(--time-summary-line-height\);/,
+    );
+    expect(renderedMarkdown).toMatch(
+      /\.first-line-wrapper\s*\{[^}]*line-height:\s*var\(--time-summary-line-height\);/,
+    );
+    expect(renderedMarkdown).toMatch(
+      /\.first-line-wrapper :global\(p\)\s*\{[^}]*overflow:\s*hidden;[^}]*text-overflow:\s*ellipsis;/,
+    );
+    expect(renderedMarkdown).toMatch(
+      /\.first-line-wrapper :global\(p\),\s*\.first-line-wrapper :global\(li\)\s*\{[^}]*white-space:\s*nowrap;/,
+    );
+    expect(renderedMarkdown).not.toMatch(
+      /\.first-line-wrapper :global\(li\)\s*\{[^}]*overflow:\s*hidden;/,
+    );
+    expect(renderedMarkdown).toMatch(
+      /\.first-line-wrapper\.is-stacked-header :global\(p\),\s*\.first-line-wrapper\.is-stacked-header :global\(li\)\s*\{[^}]*white-space:\s*normal;/,
+    );
+    expect(renderedMarkdown).toMatch(
+      /\.time-summary-row\.is-compact\s*\{[^}]*gap:\s*4px;[^}]*align-items:\s*flex-start;/,
+    );
+    expect(renderedMarkdown).not.toMatch(
+      /\.time-summary-row\.is-compact[^}]*line-height:\s*1\.2;/,
+    );
   });
 
   test("starts the single-day current-time marker at the ruler edge", () => {
@@ -121,9 +165,7 @@ describe("timeline visual contract", () => {
   });
 
   test("exposes display-focused Enhanced shortcuts in timeline settings", () => {
-    expect(timelineSettingsModal).toContain(
-      '.setHeading("Enhanced features")',
-    );
+    expect(timelineSettingsModal).toContain('.setHeading("Enhanced features")');
     expect(timelineSettingsModal).toContain("hideTasksMetadata");
     expect(timelineSettingsModal).toContain("hideTimeRangeInSingleLine");
     expect(timelineSettingsModal).not.toContain("enableTimeTracker");

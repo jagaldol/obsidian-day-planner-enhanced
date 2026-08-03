@@ -13,6 +13,7 @@ This plugin is an independent fork of [Obsidian Day Planner](https://github.com/
 - Unified the Timeline zoom range to `1–5` in both the Obsidian plugin settings and the in-view Timeline settings modal.
 - Grouped settings exclusive to Day Planner Enhanced under a dedicated **Enhanced features** section in the Obsidian plugin settings, with display-focused shortcuts also available from the in-view Timeline settings modal.
 - Restored the original `16vh` initial cap for All Day rows while keeping manual resizing available from smaller heights up to the rendered content height.
+- Kept full time ranges and task titles aligned on a consistent single-line header at the top of timeline blocks, reserving the tightest padding for truly compact blocks and preventing long titles from squeezing or pushing the time range out of view.
 
 ## 0.5.0
 

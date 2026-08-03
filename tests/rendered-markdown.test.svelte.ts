@@ -15,6 +15,114 @@ afterEach(() => {
 
 describe("RenderedMarkdown", () => {
   test.each([
+    { durationMinutes: 20, expectedCompact: true, zoomLevel: 1 },
+    { durationMinutes: 30, expectedCompact: false, zoomLevel: 1 },
+    { durationMinutes: 10, expectedCompact: true, zoomLevel: 2 },
+    { durationMinutes: 20, expectedCompact: false, zoomLevel: 2 },
+  ])(
+    "renders compact=$expectedCompact for a $durationMinutes-minute block at zoom $zoomLevel",
+    ({ durationMinutes, expectedCompact, zoomLevel }) => {
+      const target = document.createElement("div");
+      const context = new Map<string, unknown>([
+        [
+          obsidianContextKey,
+          {
+            renderMarkdown: vi.fn(() => vi.fn()),
+            settingsStore: writable({
+              ...defaultSettingsForTests,
+              zoomLevel,
+            }),
+            toggleCheckboxInFile: vi.fn(),
+          } as unknown as ObsidianContext,
+        ],
+      ]);
+
+      document.body.appendChild(target);
+
+      const component = mount(RenderedMarkdown, {
+        context,
+        props: {
+          timeBlock: {
+            ...baseTimeBlock,
+            durationMinutes,
+          },
+        },
+        target,
+      });
+
+      flushSync();
+
+      expect(
+        target
+          .querySelector(".time-summary-row")
+          ?.classList.contains("is-compact"),
+      ).toBe(expectedCompact);
+
+      unmount(component);
+    },
+  );
+
+  test.each([
+    { durationMinutes: 50, expectedStacked: false },
+    { durationMinutes: 60, expectedStacked: true },
+  ])(
+    "keeps the header top-aligned when stacked=$expectedStacked at the 50-to-60-minute boundary",
+    ({ durationMinutes, expectedStacked }) => {
+      const target = document.createElement("div");
+      const renderMarkdown = vi.fn((element: HTMLElement, markdown: string) => {
+        const paragraph = document.createElement("p");
+
+        paragraph.textContent = markdown;
+        element.append(paragraph);
+
+        return vi.fn();
+      });
+      const context = new Map<string, unknown>([
+        [
+          obsidianContextKey,
+          {
+            renderMarkdown,
+            settingsStore: writable({
+              ...defaultSettingsForTests,
+              zoomLevel: 1,
+            }),
+            toggleCheckboxInFile: vi.fn(),
+          } as unknown as ObsidianContext,
+        ],
+      ]);
+
+      document.body.appendChild(target);
+
+      const component = mount(RenderedMarkdown, {
+        context,
+        props: {
+          timeBlock: {
+            ...baseTimeBlock,
+            durationMinutes,
+            text: `00:00 - ${durationMinutes === 50 ? "00:50" : "01:00"} ${"Very long title ".repeat(12)}`,
+          },
+        },
+        target,
+      });
+
+      flushSync();
+
+      const summaryRow = target.querySelector(".time-summary-row");
+      expect(summaryRow?.classList.contains("is-stacked-header")).toBe(
+        expectedStacked,
+      );
+      expect(summaryRow?.querySelector(".time-block-range")?.textContent).toBe(
+        `00:00 - ${durationMinutes === 50 ? "00:50" : "01:00"}`,
+      );
+      expect(
+        summaryRow?.querySelector(".first-line-wrapper")?.textContent,
+      ).toContain("Very long title ".repeat(12).trim());
+
+      unmount(component);
+    },
+  );
+
+  test.each([
     {
       durationMinutes: 40,
       hideTimeRangeInSingleLine: true,
