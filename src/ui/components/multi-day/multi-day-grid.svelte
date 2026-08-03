@@ -341,6 +341,7 @@
   :global(.horizontal-resize-box-wrapper) {
     position: relative;
     grid-area: multiday;
+    max-height: 16vh;
     border-bottom: var(--border-base);
   }
 

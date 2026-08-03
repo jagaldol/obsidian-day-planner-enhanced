@@ -13,6 +13,7 @@ describe("createResizeState", () => {
     vi.stubGlobal("PointerEvent", MouseEvent);
 
     const container = document.createElement("div");
+    container.style.maxHeight = "16vh";
     document.body.appendChild(container);
     vi.spyOn(container, "getBoundingClientRect").mockReturnValue({
       top: 10,
@@ -22,7 +23,10 @@ describe("createResizeState", () => {
     const action = resizeState.resizeAction(container);
 
     resizeState.startResizing();
+    expect(container.style.maxHeight).toBe("16vh");
+
     document.dispatchEvent(new MouseEvent("mousemove", { clientY: 90 }));
+    expect(container.style.maxHeight).toBe("none");
     expect(container.style.height).toBe("80px");
 
     document.dispatchEvent(new MouseEvent("mousemove", { clientY: 210 }));

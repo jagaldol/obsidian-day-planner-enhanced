@@ -85,11 +85,15 @@ describe("timeline visual contract", () => {
     expect(timeline).toContain("{#if $isToday(day)}");
   });
 
-  test("caps resizable all-day rows at their content height", () => {
-    expect(timelineWithControls).toContain("createResizeState()");
+  test("starts all-day rows at 16vh and lets resizing reach content height", () => {
+    expect(timelineWithControls).toContain("createResizeState({");
     expect(timelineWithControls).toContain("<GripHorizontal");
     expect(timelineWithControls).toContain("use:resizeAction");
-    expect(timelineWithControls).toContain("max-height: max-content;");
+    expect(timelineWithControls).toContain("max-height: 16vh;");
+    expect(timelineWithControls).toContain(
+      "getMaxHeight: () => allDayRowRef?.scrollHeight",
+    );
+    expect(timelineWithControls).toContain("bind:this={allDayRowRef}");
     expect(multiDayGrid).toContain("createResizeState({");
     expect(multiDayGrid).toContain(
       "getMaxHeight: () => multiDayContentRef?.scrollHeight",
@@ -97,8 +101,7 @@ describe("timeline visual contract", () => {
     expect(multiDayGrid).toContain(
       "<MultiDayRow bind:el={multiDayContentRef} />",
     );
-    expect(timelineWithControls).not.toContain("max-height: 16vh;");
-    expect(multiDayGrid).not.toContain("max-height: 16vh;");
+    expect(multiDayGrid).toContain("max-height: 16vh;");
   });
 
   test("exposes the first day of week in timeline settings", () => {

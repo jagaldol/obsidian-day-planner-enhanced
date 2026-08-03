@@ -37,7 +37,10 @@
     }),
   );
 
-  const { startResizing, resizeAction } = createResizeState();
+  let allDayRowRef: HTMLDivElement | undefined = $state();
+  const { startResizing, resizeAction } = createResizeState({
+    getMaxHeight: () => allDayRowRef?.scrollHeight,
+  });
   let rulerRef: HTMLDivElement | undefined = $state();
 
   function handleAllDayEventsPointerMove() {
@@ -72,6 +75,7 @@
   </div>
 
   <div
+    bind:this={allDayRowRef}
     class={["all-day-row", $isInSidebar && "is-in-sidebar"]}
     onpointermove={handleAllDayEventsPointerMove}
     onpointerup={editContext.confirmEdit}
@@ -163,7 +167,7 @@
     overflow: auto;
     grid-area: all-day;
 
-    max-height: max-content;
+    max-height: 16vh;
 
     background-color: var(--background-primary);
     border-block-end: var(--border-base);

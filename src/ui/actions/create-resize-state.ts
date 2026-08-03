@@ -49,6 +49,9 @@ export function createResizeState({
         ? pointerHeight
         : Math.min(pointerHeight, maxHeight);
 
+    // A stylesheet can provide a compact initial cap (for example, 16vh).
+    // Once the user drags, the explicit height and getMaxHeight own the limit.
+    resizeContainerEl.style.maxHeight = "none";
     resizeContainerEl.style.height = `${newHeight}px`;
   }
 
