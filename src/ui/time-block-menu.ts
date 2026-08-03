@@ -12,6 +12,7 @@ export function createTimeBlockMenu(props: {
   event: MouseEvent | TouchEvent;
   timeBlock: EditableTimeBlock;
   activeLogTimeBlocks: readonly LogTimeBlock[];
+  isTimeTrackerEnabled: boolean;
   logEntryEditor: LogEntryEditor;
   workspaceFacade: WorkspaceFacade;
   onEdit: () => void;
@@ -22,6 +23,7 @@ export function createTimeBlockMenu(props: {
     event,
     timeBlock,
     activeLogTimeBlocks,
+    isTimeTrackerEnabled,
     workspaceFacade,
     onEdit,
     onEditNestedItems,
@@ -34,21 +36,23 @@ export function createTimeBlockMenu(props: {
   }
 
   const menu = new Menu();
-  const clockAction = getTimeBlockClockAction(timeBlock, activeLogTimeBlocks);
+  if (isTimeTrackerEnabled) {
+    const clockAction = getTimeBlockClockAction(timeBlock, activeLogTimeBlocks);
 
-  menu.addItem((item) => {
-    item
-      .setTitle(clockAction.title)
-      .setIcon(clockAction.icon)
-      .onClick(async () => {
-        const effect =
-          clockAction.type === "out"
-            ? logEntryEditor.clockOut(clockAction.location)
-            : logEntryEditor.clockIn(clockAction.location);
+    menu.addItem((item) => {
+      item
+        .setTitle(clockAction.title)
+        .setIcon(clockAction.icon)
+        .onClick(async () => {
+          const effect =
+            clockAction.type === "out"
+              ? logEntryEditor.clockOut(clockAction.location)
+              : logEntryEditor.clockIn(clockAction.location);
 
-        await runWithNoticeOnError(effect);
-      });
-  });
+          await runWithNoticeOnError(effect);
+        });
+    });
+  }
 
   menu.addItem((item) =>
     item.setTitle("Edit").setIcon("pencil").onClick(onEdit),

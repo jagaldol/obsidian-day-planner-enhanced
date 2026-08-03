@@ -5,6 +5,7 @@ import { defaultSettings } from "../src/settings";
 import {
   createTimeTrackerCommandCheck,
   createTimeTrackerViewSynchronizer,
+  getTimeTrackerDisableConfirmation,
 } from "../src/ui/time-tracker-availability";
 
 describe("time tracker availability", () => {
@@ -120,5 +121,24 @@ describe("time tracker availability", () => {
     expect(execute).not.toHaveBeenCalled();
     expect(check(false)).toBe(true);
     expect(execute).toHaveBeenCalledOnce();
+  });
+
+  test("does not interrupt disabling when no clock is active", () => {
+    expect(getTimeTrackerDisableConfirmation(0)).toBeUndefined();
+  });
+
+  test("warns that one active clock remains open while controls are hidden", () => {
+    expect(getTimeTrackerDisableConfirmation(1)).toEqual({
+      cta: "Disable",
+      text: "1 active clock is still running. Its record will remain open, but clock controls will be hidden until you enable Time Tracker again.",
+      title: "Disable Time Tracker?",
+      variant: "warning",
+    });
+  });
+
+  test("uses plural wording for multiple active clocks", () => {
+    expect(getTimeTrackerDisableConfirmation(2)?.text).toContain(
+      "2 active clocks are still running",
+    );
   });
 });

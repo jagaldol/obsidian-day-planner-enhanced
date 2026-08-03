@@ -21,7 +21,13 @@ export function addColumnSelectionItems(props: {
 }) {
   const { menu, settingsStore, section } = props;
 
-  const currentColumns = get(settingsStore).timelineColumns;
+  const currentSettings = get(settingsStore);
+
+  if (!currentSettings.enableTimeTracker) {
+    return;
+  }
+
+  const currentColumns = currentSettings.timelineColumns;
   const visibleColumnCount =
     Object.values(currentColumns).filter(Boolean).length;
 

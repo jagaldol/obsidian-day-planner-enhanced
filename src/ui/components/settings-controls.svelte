@@ -8,11 +8,12 @@
     firstDaysOfWeek,
     hideTasksMetadataDescription,
     hideTimeRangeInSingleLineDescription,
+    showActiveClockInStatusBarDescription,
     timelineZoomLevelOptions,
   } from "../../settings";
   import { range } from "../../util/collection";
 
-  const { settings } = getObsidianContext();
+  const { settings, setTimeTrackerEnabled } = getObsidianContext();
 
   const startHourOptions = Object.fromEntries(
     range(0, 13).map((it) => [it, String(it)]),
@@ -137,21 +138,25 @@
           .setName("Enable time tracker")
           .setDesc("Existing time records are kept unchanged")
           .addToggle((toggle) =>
-            toggle.setValue($settings.enableTimeTracker).onChange((value) => {
-              $settings = {
-                ...$settings,
-                enableTimeTracker: value,
-              };
-            }),
+            toggle
+              .setValue($settings.enableTimeTracker)
+              .onChange(async (value) => {
+                const applied = await setTimeTrackerEnabled(value);
+
+                if (!applied) {
+                  toggle.setValue(!value);
+                }
+              }),
           ),
       )
       .addSetting((setting) =>
         setting
           .setName("Show active clock and 'Clock in' button")
-          .setDesc("Show clock controls in the status bar")
+          .setDesc(showActiveClockInStatusBarDescription)
           .addToggle((toggle) =>
             toggle
               .setValue($settings.showActiveClockInStatusBar)
+              .setDisabled(!$settings.enableTimeTracker)
               .onChange((value) => {
                 $settings = {
                   ...$settings,

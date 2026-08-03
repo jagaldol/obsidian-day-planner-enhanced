@@ -18,6 +18,7 @@ import {
   firstDaysOfWeek,
   hideTasksMetadataDescription,
   hideTimeRangeInSingleLineDescription,
+  showActiveClockInStatusBarDescription,
   timelineZoomLevelMax,
   timelineZoomLevelMin,
   timelineZoomLevelStep,
@@ -158,7 +159,24 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
           {
             name: "Enable time tracker",
             desc: "Show time-tracking views, timeline columns, and clock actions. Existing records remain unchanged.",
-            control: { type: "toggle", key: "enableTimeTracker" },
+            render: (setting) => {
+              setting.addToggle((toggle) =>
+                toggle
+                  .setValue(this.plugin.getSettings().enableTimeTracker)
+                  .onChange(async (value) => {
+                    const applied =
+                      await this.plugin.setTimeTrackerEnabled(value);
+
+                    if (!applied) {
+                      toggle.setValue(!value);
+
+                      return;
+                    }
+
+                    this.refreshSettingsDomStateAfterControlChange();
+                  }),
+              );
+            },
           },
           {
             name: "Hide Tasks metadata in planner",
@@ -417,9 +435,11 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
         items: [
           {
             name: "Show active clock and Clock in button",
+            desc: showActiveClockInStatusBarDescription,
             control: {
               type: "toggle",
               key: "showActiveClockInStatusBar",
+              disabled: () => !this.plugin.getSettings().enableTimeTracker,
             },
           },
           {
@@ -622,7 +642,14 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
     return this.plugin.getSettings()[key as keyof DayPlannerSettings];
   }
 
-  setControlValue(key: string, value: unknown): void {
+  async setControlValue(key: string, value: unknown): Promise<void> {
+    if (key === "enableTimeTracker") {
+      await this.plugin.setTimeTrackerEnabled(value === true);
+      this.refreshSettingsDomStateAfterControlChange();
+
+      return;
+    }
+
     this.updateSettings({
       [key]: value,
     });
@@ -836,8 +863,14 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
           .addToggle((toggle) =>
             toggle
               .setValue(this.plugin.getSettings().enableTimeTracker)
-              .onChange((value: boolean) => {
-                this.updateSettings({ enableTimeTracker: value });
+              .onChange(async (value: boolean) => {
+                const applied = await this.plugin.setTimeTrackerEnabled(value);
+
+                if (!applied) {
+                  toggle.setValue(!value);
+                }
+
+                this.refreshSettings();
               }),
           ),
       )
@@ -1136,9 +1169,11 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
       .addSetting((setting) =>
         setting
           .setName("Show active clock and 'Clock in' button")
+          .setDesc(showActiveClockInStatusBarDescription)
           .addToggle((toggle) =>
             toggle
               .setValue(this.plugin.getSettings().showActiveClockInStatusBar)
+              .setDisabled(!this.plugin.getSettings().enableTimeTracker)
               .onChange((value: boolean) => {
                 this.updateSettings({ showActiveClockInStatusBar: value });
               }),
@@ -1411,6 +1446,21 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
     } else {
       this.renderSettings();
     }
+  }
+
+  private refreshSettingsDomStateAfterControlChange(): void {
+    window.setTimeout(() => {
+      const refreshDomState = Reflect.get(
+        PluginSettingTab.prototype,
+        "refreshDomState",
+      ) as ((this: DayPlannerSettingsTab) => void) | undefined;
+
+      if (refreshDomState) {
+        refreshDomState.call(this);
+      } else {
+        this.refreshSettings();
+      }
+    });
   }
 }
 /* eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. */

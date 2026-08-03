@@ -51,6 +51,7 @@
     editText,
     editLine,
     useSelector,
+    settingsSignal,
   } = getObsidianContext();
 
   const activeLogTimeBlocks = useSelector((state) =>
@@ -126,6 +127,7 @@
       event,
       timeBlock,
       activeLogTimeBlocks: activeLogTimeBlocks.current,
+      isTimeTrackerEnabled: settingsSignal.current.enableTimeTracker,
       workspaceFacade,
       logEntryEditor,
       onEdit: editTaskSummary,

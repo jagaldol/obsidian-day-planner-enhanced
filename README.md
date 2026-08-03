@@ -245,7 +245,7 @@ If your organization doesn't let you share your calendar this way, you might try
 
 You can record time spent on tasks in the form of Dataview properties and then view the records as time blocks, much like planner entries.
 
-Time tracking is enabled by default. Turn off **Enable time tracker** in the plugin settings to remove its views, timeline columns, and clock actions. Existing time records in Markdown are kept unchanged and become available again when you re-enable the feature.
+Time tracking is enabled by default. Turn off **Enable time tracker** in the plugin settings to remove its views, timeline column controls, clock commands, task-menu actions, and status-bar clock controls. If a clock is still running, the plugin warns before disabling the feature; the record remains open unless you cancel the change and clock out first. Existing time records and saved column preferences are kept unchanged and become available again when you re-enable the feature.
 
 #### Recording clocks
 
@@ -286,7 +286,7 @@ A right click on an active clock will bring the control menu:
 
 <img src="./assets/active-clocks-menu.png" width="75%">
 
-The optional status bar widget shows the active clock and provides a shortcut to **Clock in on anything...**. It follows the main **Enable time tracker** setting, so disabling Time Tracker also hides the widget and clock commands without changing existing records.
+The optional status bar widget shows the active clock and provides a shortcut to **Clock in on anything...**. It follows the main **Enable time tracker** setting, so disabling Time Tracker hides the widget and disables its dependent setting without changing existing records.
 
 #### Limitations
 

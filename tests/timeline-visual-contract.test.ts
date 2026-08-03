@@ -205,6 +205,16 @@ describe("timeline visual contract", () => {
     );
   });
 
+  test("hides tracker-only timeline controls when Time Tracker is disabled", () => {
+    expect(timeBlockControls).toContain(
+      "isTimeTrackerEnabled: settingsSignal.current.enableTimeTracker",
+    );
+    expect(multiDayGrid).toContain(
+      "{#if settingsSignal.current.enableTimeTracker}",
+    );
+    expect(multiDayGrid).toContain('label="Configure columns"');
+  });
+
   test("overlaps the sidebar border while preserving right clipping space", () => {
     expect(timeline).toContain(
       "--timeline-time-block-inline-start-overlap: -1px;",

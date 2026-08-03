@@ -235,12 +235,15 @@
         <Columns3 />
       </ControlButton>
 
-      <ControlButton
-        label="Configure columns"
-        onclick={(event) => createColumnSelectionMenu({ event, settingsStore })}
-      >
-        <TableColumnsSplit />
-      </ControlButton>
+      {#if settingsSignal.current.enableTimeTracker}
+        <ControlButton
+          label="Configure columns"
+          onclick={(event) =>
+            createColumnSelectionMenu({ event, settingsStore })}
+        >
+          <TableColumnsSplit />
+        </ControlButton>
+      {/if}
 
       <ControlButton
         label="Show current period"

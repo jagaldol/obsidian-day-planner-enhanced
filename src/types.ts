@@ -84,6 +84,7 @@ export interface ObsidianContext {
   openLogEntryEditModal: OpenLogEntryEditModal;
   openTimelineSettingsModal: OpenTimelineSettingsModal;
   openClockInOnAnythingModal: () => void;
+  setTimeTrackerEnabled: (enabled: boolean) => Promise<boolean>;
   // todo: rename to promptUserToEditText
   editText: (props: {
     initialText?: string;

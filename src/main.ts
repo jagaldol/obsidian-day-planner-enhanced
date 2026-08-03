@@ -84,6 +84,7 @@ import { mountStatusBarWidget } from "./ui/status-bar-widget";
 import {
   createTimeTrackerCommandCheck,
   createTimeTrackerViewSynchronizer,
+  getTimeTrackerDisableConfirmation,
 } from "./ui/time-tracker-availability";
 import TimeTrackerView from "./ui/time-tracker-view";
 import { createTimelineSettingsModalOpener } from "./ui/timeline-settings-modal";
@@ -112,6 +113,7 @@ export default class DayPlanner extends Plugin {
   private transactionWriter!: TransactionWriter;
   private metadataCacheFacade!: MetadataCacheFacade;
   private undoNotice!: UndoNotice;
+  private getActiveClockCount = () => 0;
   private enqueueTimeTrackerViewOperation!: (
     operation: () => Promise<void>,
   ) => Promise<void>;
@@ -129,6 +131,32 @@ export default class DayPlanner extends Plugin {
       this.vaultFacade,
       this.logEntryEditor,
     ).open();
+  };
+
+  setTimeTrackerEnabled = async (enabled: boolean): Promise<boolean> => {
+    if (enabled === this.getSettings().enableTimeTracker) {
+      return true;
+    }
+
+    if (!enabled) {
+      const confirmation = getTimeTrackerDisableConfirmation(
+        this.getActiveClockCount(),
+      );
+
+      if (
+        confirmation &&
+        !(await askForConfirmation({ ...confirmation, app: this.app }))
+      ) {
+        return false;
+      }
+    }
+
+    this.settingsStore.update((previous) => ({
+      ...previous,
+      enableTimeTracker: enabled,
+    }));
+
+    return true;
   };
 
   async onload() {
@@ -181,6 +209,9 @@ export default class DayPlanner extends Plugin {
     });
 
     const { dispatch } = store;
+
+    this.getActiveClockCount = () =>
+      selectActiveLogTimeBlocks(store.getState(), window.moment()).length;
 
     this.searchOrderingService = new DefaultSearchOrderingService(vault, () =>
       store.getState(),
@@ -686,23 +717,26 @@ export default class DayPlanner extends Plugin {
     this.addCommand({
       id: "jump-to-active-clock",
       name: "Jump to active clock",
-      callback: async () => {
-        const activeLogTimeBlocks = selectActiveLogTimeBlocks(
-          store.getState(),
-          window.moment(),
-        );
+      checkCallback: createTimeTrackerCommandCheck({
+        isEnabled: () => this.getSettings().enableTimeTracker,
+        execute: async () => {
+          const activeLogTimeBlocks = selectActiveLogTimeBlocks(
+            store.getState(),
+            window.moment(),
+          );
 
-        if (activeLogTimeBlocks.length === 0) {
-          new Notice("No active clocks found");
-          return;
-        }
+          if (activeLogTimeBlocks.length === 0) {
+            new Notice("No active clocks found");
+            return;
+          }
 
-        const firstActiveLogTimeBlock = activeLogTimeBlocks[0];
+          const firstActiveLogTimeBlock = activeLogTimeBlocks[0];
 
-        isNotVoid(firstActiveLogTimeBlock);
+          isNotVoid(firstActiveLogTimeBlock);
 
-        await this.workspaceFacade.revealLocation(firstActiveLogTimeBlock);
-      },
+          await this.workspaceFacade.revealLocation(firstActiveLogTimeBlock);
+        },
+      }),
     });
 
     if (envMode === "development") {
@@ -759,6 +793,7 @@ export default class DayPlanner extends Plugin {
       openLogEntryEditModal,
       openTimelineSettingsModal,
       openClockInOnAnythingModal: this.openClockInOnAnythingModal,
+      setTimeTrackerEnabled: this.setTimeTrackerEnabled,
       openNestedItemsEditModal,
       removeTask,
       taskEntryEditor: this.taskEntryEditor,
