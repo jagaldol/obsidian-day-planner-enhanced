@@ -75,6 +75,10 @@ describe("timeline visual contract", () => {
     expect(renderedMarkdown).toContain(
       "!timeBlock.isAllDayEvent && blockHeightPx <= compactMaxHeightPx",
     );
+    expect(renderedMarkdown).toContain("const stackedHeaderBaseHeightPx = 40;");
+    expect(renderedMarkdown).toContain(
+      "stackedHeaderBaseHeightPx + nestedItemsRequiredHeightPx",
+    );
     expect(renderedMarkdown).toContain(
       '? "var(--rendered-markdown-compact-padding, 3px 11px)"',
     );
@@ -244,7 +248,11 @@ describe("timeline visual contract", () => {
     expect(timeBlockBase).toContain(
       "border-width: 0 var(--all-day-list-border-right-width, 0) 1px 0;",
     );
-    expect(multiDayRow).toContain('--all-day-list-border-right-width="1px"');
+    for (const allDaySurface of [timelineWithControls, multiDayRow]) {
+      expect(allDaySurface).toContain(
+        '--all-day-list-border-right-width="1px"',
+      );
+    }
     expect(timelineWithControls).toContain('--block-list-padding="0"');
   });
 

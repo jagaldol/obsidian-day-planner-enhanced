@@ -63,11 +63,13 @@ describe("RenderedMarkdown", () => {
   );
 
   test.each([
-    { durationMinutes: 50, expectedStacked: false },
-    { durationMinutes: 60, expectedStacked: true },
+    { durationMinutes: 30, expectedStacked: false, zoomLevel: 1 },
+    { durationMinutes: 40, expectedStacked: true, zoomLevel: 1 },
+    { durationMinutes: 15, expectedStacked: false, zoomLevel: 2 },
+    { durationMinutes: 20, expectedStacked: true, zoomLevel: 2 },
   ])(
-    "keeps the header top-aligned when stacked=$expectedStacked at the 50-to-60-minute boundary",
-    ({ durationMinutes, expectedStacked }) => {
+    "keeps the header top-aligned when stacked=$expectedStacked for $durationMinutes minutes at zoom $zoomLevel",
+    ({ durationMinutes, expectedStacked, zoomLevel }) => {
       const target = document.createElement("div");
       const renderMarkdown = vi.fn((element: HTMLElement, markdown: string) => {
         const paragraph = document.createElement("p");
@@ -84,7 +86,7 @@ describe("RenderedMarkdown", () => {
             renderMarkdown,
             settingsStore: writable({
               ...defaultSettingsForTests,
-              zoomLevel: 1,
+              zoomLevel,
             }),
             toggleCheckboxInFile: vi.fn(),
           } as unknown as ObsidianContext,
@@ -99,7 +101,7 @@ describe("RenderedMarkdown", () => {
           timeBlock: {
             ...baseTimeBlock,
             durationMinutes,
-            text: `00:00 - ${durationMinutes === 50 ? "00:50" : "01:00"} ${"Very long title ".repeat(12)}`,
+            text: `00:00 - 00:${String(durationMinutes).padStart(2, "0")} ${"Very long title ".repeat(12)}`,
           },
         },
         target,
@@ -112,7 +114,7 @@ describe("RenderedMarkdown", () => {
         expectedStacked,
       );
       expect(summaryRow?.querySelector(".time-block-range")?.textContent).toBe(
-        `00:00 - ${durationMinutes === 50 ? "00:50" : "01:00"}`,
+        `00:00 - 00:${String(durationMinutes).padStart(2, "0")}`,
       );
       expect(
         summaryRow?.querySelector(".first-line-wrapper")?.textContent,
@@ -123,8 +125,69 @@ describe("RenderedMarkdown", () => {
   );
 
   test.each([
+    { durationMinutes: 60, expectedStacked: false, nestedItemCount: 1 },
+    { durationMinutes: 70, expectedStacked: true, nestedItemCount: 1 },
+    { durationMinutes: 80, expectedStacked: false, nestedItemCount: 2 },
+    { durationMinutes: 90, expectedStacked: true, nestedItemCount: 2 },
+  ])(
+    "accounts for $nestedItemCount nested items before rendering stacked=$expectedStacked at $durationMinutes pixels",
+    ({ durationMinutes, expectedStacked, nestedItemCount }) => {
+      const target = document.createElement("div");
+      const context = new Map<string, unknown>([
+        [
+          obsidianContextKey,
+          {
+            renderMarkdown: vi.fn(() => vi.fn()),
+            settingsStore: writable({
+              ...defaultSettingsForTests,
+              zoomLevel: 1,
+            }),
+            toggleCheckboxInFile: vi.fn(),
+          } as unknown as ObsidianContext,
+        ],
+      ]);
+
+      document.body.appendChild(target);
+
+      const component = mount(RenderedMarkdown, {
+        context,
+        props: {
+          timeBlock: {
+            ...baseTimeBlock,
+            children: Array.from({ length: nestedItemCount }, (_, index) => ({
+              children: [],
+              id: `nested-item-${index + 1}`,
+              logEntries: [],
+              path: "path",
+              planEntries: [],
+              position: {
+                end: { col: 0, line: index + 2, offset: 0 },
+                start: { col: 0, line: index + 1, offset: 0 },
+              },
+              symbol: "-",
+              text: `Nested item ${index + 1}`,
+            })),
+            durationMinutes,
+          },
+        },
+        target,
+      });
+
+      flushSync();
+
+      expect(
+        target
+          .querySelector(".time-summary-row")
+          ?.classList.contains("is-stacked-header"),
+      ).toBe(expectedStacked);
+
+      unmount(component);
+    },
+  );
+
+  test.each([
     {
-      durationMinutes: 40,
+      durationMinutes: 30,
       hideTimeRangeInSingleLine: true,
       expectedVisible: false,
     },
@@ -134,12 +197,7 @@ describe("RenderedMarkdown", () => {
       expectedVisible: true,
     },
     {
-      durationMinutes: 50,
-      hideTimeRangeInSingleLine: true,
-      expectedVisible: false,
-    },
-    {
-      durationMinutes: 58,
+      durationMinutes: 40,
       hideTimeRangeInSingleLine: true,
       expectedVisible: true,
     },

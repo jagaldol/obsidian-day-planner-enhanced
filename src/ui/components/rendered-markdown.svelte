@@ -88,12 +88,22 @@
       : [],
   );
   const nestedItemCount = $derived(nestedItems.length);
-  // Keep the header on one line when a stacked header would crowd nested items.
-  const stackedHeaderBaseHeightPx = 58;
-  const nestedItemEstimatedLineHeightPx = 22;
+  // Stack the header once two lines fit, but keep it inline when nested content
+  // needs the same vertical space. These values mirror the rendered list
+  // margin, line height, and gap below.
+  const stackedHeaderBaseHeightPx = 40;
+  const nestedListMarginTopPx = 6;
+  const nestedItemEstimatedLineHeightPx = 18;
+  const nestedItemGapPx = 4;
+  const nestedItemsRequiredHeightPx = $derived(
+    nestedItemCount === 0
+      ? 0
+      : nestedListMarginTopPx +
+          nestedItemCount * nestedItemEstimatedLineHeightPx +
+          (nestedItemCount - 1) * nestedItemGapPx,
+  );
   const stackedHeaderRequiredHeightPx = $derived(
-    stackedHeaderBaseHeightPx +
-      nestedItemCount * nestedItemEstimatedLineHeightPx,
+    stackedHeaderBaseHeightPx + nestedItemsRequiredHeightPx,
   );
   const useStackedHeader = $derived(
     !isCompact && blockHeightPx >= stackedHeaderRequiredHeightPx,

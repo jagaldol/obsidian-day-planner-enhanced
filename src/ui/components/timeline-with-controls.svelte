@@ -87,7 +87,10 @@
       list={displayedAllDayTimeBlocks}
     >
       {#snippet match(timeBlock: TimelineTimeBlock)}
-        <UnscheduledTimeBlock {timeBlock} />
+        <UnscheduledTimeBlock
+          --all-day-list-border-right-width="1px"
+          {timeBlock}
+        />
       {/snippet}
       {#snippet fallback()}
         <div class="empty-all-day-events">No all day events</div>
