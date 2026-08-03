@@ -3,6 +3,7 @@
   import { type Snippet } from "svelte";
 
   import { getObsidianContext } from "../../context/obsidian-context";
+  import { currentTimeSignal } from "../../global-store/current-time";
   import {
     clearTimelineTaskSelection,
     isLocatedTimelineTaskSelectionMatch,
@@ -14,6 +15,7 @@
     removeTimeRangeFromLine,
     replaceOrPrependTimeRange,
   } from "../../parser/parser";
+  import { selectActiveLogTimeBlocks } from "../../redux/index/index-selectors";
   import { type EditableTimeBlock } from "../../time-block-types";
   import { createMarkdownListTokens, getFirstLine } from "../../util/markdown";
   import type { HTMLActionArray } from "../actions/use-actions";
@@ -48,7 +50,12 @@
     removeTask: removeTaskFromPlan,
     editText,
     editLine,
+    useSelector,
   } = getObsidianContext();
+
+  const activeLogTimeBlocks = useSelector((state) =>
+    selectActiveLogTimeBlocks(state, currentTimeSignal.current),
+  );
 
   async function editTaskSummary() {
     if (timeBlock.source === "unwritten") {
@@ -118,6 +125,7 @@
     createTimeBlockMenu({
       event,
       timeBlock,
+      activeLogTimeBlocks: activeLogTimeBlocks.current,
       workspaceFacade,
       logEntryEditor,
       onEdit: editTaskSummary,
@@ -140,12 +148,7 @@
       {/snippet}
 
       {#snippet topEnd({ isActive, setIsActive })}
-        <DragControls
-          --expanding-controls-position="absolute"
-          {isActive}
-          {setIsActive}
-          {timeBlock}
-        />
+        <DragControls {isActive} {setIsActive} {timeBlock} />
       {/snippet}
 
       {#snippet bottom({ isActive, setIsActive })}

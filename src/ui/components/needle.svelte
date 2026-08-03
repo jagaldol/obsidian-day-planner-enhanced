@@ -49,12 +49,8 @@
 <style>
   .needle-line {
     pointer-events: none;
-
-    z-index: 1;
-    left: calc(-1 * var(--planner-ruler-width, 36px));
-
+    z-index: 7;
     height: 2px;
-
     background-color: var(--planner-current-time-color, #10b981);
   }
 

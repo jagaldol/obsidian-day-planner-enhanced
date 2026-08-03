@@ -1,6 +1,6 @@
 <script lang="ts">
   /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
-  import { offset } from "@floating-ui/dom";
+  import { hide, offset, shift } from "@floating-ui/dom";
   import { type ComputePositionConfig } from "@floating-ui/dom";
   import { type Snippet } from "svelte";
   import { isNotVoid } from "typed-assert";
@@ -56,21 +56,45 @@
   const controls: Array<{ name: ActiveControl; use: ActionArray }> = [
     {
       use: createAnchoredFloatingUi({
-        middleware: [offset({ mainAxis: floatingUiOffset })],
+        middleware: [
+          offset({ mainAxis: floatingUiOffset }),
+          shift({
+            mainAxis: true,
+            crossAxis: true,
+            padding: 0,
+          }),
+          hide(),
+        ],
         placement: "top-end",
       }),
       name: "topEnd",
     },
     {
       use: createAnchoredFloatingUi({
-        middleware: [offset(createOffsetFnWithFrozenCrossAxis())],
+        middleware: [
+          offset(createOffsetFnWithFrozenCrossAxis()),
+          shift({
+            mainAxis: true,
+            crossAxis: true,
+            padding: floatingUiOffset,
+          }),
+          hide(),
+        ],
         placement: "bottom-start",
       }),
       name: "bottom",
     },
     {
       use: createAnchoredFloatingUi({
-        middleware: [offset(createOffsetFnWithFrozenCrossAxis())],
+        middleware: [
+          offset(createOffsetFnWithFrozenCrossAxis()),
+          shift({
+            mainAxis: true,
+            crossAxis: true,
+            padding: 0,
+          }),
+          hide(),
+        ],
         placement: "top-start",
       }),
       name: "top",

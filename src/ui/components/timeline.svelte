@@ -57,7 +57,12 @@
   const {
     day,
     autoScrollBlocked = false,
-  }: { autoScrollBlocked?: boolean; day: Moment } = $props();
+    isInSidebar = false,
+  }: {
+    autoScrollBlocked?: boolean;
+    day: Moment;
+    isInSidebar?: boolean;
+  } = $props();
 
   const {
     settingsStore,
@@ -297,94 +302,108 @@
   });
 </script>
 
-{#if timelineColumns.planner}
-  <Column
-    --timeline-column-z-index={$isToday(day) ? "6" : "auto"}
-    visibleHours={getVisibleHours($settingsStore)}
-  >
-    {#if $isToday(day)}
-      <Needle {autoScrollBlocked} />
-    {/if}
+<div class={["timeline", isInSidebar && "is-in-sidebar"]}>
+  {#if $isToday(day)}
+    <Needle {autoScrollBlocked} />
+  {/if}
 
-    <div
-      bind:this={el}
-      class="tasks absolute-stretch-x"
-      onpointerdown={(event) => {
-        if (isTouchEvent(event) || event.target !== el) {
-          return;
-        }
-
-        handleContainerPointerDown(event);
-      }}
-      onpointermove={handleContainerPointerMove}
-      onpointerup={confirmEdit}
-      use:timelineGestures
-      use:updateDragPointerOnAutoScroll
+  {#if timelineColumns.planner}
+    <Column
+      --timeline-column-z-index={$isToday(day) ? "6" : "auto"}
+      visibleHours={getVisibleHours($settingsStore)}
     >
-      {#each $displayedTimeBlocksForTimeline.withTime as timeBlock (getRenderKey(timeBlock))}
-        {@const separatorVisibility = plannerSeparatorVisibility.get(
-          getRenderKey(timeBlock),
-        )}
-        <PositionedTimeBlock
-          showBottomSeparator={separatorVisibility?.showBottomSeparator}
-          showTopSeparator={separatorVisibility?.showTopSeparator}
-          {timeBlock}
-        >
-          <UnscheduledTimeBlock {timeBlock}>
-            {#snippet bottomDecoration()}
-              {getBlockProps(timeBlock, settingsSignal.current)}
-            {/snippet}
-          </UnscheduledTimeBlock>
-        </PositionedTimeBlock>
-      {/each}
-    </div>
-  </Column>
-{/if}
+      <div
+        bind:this={el}
+        class="tasks absolute-stretch-x"
+        onpointerdown={(event) => {
+          if (isTouchEvent(event) || event.target !== el) {
+            return;
+          }
 
-{#if timelineColumns.timeTracker}
-  <Column
-    --timeline-column-z-index={$isToday(day) ? "6" : "auto"}
-    visibleHours={getVisibleHours($settingsStore)}
-  >
-    {#if $isToday(day)}
-      <Needle {autoScrollBlocked} />
-    {/if}
-
-    <div class="tasks absolute-stretch-x">
-      {#each logEntriesForDay.current as timeBlock (timeBlock.id)}
-        {@const separatorVisibility = logEntrySeparatorVisibility.get(
-          getRenderKey(timeBlock),
-        )}
-        <PositionedTimeBlock
-          showBottomSeparator={separatorVisibility?.showBottomSeparator}
-          showTopSeparator={separatorVisibility?.showTopSeparator}
-          {timeBlock}
-        >
-          <Selectable
-            onSecondarySelect={(event) => showLogBlockMenu(event, timeBlock)}
+          handleContainerPointerDown(event);
+        }}
+        onpointermove={handleContainerPointerMove}
+        onpointerup={confirmEdit}
+        use:timelineGestures
+        use:updateDragPointerOnAutoScroll
+      >
+        {#each $displayedTimeBlocksForTimeline.withTime as timeBlock (getRenderKey(timeBlock))}
+          {@const separatorVisibility = plannerSeparatorVisibility.get(
+            getRenderKey(timeBlock),
+          )}
+          <PositionedTimeBlock
+            showBottomSeparator={separatorVisibility?.showBottomSeparator}
+            showTopSeparator={separatorVisibility?.showTopSeparator}
+            {timeBlock}
           >
-            {#snippet children({ use, onpointerup, state })}
-              <LocalTimeBlock
-                isActive={state === "secondary"}
-                {onpointerup}
-                {timeBlock}
-                {use}
-              >
-                {#snippet bottomDecoration()}
-                  {getBlockProps(timeBlock, settingsSignal.current)}
-                {/snippet}
-              </LocalTimeBlock>
-            {/snippet}
-          </Selectable>
-        </PositionedTimeBlock>
-      {/each}
-    </div>
-  </Column>
-{/if}
+            <UnscheduledTimeBlock {timeBlock}>
+              {#snippet bottomDecoration()}
+                {getBlockProps(timeBlock, settingsSignal.current)}
+              {/snippet}
+            </UnscheduledTimeBlock>
+          </PositionedTimeBlock>
+        {/each}
+      </div>
+    </Column>
+  {/if}
+
+  {#if timelineColumns.timeTracker}
+    <Column
+      --timeline-column-z-index={$isToday(day) ? "6" : "auto"}
+      visibleHours={getVisibleHours($settingsStore)}
+    >
+      <div class="tasks absolute-stretch-x">
+        {#each logEntriesForDay.current as timeBlock (timeBlock.id)}
+          {@const separatorVisibility = logEntrySeparatorVisibility.get(
+            getRenderKey(timeBlock),
+          )}
+          <PositionedTimeBlock
+            showBottomSeparator={separatorVisibility?.showBottomSeparator}
+            showTopSeparator={separatorVisibility?.showTopSeparator}
+            {timeBlock}
+          >
+            <Selectable
+              onSecondarySelect={(event) => showLogBlockMenu(event, timeBlock)}
+            >
+              {#snippet children({ use, onpointerup, state })}
+                <LocalTimeBlock
+                  isActive={state === "secondary"}
+                  {onpointerup}
+                  {timeBlock}
+                  {use}
+                >
+                  {#snippet bottomDecoration()}
+                    {getBlockProps(timeBlock, settingsSignal.current)}
+                  {/snippet}
+                </LocalTimeBlock>
+              {/snippet}
+            </Selectable>
+          </PositionedTimeBlock>
+        {/each}
+      </div>
+    </Column>
+  {/if}
+</div>
 
 <!-- eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. -->
 
 <style>
+  .timeline {
+    isolation: isolate;
+    position: relative;
+
+    display: flex;
+    flex: 1 1 0;
+
+    height: fit-content;
+
+    border-inline-end: var(--timeline-border-inline-end);
+  }
+
+  .timeline.is-in-sidebar {
+    --timeline-time-block-inline-inset: 2px;
+  }
+
   .tasks {
     z-index: 2;
     top: 0;
@@ -393,7 +412,7 @@
     display: flex;
     flex-direction: column;
 
-    margin-inline: 0;
+    margin-inline: var(--timeline-time-block-inline-inset, 0);
   }
 
   .tasks :global(.planner-sticky-block-content) {

@@ -98,7 +98,11 @@
       onscroll={handleScroll}
     >
       {#snippet children(autoScrollBlocked)}
-        <Timeline {autoScrollBlocked} day={firstDayInRange} />
+        <Timeline
+          {autoScrollBlocked}
+          day={firstDayInRange}
+          isInSidebar={$isInSidebar}
+        />
       {/snippet}
     </Scroller>
   {/if}

@@ -36,14 +36,19 @@ export function useFloatingUi(options: Partial<ComputePositionConfig>) {
       isNotVoid(anchor);
       isNotVoid(floatingUi);
 
-      computePosition(anchor, floatingUi, options).then(({ x, y }) => {
-        isNotVoid(floatingUi);
+      computePosition(anchor, floatingUi, options).then(
+        ({ x, y, middlewareData }) => {
+          isNotVoid(floatingUi);
 
-        Object.assign(floatingUi.style, {
-          left: `${x}px`,
-          top: `${y}px`,
-        });
-      });
+          Object.assign(floatingUi.style, {
+            left: `${x}px`,
+            top: `${y}px`,
+            visibility: middlewareData.hide?.referenceHidden
+              ? "hidden"
+              : "visible",
+          });
+        },
+      );
     });
 
     return {

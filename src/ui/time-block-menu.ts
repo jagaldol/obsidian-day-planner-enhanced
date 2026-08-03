@@ -3,12 +3,15 @@ import { Menu } from "obsidian";
 
 import type { LogEntryEditor } from "../service/log-entry-editor";
 import type { WorkspaceFacade } from "../service/workspace-facade";
-import { type EditableTimeBlock } from "../time-block-types";
+import { type EditableTimeBlock, type LogTimeBlock } from "../time-block-types";
 import { runWithNoticeOnError } from "../util/effect";
+
+import { getTimeBlockClockAction } from "./time-block-clock-action";
 
 export function createTimeBlockMenu(props: {
   event: MouseEvent | TouchEvent;
   timeBlock: EditableTimeBlock;
+  activeLogTimeBlocks: readonly LogTimeBlock[];
   logEntryEditor: LogEntryEditor;
   workspaceFacade: WorkspaceFacade;
   onEdit: () => void;
@@ -18,6 +21,7 @@ export function createTimeBlockMenu(props: {
   const {
     event,
     timeBlock,
+    activeLogTimeBlocks,
     workspaceFacade,
     onEdit,
     onEditNestedItems,
@@ -30,13 +34,19 @@ export function createTimeBlockMenu(props: {
   }
 
   const menu = new Menu();
+  const clockAction = getTimeBlockClockAction(timeBlock, activeLogTimeBlocks);
 
   menu.addItem((item) => {
     item
-      .setTitle("Clock in")
-      .setIcon("play")
+      .setTitle(clockAction.title)
+      .setIcon(clockAction.icon)
       .onClick(async () => {
-        await runWithNoticeOnError(logEntryEditor.clockIn(timeBlock));
+        const effect =
+          clockAction.type === "out"
+            ? logEntryEditor.clockOut(clockAction.location)
+            : logEntryEditor.clockIn(clockAction.location);
+
+        await runWithNoticeOnError(effect);
       });
   });
 
