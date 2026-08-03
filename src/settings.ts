@@ -32,6 +32,16 @@ export const firstDayOfWeekOptions = {
   saturday: "Saturday",
   friday: "Friday",
 } as const satisfies Record<(typeof firstDaysOfWeek)[number], string>;
+export const timelineZoomLevelMin = 1;
+export const timelineZoomLevelMax = 5;
+export const timelineZoomLevelStep = 1;
+export const timelineZoomLevelOptions = {
+  1: "1",
+  2: "2",
+  3: "3",
+  4: "4",
+  5: "5",
+} as const;
 
 export type TimelineColumnType = "timeTracker" | "planner";
 export type TimelineColumns = Record<TimelineColumnType, boolean>;
@@ -56,8 +66,6 @@ export interface DayPlannerSettings {
   defaultDurationMinutes: number;
   minimalDurationMinutes: number;
   showTimestampInTaskBlock: boolean;
-  showUncheduledTasks: boolean;
-  showTimelineInSidebar: boolean;
   enableTimeTracker: boolean;
   showActiveClockInStatusBar: boolean;
   showNow: boolean;
@@ -100,7 +108,6 @@ export const defaultSettings: DayPlannerSettings = {
   defaultDurationMinutes: 30,
   minimalDurationMinutes: 10,
   showTimestampInTaskBlock: false,
-  showUncheduledTasks: true,
   showNow: true,
   showNext: true,
   pluginVersion: "",
@@ -116,21 +123,24 @@ export const defaultSettings: DayPlannerSettings = {
   sortTasksInPlanAfterEdit: false,
   firstDayOfWeek: "monday",
   multiDayRange: "3-days",
-  showTimelineInSidebar: true,
   enableTimeTracker: true,
   showActiveClockInStatusBar: true,
   timelineColumns: { planner: true, timeTracker: false },
 };
 
 type StoredDayPlannerSettings = Partial<DayPlannerSettings> & {
+  showUncheduledTasks?: boolean;
   showUnscheduledNestedTasks?: boolean;
+  showTimelineInSidebar?: boolean;
 };
 
 export function mergeStoredSettings(
   storedSettings: StoredDayPlannerSettings | null,
 ): DayPlannerSettings {
   const currentSettings = { ...storedSettings };
+  delete currentSettings.showUncheduledTasks;
   delete currentSettings.showUnscheduledNestedTasks;
+  delete currentSettings.showTimelineInSidebar;
 
   return {
     ...defaultSettings,

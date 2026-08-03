@@ -18,6 +18,9 @@ import {
   firstDaysOfWeek,
   hideTasksMetadataDescription,
   hideTimeRangeInSingleLineDescription,
+  timelineZoomLevelMax,
+  timelineZoomLevelMin,
+  timelineZoomLevelStep,
 } from "../settings";
 import Callout from "../ui/components/callout.svelte";
 
@@ -83,9 +86,9 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
             control: {
               type: "slider",
               key: "zoomLevel",
-              min: 1,
-              max: 5,
-              step: 1,
+              min: timelineZoomLevelMin,
+              max: timelineZoomLevelMax,
+              step: timelineZoomLevelStep,
             },
           },
           {
@@ -150,12 +153,25 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
       },
       {
         type: "group",
-        heading: "Tasks integration",
+        heading: "Enhanced features",
         items: [
+          {
+            name: "Enable time tracker",
+            desc: "Show time-tracking views, timeline columns, and clock actions. Existing records remain unchanged.",
+            control: { type: "toggle", key: "enableTimeTracker" },
+          },
           {
             name: "Hide Tasks metadata in planner",
             desc: hideTasksMetadataDescription,
             control: { type: "toggle", key: "hideTasksMetadata" },
+          },
+          {
+            name: "Hide time range in single-line blocks",
+            desc: hideTimeRangeInSingleLineDescription,
+            control: {
+              type: "toggle",
+              key: "hideTimeRangeInSingleLine",
+            },
           },
         ],
       },
@@ -397,17 +413,6 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
       },
       {
         type: "group",
-        heading: "Time tracking",
-        items: [
-          {
-            name: "Enable time tracker",
-            desc: "Show time-tracking views, timeline columns, and clock actions. Existing records remain unchanged.",
-            control: { type: "toggle", key: "enableTimeTracker" },
-          },
-        ],
-      },
-      {
-        type: "group",
         heading: "Status bar widget",
         items: [
           {
@@ -449,14 +454,6 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
             control: {
               type: "toggle",
               key: "showTimestampInTaskBlock",
-            },
-          },
-          {
-            name: "Hide time range in single-line blocks",
-            desc: hideTimeRangeInSingleLineDescription,
-            control: {
-              type: "toggle",
-              key: "hideTimeRangeInSingleLine",
             },
           },
         ],
@@ -728,7 +725,11 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
           )
           .addSlider((slider) =>
             slider
-              .setLimits(1, 5, 1)
+              .setLimits(
+                timelineZoomLevelMin,
+                timelineZoomLevelMax,
+                timelineZoomLevelStep,
+              )
               .setValue(Number(this.plugin.getSettings().zoomLevel) ?? 4)
               .setDynamicTooltip()
               .onChange((value: number) => {
@@ -825,7 +826,21 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
       );
 
     new SettingGroup(containerEl)
-      .setHeading("Tasks integration")
+      .setHeading("Enhanced features")
+      .addSetting((setting) =>
+        setting
+          .setName("Enable time tracker")
+          .setDesc(
+            "Show time-tracking views, timeline columns, and clock actions. Existing time records are kept unchanged.",
+          )
+          .addToggle((toggle) =>
+            toggle
+              .setValue(this.plugin.getSettings().enableTimeTracker)
+              .onChange((value: boolean) => {
+                this.updateSettings({ enableTimeTracker: value });
+              }),
+          ),
+      )
       .addSetting((setting) =>
         setting
           .setName("Hide Tasks metadata in planner")
@@ -837,6 +852,18 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
                 this.updateSettings({ hideTasksMetadata: value });
               }),
           ),
+      )
+      .addSetting((setting) =>
+        setting
+          .setName("Hide time range in single-line blocks")
+          .setDesc(hideTimeRangeInSingleLineDescription)
+          .addToggle((component) => {
+            component
+              .setValue(this.plugin.getSettings().hideTimeRangeInSingleLine)
+              .onChange((value) => {
+                this.updateSettings({ hideTimeRangeInSingleLine: value });
+              });
+          }),
       );
 
     new SettingGroup(containerEl)
@@ -1105,23 +1132,6 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
       );
 
     new SettingGroup(containerEl)
-      .setHeading("Time tracking")
-      .addSetting((setting) =>
-        setting
-          .setName("Enable time tracker")
-          .setDesc(
-            "Show time-tracking views, timeline columns, and clock actions. Existing time records are kept unchanged.",
-          )
-          .addToggle((toggle) =>
-            toggle
-              .setValue(this.plugin.getSettings().enableTimeTracker)
-              .onChange((value: boolean) => {
-                this.updateSettings({ enableTimeTracker: value });
-              }),
-          ),
-      );
-
-    new SettingGroup(containerEl)
       .setHeading("Status bar widget")
       .addSetting((setting) =>
         setting
@@ -1181,18 +1191,6 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
               .setValue(this.plugin.getSettings().showTimestampInTaskBlock)
               .onChange((value) => {
                 this.updateSettings({ showTimestampInTaskBlock: value });
-              });
-          }),
-      )
-      .addSetting((setting) =>
-        setting
-          .setName("Hide time range in single-line blocks")
-          .setDesc(hideTimeRangeInSingleLineDescription)
-          .addToggle((component) => {
-            component
-              .setValue(this.plugin.getSettings().hideTimeRangeInSingleLine)
-              .onChange((value) => {
-                this.updateSettings({ hideTimeRangeInSingleLine: value });
               });
           }),
       );

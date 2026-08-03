@@ -7,17 +7,14 @@ import {
   type DayPlannerSettings,
   firstDayOfWeekOptions,
   firstDaysOfWeek,
+  hideTasksMetadataDescription,
+  hideTimeRangeInSingleLineDescription,
+  timelineZoomLevelOptions,
 } from "../settings";
 
 const startHourOptions = Object.fromEntries(
   Array.range(0, 12).map((it) => [it, String(it)]),
 );
-const zoomLevelOptions = Object.fromEntries(
-  Array.range(1, 8)
-    .map(String)
-    .map((it) => [it, String(it)]),
-);
-
 export function createTimelineSettingsModalOpener(
   app: App,
   settingsStore: Writable<DayPlannerSettings>,
@@ -45,7 +42,7 @@ export function createTimelineSettingsModalOpener(
       .addSetting((setting) =>
         setting.setName("Zoom").addDropdown((dropdown) =>
           dropdown
-            .addOptions(zoomLevelOptions)
+            .addOptions(timelineZoomLevelOptions)
             .setValue(String(current().zoomLevel))
             .onChange((value) => {
               settingsStore.update((previous) => ({
@@ -72,16 +69,6 @@ export function createTimelineSettingsModalOpener(
 
     new SettingGroup(contentEl)
       .setHeading("Timeline")
-      .addSetting((setting) =>
-        setting.setName("Show timeline in sidebar").addToggle((toggle) =>
-          toggle.setValue(current().showTimelineInSidebar).onChange((value) => {
-            settingsStore.update((previous) => ({
-              ...previous,
-              showTimelineInSidebar: value,
-            }));
-          }),
-        ),
-      )
       .addSetting((setting) =>
         setting.setName("Auto-scroll to now").addToggle((toggle) =>
           toggle.setValue(current().centerNeedle).onChange((value) => {
@@ -116,16 +103,34 @@ export function createTimelineSettingsModalOpener(
       );
 
     new SettingGroup(contentEl)
-      .setHeading("All day events")
+      .setHeading("Enhanced features")
       .addSetting((setting) =>
-        setting.setName("Show all day events").addToggle((toggle) =>
-          toggle.setValue(current().showUncheduledTasks).onChange((value) => {
-            settingsStore.update((previous) => ({
-              ...previous,
-              showUncheduledTasks: value,
-            }));
-          }),
-        ),
+        setting
+          .setName("Hide Tasks metadata in planner")
+          .setDesc(hideTasksMetadataDescription)
+          .addToggle((toggle) =>
+            toggle.setValue(current().hideTasksMetadata).onChange((value) => {
+              settingsStore.update((previous) => ({
+                ...previous,
+                hideTasksMetadata: value,
+              }));
+            }),
+          ),
+      )
+      .addSetting((setting) =>
+        setting
+          .setName("Hide time range in single-line blocks")
+          .setDesc(hideTimeRangeInSingleLineDescription)
+          .addToggle((toggle) =>
+            toggle
+              .setValue(current().hideTimeRangeInSingleLine)
+              .onChange((value) => {
+                settingsStore.update((previous) => ({
+                  ...previous,
+                  hideTimeRangeInSingleLine: value,
+                }));
+              }),
+          ),
       );
 
     contentEl.createDiv("modal-button-container", (buttonsEl) => {

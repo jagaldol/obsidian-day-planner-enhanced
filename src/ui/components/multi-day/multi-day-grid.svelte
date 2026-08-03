@@ -144,13 +144,11 @@
 </script>
 
 <div class="corner">
-  {#if $settingsStore.showUncheduledTasks}
-    <GripHorizontal
-      class="horizontal-grip"
-      onmousedown={startResizing}
-      ontouchstart={startResizing}
-    />
-  {/if}
+  <GripHorizontal
+    class="horizontal-grip"
+    onmousedown={startResizing}
+    ontouchstart={startResizing}
+  />
 </div>
 
 <div bind:this={rulerRef} class="ruler">
@@ -187,28 +185,26 @@
   {/each}
 </div>
 
-{#if $settingsStore.showUncheduledTasks}
+<div
+  style:--multi-day-scrollbar-gutter={`${timelineScrollbarGutter}px`}
+  style:--timeline-internal-column-count={timelineInternalColumnCount}
+  class={["planner-header-row", "horizontal-resize-box-wrapper"]}
+  use:resizeAction
+>
+  <!--Note: we need this wrapper to listen to pointer events on the whole height of the row-->
   <div
-    style:--multi-day-scrollbar-gutter={`${timelineScrollbarGutter}px`}
-    style:--timeline-internal-column-count={timelineInternalColumnCount}
-    class={["planner-header-row", "horizontal-resize-box-wrapper"]}
-    use:resizeAction
+    bind:this={multiDayRowRef}
+    class="multi-day-row-wrapper"
+    onpointermove={handlePointerMove}
+    onpointerup={editContext.confirmEdit}
   >
-    <!--Note: we need this wrapper to listen to pointer events on the whole height of the row-->
-    <div
-      bind:this={multiDayRowRef}
-      class="multi-day-row-wrapper"
-      onpointermove={handlePointerMove}
-      onpointerup={editContext.confirmEdit}
-    >
-      <MultiDayRow bind:el={multiDayContentRef} />
-    </div>
-    <ColumnTracksOverlay
-      columnCount={dateRange.current.length}
-      bind:el={columnTrackOverlayEl}
-    />
+    <MultiDayRow bind:el={multiDayContentRef} />
   </div>
-{/if}
+  <ColumnTracksOverlay
+    columnCount={dateRange.current.length}
+    bind:el={columnTrackOverlayEl}
+  />
+</div>
 
 <ErrorBoundary>
   <div class="multi-day-main-content">

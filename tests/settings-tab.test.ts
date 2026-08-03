@@ -69,7 +69,11 @@ describe("DayPlannerSettingsTab declarative settings", () => {
     expect(serializedDefinitions).toContain("First day of week");
     expect(serializedDefinitions).toContain("Sunday");
     expect(serializedDefinitions).toContain("Enable time tracker");
-    expect(serializedDefinitions).toContain("Tasks integration");
+    expect(serializedDefinitions).toContain('"heading":"Enhanced features"');
+    expect(serializedDefinitions).not.toContain(
+      '"heading":"Tasks integration"',
+    );
+    expect(serializedDefinitions).not.toContain('"heading":"Time tracking"');
     expect(serializedDefinitions).toContain("hideTasksMetadata");
     expect(serializedDefinitions).toContain(hideTasksMetadataDescription);
     expect(serializedDefinitions).toContain("hideTimeRangeInSingleLine");

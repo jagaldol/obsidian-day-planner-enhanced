@@ -9,7 +9,9 @@ This plugin is an independent fork of [Obsidian Day Planner](https://github.com/
 ### ✨ Other improvements
 
 - Merged upstream 0.34.0–0.35.1 timeline improvements, including the week-strip header, compact All Day row, Timeline settings modal, timeline clock-in actions, and current-time/status-bar fixes.
-- Kept Enhanced's separate identity, visibility controls, nested-schedule rendering, and independent release history. The retired `showUnscheduledNestedTasks` stored key remains removed; the Timeline settings modal instead controls Enhanced's All Day visibility setting.
+- Kept Enhanced's separate identity, nested-schedule rendering, and independent release history while making the All Day row and sidebar timeline consistently available. The retired `showUncheduledTasks`, `showUnscheduledNestedTasks`, and `showTimelineInSidebar` stored keys are now discarded when settings load.
+- Unified the Timeline zoom range to `1–5` in both the Obsidian plugin settings and the in-view Timeline settings modal.
+- Grouped settings exclusive to Day Planner Enhanced under a dedicated **Enhanced features** section in the Obsidian plugin settings, with display-focused shortcuts also available from the in-view Timeline settings modal.
 
 ## 0.5.0
 

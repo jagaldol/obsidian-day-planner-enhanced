@@ -8,6 +8,7 @@
     firstDaysOfWeek,
     hideTasksMetadataDescription,
     hideTimeRangeInSingleLineDescription,
+    timelineZoomLevelOptions,
   } from "../../settings";
   import { range } from "../../util/collection";
 
@@ -15,11 +16,6 @@
 
   const startHourOptions = Object.fromEntries(
     range(0, 13).map((it) => [it, String(it)]),
-  );
-  const zoomLevelOptions = Object.fromEntries(
-    range(1, 9)
-      .map(String)
-      .map((it) => [it, String(it)]),
   );
 </script>
 
@@ -45,7 +41,7 @@
       .addSetting((setting) =>
         setting.setName("Zoom").addDropdown((dropdown) =>
           dropdown
-            .addOptions(zoomLevelOptions)
+            .addOptions(timelineZoomLevelOptions)
             .setValue(String($settings.zoomLevel))
             .onChange((value) => {
               $settings = {
@@ -72,16 +68,6 @@
 
     new SettingGroup(el)
       .setHeading("Timeline")
-      .addSetting((setting) =>
-        setting.setName("Show timeline").addToggle((toggle) =>
-          toggle.setValue($settings.showTimelineInSidebar).onChange((value) => {
-            $settings = {
-              ...$settings,
-              showTimelineInSidebar: value,
-            };
-          }),
-        ),
-      )
       .addSetting((setting) =>
         setting.setName("Auto-scroll to now").addToggle((toggle) =>
           toggle.setValue($settings.centerNeedle).onChange((value) => {
@@ -174,17 +160,6 @@
               }),
           ),
       );
-
-    new SettingGroup(el).setHeading("All day events").addSetting((setting) =>
-      setting.setName("Show all day events").addToggle((toggle) =>
-        toggle.setValue($settings.showUncheduledTasks).onChange((value) => {
-          $settings = {
-            ...$settings,
-            showUncheduledTasks: value,
-          };
-        }),
-      ),
-    );
 
     return () => {
       el.empty();

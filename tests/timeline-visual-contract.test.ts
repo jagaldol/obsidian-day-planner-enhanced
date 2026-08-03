@@ -109,6 +109,43 @@ describe("timeline visual contract", () => {
     }
   });
 
+  test("shares the 1-5 timeline zoom options across settings surfaces", () => {
+    for (const settingsSurface of [timelineSettingsModal, settingsControls]) {
+      expect(settingsSurface).toContain("timelineZoomLevelOptions");
+      expect(settingsSurface).not.toContain("Array.range(1, 8)");
+      expect(settingsSurface).not.toContain("range(1, 9)");
+    }
+  });
+
+  test("exposes display-focused Enhanced shortcuts in timeline settings", () => {
+    expect(timelineSettingsModal).toContain(
+      '.setHeading("Enhanced features")',
+    );
+    expect(timelineSettingsModal).toContain("hideTasksMetadata");
+    expect(timelineSettingsModal).toContain("hideTimeRangeInSingleLine");
+    expect(timelineSettingsModal).not.toContain("enableTimeTracker");
+  });
+
+  test("always renders all-day rows and the sidebar timeline", () => {
+    for (const source of [
+      timelineWithControls,
+      multiDayGrid,
+      timelineSettingsModal,
+      settingsControls,
+    ]) {
+      expect(source).not.toContain("showUncheduledTasks");
+      expect(source).not.toContain("showTimelineInSidebar");
+    }
+
+    expect(timelineWithControls).toContain(
+      'class={["all-day-row", $isInSidebar && "is-in-sidebar"]}',
+    );
+    expect(timelineWithControls).toContain("isInSidebar={$isInSidebar}");
+    expect(multiDayGrid).toContain(
+      'class={["planner-header-row", "horizontal-resize-box-wrapper"]}',
+    );
+  });
+
   test("overlaps the sidebar border while preserving right clipping space", () => {
     expect(timeline).toContain(
       "--timeline-time-block-inline-start-overlap: -1px;",

@@ -29,9 +29,6 @@
   const dateRange = getDateRangeContext();
   const firstDayInRange = $derived(dateRange.first);
   const lastDayInRange = $derived(dateRange.last);
-  const showTimeline = $derived(
-    !$isInSidebar || $settingsStore.showTimelineInSidebar,
-  );
 
   const displayedAllDayTimeBlocks = $derived(
     getDisplayedAllDayTimeBlocksForMultiDayRow.current({
@@ -66,63 +63,55 @@
     <TimelineControls />
   </div>
 
-  {#if showTimeline || $settingsStore.showUncheduledTasks}
-    <div class="corner">
-      {#if $settingsStore.showUncheduledTasks}
-        <GripHorizontal
-          class="horizontal-grip"
-          onmousedown={startResizing}
-          ontouchstart={startResizing}
-        />
-      {/if}
-    </div>
-  {/if}
+  <div class="corner">
+    <GripHorizontal
+      class="horizontal-grip"
+      onmousedown={startResizing}
+      ontouchstart={startResizing}
+    />
+  </div>
 
-  {#if $settingsStore.showUncheduledTasks}
-    <div
-      class={["all-day-row", $isInSidebar && "is-in-sidebar"]}
-      onpointermove={handleAllDayEventsPointerMove}
-      onpointerup={editContext.confirmEdit}
-      use:resizeAction
+  <div
+    class={["all-day-row", $isInSidebar && "is-in-sidebar"]}
+    onpointermove={handleAllDayEventsPointerMove}
+    onpointerup={editContext.confirmEdit}
+    use:resizeAction
+  >
+    <BlockList
+      --block-list-padding="0"
+      className="all-day-events"
+      list={displayedAllDayTimeBlocks}
     >
-      <BlockList
-        --block-list-padding="0"
-        className="all-day-events"
-        list={displayedAllDayTimeBlocks}
-      >
-        {#snippet match(timeBlock: TimelineTimeBlock)}
-          <UnscheduledTimeBlock {timeBlock} />
-        {/snippet}
-        {#snippet fallback()}
-          <div class="empty-all-day-events">No all day events</div>
-        {/snippet}
-      </BlockList>
-    </div>
-  {/if}
-
-  {#if showTimeline}
-    <div bind:this={rulerRef} class="ruler">
-      <Ruler
-        showCurrentTimeMarker={$isToday(firstDayInRange)}
-        visibleHours={getVisibleHours($settingsStore)}
-      />
-      <div class="scrollbar-filler"></div>
-    </div>
-
-    <Scroller
-      class={["planner-timeline-scroller", "timeline-row"]}
-      onscroll={handleScroll}
-    >
-      {#snippet children(autoScrollBlocked)}
-        <Timeline
-          {autoScrollBlocked}
-          day={firstDayInRange}
-          isInSidebar={$isInSidebar}
-          showNeedleMarker={false}
-        />
+      {#snippet match(timeBlock: TimelineTimeBlock)}
+        <UnscheduledTimeBlock {timeBlock} />
       {/snippet}
-    </Scroller>
-  {/if}
+      {#snippet fallback()}
+        <div class="empty-all-day-events">No all day events</div>
+      {/snippet}
+    </BlockList>
+  </div>
+
+  <div bind:this={rulerRef} class="ruler">
+    <Ruler
+      showCurrentTimeMarker={$isToday(firstDayInRange)}
+      visibleHours={getVisibleHours($settingsStore)}
+    />
+    <div class="scrollbar-filler"></div>
+  </div>
+
+  <Scroller
+    class={["planner-timeline-scroller", "timeline-row"]}
+    onscroll={handleScroll}
+  >
+    {#snippet children(autoScrollBlocked)}
+      <Timeline
+        {autoScrollBlocked}
+        day={firstDayInRange}
+        isInSidebar={$isInSidebar}
+        showNeedleMarker={false}
+      />
+    {/snippet}
+  </Scroller>
 </ErrorBoundary>
 
 <!-- eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. -->
