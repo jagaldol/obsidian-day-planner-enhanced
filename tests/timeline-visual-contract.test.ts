@@ -21,6 +21,10 @@ const floatingControls = fs.readFileSync(
   "src/ui/components/floating-controls.svelte",
   "utf8",
 );
+const resizeControls = fs.readFileSync(
+  "src/ui/components/resize-controls.svelte",
+  "utf8",
+);
 const useFloatingUi = fs.readFileSync(
   "src/ui/hooks/use-floating-ui.ts",
   "utf8",
@@ -228,6 +232,15 @@ describe("timeline visual contract", () => {
     expect(timeBlockControls).not.toContain(
       '--expanding-controls-position="absolute"',
     );
+  });
+
+  test("starts resize gestures relative to the selected block edge", () => {
+    expect(resizeControls).toContain("getResizeStartState");
+    expect(resizeControls).toContain("getRelativePointerDateTime");
+    expect(resizeControls).toContain("getIsomorphicClientY(event)");
+    expect(resizeControls).toContain("onpanstart: prepareResize");
+    expect(resizeControls).toContain("onpanmove: (event)");
+    expect(resizeControls).not.toContain("onpanstart: (event) => startResize");
   });
 
   test("renders all-day blocks as compact calendar-colored list rows", () => {

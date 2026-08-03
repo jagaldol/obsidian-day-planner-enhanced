@@ -5,6 +5,7 @@ import { defaultSettingsForTests } from "../../src/settings";
 import {
   getDragPointerDateTime,
   getDragStartState,
+  getResizeStartState,
   shouldUpdateDateTimePointer,
   withDragScrollOffset,
 } from "../../src/ui/hooks/use-edit/drag-pointer";
@@ -18,6 +19,7 @@ const settings = {
   startHour: 6,
   zoomLevel: 2,
 };
+const resizeSettings = { ...settings, zoomLevel: 1 };
 
 describe("drag pointer time", () => {
   test("starts all-day drags without a relative timeline origin", () => {
@@ -44,7 +46,7 @@ describe("drag pointer time", () => {
     };
     const operation = {
       dragOriginClientY: 120,
-      dragOriginStartTime: timeBlock.startTime.clone(),
+      dragOriginMinutes: 0,
       mode: EditMode.DRAG,
       timeBlock,
     };
@@ -95,7 +97,7 @@ describe("drag pointer time", () => {
 
     const operation = {
       dragOriginClientY: 120,
-      dragOriginStartTime: timeBlock.startTime.clone(),
+      dragOriginMinutes: 10 * 60,
       mode: EditMode.DRAG,
       timeBlock,
     };
@@ -120,7 +122,7 @@ describe("drag pointer time", () => {
     const operation = withDragScrollOffset(
       {
         dragOriginClientY: 120,
-        dragOriginStartTime: timeBlock.startTime.clone(),
+        dragOriginMinutes: 10 * 60,
         mode: EditMode.DRAG,
         timeBlock,
       },
@@ -148,7 +150,7 @@ describe("drag pointer time", () => {
     };
     const operation = {
       dragOriginClientY: 120,
-      dragOriginStartTime: timeBlock.startTime.clone(),
+      dragOriginMinutes: 10 * 60,
       mode: EditMode.DRAG,
       timeBlock,
     };
@@ -162,5 +164,97 @@ describe("drag pointer time", () => {
         timelineOffsetY: 840,
       }),
     ).toEqual(moment("2023-01-02 10:20"));
+  });
+
+  test.each([
+    {
+      description: "bottom",
+      edgeTime: "12:40",
+      fromTop: false,
+      mode: EditMode.RESIZE,
+      movedClientY: 308,
+      movedTime: "12:50",
+      nearlyStillClientY: 302,
+    },
+    {
+      description: "top",
+      edgeTime: "12:00",
+      fromTop: true,
+      mode: EditMode.RESIZE_FROM_TOP,
+      movedClientY: 292,
+      movedTime: "11:50",
+      nearlyStillClientY: 298,
+    },
+  ])(
+    "$description resize starts from the block edge instead of the floating control",
+    ({
+      edgeTime,
+      fromTop,
+      mode,
+      movedClientY,
+      movedTime,
+      nearlyStillClientY,
+    }) => {
+      const timeBlock = {
+        ...baseTimeBlock,
+        durationMinutes: 40,
+        isAllDayEvent: false,
+        startTime: moment("2023-01-01 12:00"),
+      };
+      const startState = getResizeStartState(timeBlock, 300, fromTop);
+      const operation = {
+        dragOriginClientY: startState.dragOriginClientY,
+        dragOriginMinutes: startState.dragOriginMinutes,
+        mode,
+        timeBlock,
+      };
+      const getDateTime = (clientY: number) =>
+        getDragPointerDateTime({
+          clientY,
+          day: moment("2023-01-01"),
+          operation,
+          settings: resizeSettings,
+          timelineOffsetY: 840,
+        });
+
+      expect(startState.pointerDateTime.dateTime).toEqual(
+        moment(`2023-01-01 ${edgeTime}`),
+      );
+      expect(getDateTime(nearlyStillClientY)).toEqual(
+        moment(`2023-01-01 ${edgeTime}`),
+      );
+      expect(getDateTime(movedClientY)).toEqual(
+        moment(`2023-01-01 ${movedTime}`),
+      );
+    },
+  );
+
+  test("bottom resize keeps a midnight edge on the following day", () => {
+    const timeBlock = {
+      ...baseTimeBlock,
+      durationMinutes: 30,
+      isAllDayEvent: false,
+      startTime: moment("2023-01-01 23:30"),
+    };
+    const startState = getResizeStartState(timeBlock, 300, false);
+
+    expect(startState.dragOriginMinutes).toBe(24 * 60);
+    expect(startState.pointerDateTime.dateTime).toEqual(
+      moment("2023-01-02 00:00"),
+    );
+    expect(
+      getDragPointerDateTime({
+        clientY: 302,
+        day: moment("2023-01-01"),
+        operation: {
+          dragOriginClientY: startState.dragOriginClientY,
+          dragOriginMinutes: startState.dragOriginMinutes,
+          mode: EditMode.RESIZE,
+          timeBlock,
+        },
+        settings: resizeSettings,
+        timelineOffsetY: 0,
+      }),
+    ).toEqual(moment("2023-01-02 00:00"));
   });
 });

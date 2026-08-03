@@ -2,7 +2,6 @@ import type {
   EditableTimeBlock,
   WithDuration,
 } from "../../../time-block-types";
-import type { Moment } from "../../../util/obsidian-moment";
 
 export enum EditMode {
   DRAG = "DRAG",
@@ -20,7 +19,7 @@ export enum EditMode {
 
 export interface EditOperation {
   dragOriginClientY?: number;
-  dragOriginStartTime?: Moment;
+  dragOriginMinutes?: number;
   dragScrollOffsetY?: number;
   timeBlock: WithDuration<EditableTimeBlock>;
   mode: EditMode;

@@ -11,6 +11,7 @@ import {
   minutesToMomentOfDay,
 } from "../../../util/moment";
 import type { Moment } from "../../../util/obsidian-moment";
+import { getEndMinutes } from "../../../util/time-block-utils";
 
 import type { EditOperation } from "./types";
 
@@ -32,6 +33,29 @@ export function getDragStartState(
   };
 }
 
+export function getResizeStartState(
+  timeBlock: WithDuration<EditableTimeBlock>,
+  clientY: number,
+  fromTop: boolean,
+): {
+  dragOriginClientY: number;
+  dragOriginMinutes: number;
+  pointerDateTime: PointerDateTime;
+} {
+  const dragOriginMinutes = fromTop
+    ? getMinutesSinceMidnight(timeBlock.startTime)
+    : getEndMinutes(timeBlock);
+
+  return {
+    dragOriginClientY: clientY,
+    dragOriginMinutes,
+    pointerDateTime: {
+      dateTime: minutesToMomentOfDay(dragOriginMinutes, timeBlock.startTime),
+      type: "dateTime",
+    },
+  };
+}
+
 export function getDragPointerDateTime(props: {
   clientY: number;
   day: Moment;
@@ -44,18 +68,18 @@ export function getDragPointerDateTime(props: {
   if (isRelativeDragOperation(operation)) {
     const {
       dragOriginClientY,
-      dragOriginStartTime,
+      dragOriginMinutes,
       dragScrollOffsetY = 0,
     } = operation;
-    const deltaMinutes =
-      (clientY - dragOriginClientY + dragScrollOffsetY) / settings.zoomLevel;
-    const snappedDeltaMinutes =
-      Math.round(deltaMinutes / settings.snapStepMinutes) *
-      settings.snapStepMinutes;
-    const targetMinutes =
-      getMinutesSinceMidnight(dragOriginStartTime) + snappedDeltaMinutes;
 
-    return minutesToMomentOfDay(targetMinutes, day);
+    return getRelativePointerDateTime({
+      clientY,
+      day,
+      dragOriginClientY,
+      dragOriginMinutes,
+      dragScrollOffsetY,
+      settings,
+    });
   }
 
   const snappedTimelineOffsetY = snap(timelineOffsetY, settings);
@@ -68,16 +92,42 @@ export function getDragPointerDateTime(props: {
   return minutesToMomentOfDay(minutesSinceMidnight, day);
 }
 
+export function getRelativePointerDateTime(props: {
+  clientY: number;
+  day: Moment;
+  dragOriginClientY: number;
+  dragOriginMinutes: number;
+  dragScrollOffsetY?: number;
+  settings: DayPlannerSettings;
+}) {
+  const {
+    clientY,
+    day,
+    dragOriginClientY,
+    dragOriginMinutes,
+    dragScrollOffsetY = 0,
+    settings,
+  } = props;
+  const deltaMinutes =
+    (clientY - dragOriginClientY + dragScrollOffsetY) / settings.zoomLevel;
+  const snappedDeltaMinutes =
+    Math.round(deltaMinutes / settings.snapStepMinutes) *
+    settings.snapStepMinutes;
+  const targetMinutes = dragOriginMinutes + snappedDeltaMinutes;
+
+  return minutesToMomentOfDay(targetMinutes, day);
+}
+
 export function isRelativeDragOperation(
   operation: EditOperation,
 ): operation is EditOperation & {
   dragOriginClientY: number;
-  dragOriginStartTime: Moment;
+  dragOriginMinutes: number;
 } {
   return (
     operation.timeBlock.isAllDayEvent !== true &&
     operation.dragOriginClientY !== undefined &&
-    operation.dragOriginStartTime !== undefined
+    operation.dragOriginMinutes !== undefined
   );
 }
 

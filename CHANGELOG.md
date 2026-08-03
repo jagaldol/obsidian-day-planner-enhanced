@@ -6,6 +6,10 @@ This plugin is an independent fork of [Obsidian Day Planner](https://github.com/
 
 ## Unreleased
 
+### 🐞 Fixed issues
+
+- Anchored timeline resize gestures to the selected block edge, preventing the floating top and bottom controls from adding their visual offset to the first movement.
+
 ### ✨ Other improvements
 
 - Merged upstream 0.34.0–0.35.1 timeline improvements, including the week-strip header, compact All Day row, Timeline settings modal, timeline clock-in actions, and current-time/status-bar fixes.

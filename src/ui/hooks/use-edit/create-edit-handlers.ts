@@ -60,12 +60,19 @@ export function createEditHandlers({
   function handleResizerMouseDown(
     timeBlock: WithDuration<EditableTimeBlock>,
     mode: EditMode,
+    dragOriginClientY?: number,
+    dragOriginMinutes?: number,
   ) {
     const pointerDay = get(pointerDateTime).dateTime;
 
     isNotVoid(pointerDay, "Day cannot be undefined on edit");
 
-    startEdit({ timeBlock: t.getTimelineSegmentSource(timeBlock), mode });
+    startEdit({
+      dragOriginClientY,
+      dragOriginMinutes,
+      timeBlock: t.getTimelineSegmentSource(timeBlock),
+      mode,
+    });
   }
 
   function handleGripMouseDown(
@@ -83,10 +90,10 @@ export function createEditHandlers({
 
     startEdit({
       dragOriginClientY,
-      dragOriginStartTime:
+      dragOriginMinutes:
         dragOriginClientY === undefined
           ? undefined
-          : timeBlock.startTime.clone(),
+          : getMinutesSinceMidnight(timeBlock.startTime),
       timeBlock: t.getTimelineSegmentSource(timeBlock),
       mode,
     });
