@@ -91,6 +91,19 @@ describe("TimelineControls navigation", () => {
     expect(reorderedDayLabels[0]).toBe("Sunday, July 12");
     expect(reorderedDayLabels.at(-1)).toBe("Saturday, July 18");
 
+    const firstDayButton = target.querySelector<HTMLElement>(
+      '[aria-label="Sunday, July 12"]',
+    );
+
+    expect(firstDayButton).not.toBeNull();
+    firstDayButton!.dispatchEvent(
+      new MouseEvent("click", { bubbles: true, cancelable: true }),
+    );
+
+    expect(set.mock.calls.at(-1)?.[0]?.[0]?.format("YYYY-MM-DD")).toBe(
+      "2026-07-12",
+    );
+
     unmount(component);
     flushSync();
   });

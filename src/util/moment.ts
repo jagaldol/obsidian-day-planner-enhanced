@@ -29,17 +29,18 @@ export function getDiffInMinutes(a: Moment, b: Moment) {
 
 export function getMomentFromDayOfWeek(
   startingDay: Moment,
-  firstDayOFWeek: DayPlannerSettings["firstDayOfWeek"],
+  firstDayOfWeek: DayPlannerSettings["firstDayOfWeek"],
 ) {
-  const startOfIsoWeek = startingDay.clone().startOf("isoWeek");
-  const subtractDays: Record<DayPlannerSettings["firstDayOfWeek"], number> = {
-    monday: 0,
-    sunday: 1,
-    saturday: 2,
-    friday: 3,
+  const dayIndex: Record<DayPlannerSettings["firstDayOfWeek"], number> = {
+    sunday: 0,
+    monday: 1,
+    friday: 5,
+    saturday: 6,
   };
+  const daysSinceFirstDay =
+    (startingDay.day() - dayIndex[firstDayOfWeek] + 7) % 7;
 
-  return startOfIsoWeek.subtract(subtractDays[firstDayOFWeek], "days");
+  return startingDay.clone().startOf("day").subtract(daysSinceFirstDay, "days");
 }
 
 export function minutesToMomentOfDay(
