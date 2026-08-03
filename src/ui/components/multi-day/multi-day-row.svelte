@@ -8,6 +8,8 @@
   import * as t from "../../../util/time-block-utils";
   import UnscheduledTimeBlock from "../unscheduled-time-block.svelte";
 
+  let { el = $bindable() }: { el?: HTMLDivElement } = $props();
+
   const { editContext } = getObsidianContext();
   const getDisplayedAllDayTimeBlocksForMultiDayRow = fromStore(
     editContext.getDisplayedAllDayTimeBlocksForMultiDayRow,
@@ -54,7 +56,11 @@
   }
 </script>
 
-<div style:--column-count={dateRange.current.length} class="multi-day-row">
+<div
+  bind:this={el}
+  style:--column-count={dateRange.current.length}
+  class="multi-day-row"
+>
   {#each displayedAllDayTimeBlocks as timeBlock (timeBlock.id)}
     <UnscheduledTimeBlock
       --all-day-list-border-right-width="1px"

@@ -7,6 +7,14 @@ const timelineWithControls = fs.readFileSync(
   "src/ui/components/timeline-with-controls.svelte",
   "utf8",
 );
+const timelineSettingsModal = fs.readFileSync(
+  "src/ui/timeline-settings-modal.ts",
+  "utf8",
+);
+const settingsControls = fs.readFileSync(
+  "src/ui/components/settings-controls.svelte",
+  "utf8",
+);
 const ruler = fs.readFileSync("src/ui/components/ruler.svelte", "utf8");
 const needle = fs.readFileSync("src/ui/components/needle.svelte", "utf8");
 const floatingControls = fs.readFileSync(
@@ -75,6 +83,30 @@ describe("timeline visual contract", () => {
     );
     expect(multiDayGrid).toContain("showNeedleMarker={false}");
     expect(timeline).toContain("{#if $isToday(day)}");
+  });
+
+  test("caps resizable all-day rows at their content height", () => {
+    expect(timelineWithControls).toContain("createResizeState()");
+    expect(timelineWithControls).toContain("<GripHorizontal");
+    expect(timelineWithControls).toContain("use:resizeAction");
+    expect(timelineWithControls).toContain("max-height: max-content;");
+    expect(multiDayGrid).toContain("createResizeState({");
+    expect(multiDayGrid).toContain(
+      "getMaxHeight: () => multiDayContentRef?.scrollHeight",
+    );
+    expect(multiDayGrid).toContain(
+      "<MultiDayRow bind:el={multiDayContentRef} />",
+    );
+    expect(timelineWithControls).not.toContain("max-height: 16vh;");
+    expect(multiDayGrid).not.toContain("max-height: 16vh;");
+  });
+
+  test("exposes the first day of week in timeline settings", () => {
+    for (const settingsSurface of [timelineSettingsModal, settingsControls]) {
+      expect(settingsSurface).toContain('setName("First day of week")');
+      expect(settingsSurface).toContain("firstDayOfWeekOptions");
+      expect(settingsSurface).toContain("firstDayOfWeek: value");
+    }
   });
 
   test("overlaps the sidebar border while preserving right clipping space", () => {

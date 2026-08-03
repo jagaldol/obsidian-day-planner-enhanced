@@ -14,6 +14,7 @@ import type DayPlanner from "../main";
 import {
   type DayPlannerSettings,
   eventFormats,
+  firstDayOfWeekOptions,
   firstDaysOfWeek,
   hideTasksMetadataDescription,
   hideTimeRangeInSingleLineDescription,
@@ -142,12 +143,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
             control: {
               type: "dropdown",
               key: "firstDayOfWeek",
-              options: {
-                monday: "Monday",
-                sunday: "Sunday",
-                saturday: "Saturday",
-                friday: "Friday",
-              },
+              options: firstDayOfWeekOptions,
             },
           },
         ],
@@ -818,12 +814,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
       .addSetting((setting) =>
         setting.setName("First day of week").addDropdown((component) =>
           component
-            .addOptions({
-              monday: "Monday",
-              sunday: "Sunday",
-              saturday: "Saturday",
-              friday: "Friday",
-            })
+            .addOptions(firstDayOfWeekOptions)
             .setValue(String(this.plugin.getSettings().firstDayOfWeek))
             .onChange((value: string) => {
               isOneOf(value, firstDaysOfWeek);

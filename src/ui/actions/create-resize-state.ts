@@ -8,7 +8,9 @@ import { getPointerOffsetY } from "../../util/dom";
  * This action is useful for cases when we need a resize grip that is outside
  * the resize container.
  */
-export function createResizeState() {
+export function createResizeState({
+  getMaxHeight,
+}: { getMaxHeight?: () => number | undefined } = {}) {
   const onDestroyCallbacks: Array<() => void> = [];
   let resizeContainerEl: HTMLElement | undefined;
   let editingHeight = false;
@@ -40,7 +42,12 @@ export function createResizeState() {
       `Failed to resize a container. Either an action function hasn't been passed to a container, or the container got destroyed.`,
     );
 
-    const newHeight = getPointerOffsetY(resizeContainerEl, event);
+    const pointerHeight = getPointerOffsetY(resizeContainerEl, event);
+    const maxHeight = getMaxHeight?.();
+    const newHeight =
+      maxHeight === undefined
+        ? pointerHeight
+        : Math.min(pointerHeight, maxHeight);
 
     resizeContainerEl.style.height = `${newHeight}px`;
   }

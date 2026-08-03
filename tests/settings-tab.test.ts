@@ -66,6 +66,8 @@ describe("DayPlannerSettingsTab declarative settings", () => {
     expect(serializedDefinitions).toContain("eventFormatOnCreation");
     expect(serializedDefinitions).toContain("Remote calendar URL");
     expect(serializedDefinitions).toContain("Date format in timeline header");
+    expect(serializedDefinitions).toContain("First day of week");
+    expect(serializedDefinitions).toContain("Sunday");
     expect(serializedDefinitions).toContain("Enable time tracker");
     expect(serializedDefinitions).toContain("Tasks integration");
     expect(serializedDefinitions).toContain("hideTasksMetadata");
@@ -100,6 +102,11 @@ describe("DayPlannerSettingsTab declarative settings", () => {
 
     expect(tab.getControlValue("hideTimeRangeInSingleLine")).toBe(true);
     expect(get(settingsStore).hideTimeRangeInSingleLine).toBe(true);
+
+    tab.setControlValue("firstDayOfWeek", "sunday");
+
+    expect(tab.getControlValue("firstDayOfWeek")).toBe("sunday");
+    expect(get(settingsStore).firstDayOfWeek).toBe("sunday");
   });
 
   test("documents the supported 24-hour timestamp syntax", () => {

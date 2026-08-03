@@ -26,6 +26,12 @@ export const firstDaysOfWeek = [
   "saturday",
   "friday",
 ] as const;
+export const firstDayOfWeekOptions = {
+  monday: "Monday",
+  sunday: "Sunday",
+  saturday: "Saturday",
+  friday: "Friday",
+} as const satisfies Record<(typeof firstDaysOfWeek)[number], string>;
 
 export type TimelineColumnType = "timeTracker" | "planner";
 export type TimelineColumns = Record<TimelineColumnType, boolean>;

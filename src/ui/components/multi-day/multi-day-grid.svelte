@@ -137,7 +137,10 @@
     });
   }
 
-  const { startResizing, resizeAction } = createResizeState();
+  let multiDayContentRef: HTMLDivElement | undefined = $state();
+  const { startResizing, resizeAction } = createResizeState({
+    getMaxHeight: () => multiDayContentRef?.scrollHeight,
+  });
 </script>
 
 <div class="corner">
@@ -198,7 +201,7 @@
       onpointermove={handlePointerMove}
       onpointerup={editContext.confirmEdit}
     >
-      <MultiDayRow />
+      <MultiDayRow bind:el={multiDayContentRef} />
     </div>
     <ColumnTracksOverlay
       columnCount={dateRange.current.length}
@@ -342,7 +345,6 @@
   :global(.horizontal-resize-box-wrapper) {
     position: relative;
     grid-area: multiday;
-    max-height: 16vh;
     border-bottom: var(--border-base);
   }
 

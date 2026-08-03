@@ -1,8 +1,13 @@
 import { Array } from "effect";
 import { App, Modal, SettingGroup } from "obsidian";
 import { get, type Writable } from "svelte/store";
+import { isOneOf } from "typed-assert";
 
-import type { DayPlannerSettings } from "../settings";
+import {
+  type DayPlannerSettings,
+  firstDayOfWeekOptions,
+  firstDaysOfWeek,
+} from "../settings";
 
 const startHourOptions = Object.fromEntries(
   Array.range(0, 12).map((it) => [it, String(it)]),
@@ -46,6 +51,20 @@ export function createTimelineSettingsModalOpener(
               settingsStore.update((previous) => ({
                 ...previous,
                 zoomLevel: Number(value),
+              }));
+            }),
+        ),
+      )
+      .addSetting((setting) =>
+        setting.setName("First day of week").addDropdown((dropdown) =>
+          dropdown
+            .addOptions(firstDayOfWeekOptions)
+            .setValue(current().firstDayOfWeek)
+            .onChange((value) => {
+              isOneOf(value, firstDaysOfWeek);
+              settingsStore.update((previous) => ({
+                ...previous,
+                firstDayOfWeek: value,
               }));
             }),
         ),

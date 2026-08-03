@@ -77,6 +77,20 @@ describe("TimelineControls navigation", () => {
       "2026-07-19",
     );
 
+    settingsStore.set({
+      ...defaultSettingsForTests,
+      firstDayOfWeek: "sunday",
+    });
+    flushSync();
+
+    const reorderedDayLabels = Array.from(
+      target.querySelectorAll<HTMLElement>(".day-of-month-button"),
+      (element) => element.getAttribute("aria-label"),
+    );
+
+    expect(reorderedDayLabels[0]).toBe("Sunday, July 12");
+    expect(reorderedDayLabels.at(-1)).toBe("Saturday, July 18");
+
     unmount(component);
     flushSync();
   });

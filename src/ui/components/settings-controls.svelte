@@ -1,8 +1,11 @@
 <script lang="ts">
   import { SettingGroup } from "obsidian";
+  import { isOneOf } from "typed-assert";
 
   import { getObsidianContext } from "../../context/obsidian-context";
   import {
+    firstDayOfWeekOptions,
+    firstDaysOfWeek,
     hideTasksMetadataDescription,
     hideTimeRangeInSingleLineDescription,
   } from "../../settings";
@@ -48,6 +51,20 @@
               $settings = {
                 ...$settings,
                 zoomLevel: Number(value),
+              };
+            }),
+        ),
+      )
+      .addSetting((setting) =>
+        setting.setName("First day of week").addDropdown((dropdown) =>
+          dropdown
+            .addOptions(firstDayOfWeekOptions)
+            .setValue($settings.firstDayOfWeek)
+            .onChange((value) => {
+              isOneOf(value, firstDaysOfWeek);
+              $settings = {
+                ...$settings,
+                firstDayOfWeek: value,
               };
             }),
         ),

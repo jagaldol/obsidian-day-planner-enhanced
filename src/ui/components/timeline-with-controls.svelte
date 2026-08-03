@@ -8,9 +8,11 @@
   import { isToday } from "../../global-store/current-time";
   import { getVisibleHours } from "../../global-store/derived-settings";
   import type { TimelineTimeBlock } from "../../time-block-types";
+  import { createResizeState } from "../actions/create-resize-state";
 
   import BlockList from "./block-list.svelte";
   import ErrorBoundary from "./error-boundary.svelte";
+  import { GripHorizontal } from "./lucide";
   import Ruler from "./ruler.svelte";
   import Scroller from "./scroller.svelte";
   import TimelineControls from "./timeline-controls.svelte";
@@ -38,6 +40,7 @@
     }),
   );
 
+  const { startResizing, resizeAction } = createResizeState();
   let rulerRef: HTMLDivElement | undefined = $state();
 
   function handleAllDayEventsPointerMove() {
@@ -64,7 +67,15 @@
   </div>
 
   {#if showTimeline || $settingsStore.showUncheduledTasks}
-    <div class="corner"></div>
+    <div class="corner">
+      {#if $settingsStore.showUncheduledTasks}
+        <GripHorizontal
+          class="horizontal-grip"
+          onmousedown={startResizing}
+          ontouchstart={startResizing}
+        />
+      {/if}
+    </div>
   {/if}
 
   {#if $settingsStore.showUncheduledTasks}
@@ -72,6 +83,7 @@
       class={["all-day-row", $isInSidebar && "is-in-sidebar"]}
       onpointermove={handleAllDayEventsPointerMove}
       onpointerup={editContext.confirmEdit}
+      use:resizeAction
     >
       <BlockList
         --block-list-padding="0"
@@ -119,12 +131,26 @@
   .corner {
     z-index: 1000;
 
+    display: flex;
     grid-area: corner;
+    flex-direction: column-reverse;
+    align-items: center;
 
     background-color: var(--background-primary);
     border-block: var(--border-base);
     border-inline-end: var(--border-base);
     box-shadow: var(--shadow-bottom);
+  }
+
+  :global(.horizontal-grip) {
+    flex: 0 0 auto;
+    color: var(--icon-color);
+    opacity: var(--icon-opacity);
+  }
+
+  :global(.horizontal-grip:hover) {
+    cursor: grab;
+    opacity: var(--icon-opacity-hover);
   }
 
   .ruler {
@@ -148,7 +174,7 @@
     overflow: auto;
     grid-area: all-day;
 
-    max-height: 16vh;
+    max-height: max-content;
 
     background-color: var(--background-primary);
     border-block-end: var(--border-base);

@@ -84,7 +84,10 @@ describe("single-day timeline layout contract", () => {
     );
     expect(timelineWithControls).toContain('class="ruler"');
     expect(timelineWithControls).toContain('"timeline-row"');
-    expect(timelineWithControls).toContain("max-height: 16vh");
+    expect(timelineWithControls).not.toContain("max-height: 16vh");
+    expect(timelineWithControls).toContain("max-height: max-content");
+    expect(timelineWithControls).toContain("createResizeState()");
+    expect(timelineWithControls).toContain("use:resizeAction");
     expect(timelineWithControls).toContain(
       ".all-day-row.is-in-sidebar {\n    margin-inline-start: -1px;",
     );
