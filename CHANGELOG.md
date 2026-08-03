@@ -4,6 +4,14 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.35.1**, and follows its own versioning.
 
+## 0.6.1
+
+### 🐞 Fixed issues
+
+- Made **Enable time tracker** consistently hide Time Tracker views, timeline column controls, clock commands, task-menu clock actions, and status-bar clock controls while leaving Planner, All Day, current-time, and current/upcoming-task UI available.
+- Added a warning before disabling Time Tracker with active clocks. Canceling restores the setting toggle, while confirming keeps existing records and saved column preferences unchanged for later re-enabling.
+- Disabled the dependent **Show active clock and Clock in button** setting while Time Tracker is off.
+
 ## 0.6.0
 
 ### ✨ New features
