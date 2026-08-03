@@ -17,16 +17,30 @@
     class?: string;
     bottomDecoration?: Snippet;
   } = $props();
+
+  const isAllDayList = $derived(timeBlock.isAllDayEvent === true);
+  const allDayColor = $derived(
+    isRemote(timeBlock)
+      ? timeBlock.calendar.color
+      : "var(--planner-all-day-color, var(--color-blue))",
+  );
 </script>
 
 {#if isRemote(timeBlock)}
-  <TimeBlockBase {timeBlock}>
+  <TimeBlockBase
+    {allDayColor}
+    allDayList={isAllDayList}
+    showAllDayStrip={false}
+    {timeBlock}
+  >
     <RemoteTimeBlockContent {bottomDecoration} {timeBlock} />
   </TimeBlockBase>
 {:else}
   <TimeBlockControls {timeBlock}>
     {#snippet content({ isActive, onPointerUp, use })}
       <LocalTimeBlock
+        {allDayColor}
+        allDayList={isAllDayList}
         {bottomDecoration}
         {isActive}
         onpointerup={onPointerUp}

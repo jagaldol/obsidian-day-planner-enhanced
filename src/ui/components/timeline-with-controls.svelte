@@ -68,12 +68,12 @@
 
   {#if $settingsStore.showUncheduledTasks}
     <div
-      class="all-day-row"
+      class={["all-day-row", $isInSidebar && "is-in-sidebar"]}
       onpointermove={handleAllDayEventsPointerMove}
       onpointerup={editContext.confirmEdit}
     >
       <BlockList
-        --block-list-padding="var(--size-2-1) 3px 0"
+        --block-list-padding="0"
         className="all-day-events"
         list={displayedAllDayTimeBlocks}
       >
@@ -112,10 +112,14 @@
 
 <style>
   .corner {
+    z-index: 1000;
+
     grid-area: corner;
+
     background-color: var(--background-primary);
     border-block: var(--border-base);
     border-inline-end: var(--border-base);
+    box-shadow: var(--shadow-bottom);
   }
 
   .ruler {
@@ -134,6 +138,8 @@
   }
 
   .all-day-row {
+    z-index: 1000;
+
     overflow: auto;
     grid-area: all-day;
 
@@ -141,6 +147,11 @@
 
     background-color: var(--background-primary);
     border-block-end: var(--border-base);
+    box-shadow: var(--shadow-bottom);
+  }
+
+  .all-day-row.is-in-sidebar {
+    margin-inline-start: -1px;
   }
 
   :global(.timeline-row) {

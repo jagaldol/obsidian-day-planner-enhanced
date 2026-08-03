@@ -22,7 +22,7 @@
   .column-tracks-wrapper {
     position: absolute;
     z-index: -1;
-    inset: 0 var(--scrollbar-width) 0 0;
+    inset: 0 var(--multi-day-scrollbar-gutter, 0) 0 0;
 
     overflow-x: hidden;
     display: grid;

@@ -12,13 +12,15 @@
     type ClientCoordinates,
   } from "../../util/dom";
 
-  const {
+  let {
     children,
+    el = $bindable(),
     onscroll,
     ...rest
   }: {
     children: Snippet<[boolean]>;
     class?: string | string[];
+    el?: HTMLElement;
     onscroll?: (event: Event) => void;
   } = $props();
 
@@ -27,7 +29,6 @@
   } = getObsidianContext();
 
   let isUnderCursor = $state(false);
-  let el: HTMLElement | undefined = $state();
   let autoScrollBlockedUntil = $state(0);
   let autoScrollUnblockTimeout: number | undefined;
   let lastEditPointerCoordinates: ClientCoordinates | undefined;

@@ -79,10 +79,20 @@ describe("single-day timeline layout contract", () => {
     expect(timelineView).toContain("handleActiveFileChange(");
     expect(timelineView).toContain("this.app.workspace.getActiveFile()");
     expect(timelineWithControls).toContain('class="controls-row"');
-    expect(timelineWithControls).toContain('class="all-day-row"');
+    expect(timelineWithControls).toContain(
+      'class={["all-day-row", $isInSidebar && "is-in-sidebar"]}',
+    );
     expect(timelineWithControls).toContain('class="ruler"');
     expect(timelineWithControls).toContain('"timeline-row"');
     expect(timelineWithControls).toContain("max-height: 16vh");
+    expect(timelineWithControls).toContain(
+      ".all-day-row.is-in-sidebar {\n    margin-inline-start: -1px;",
+    );
+    expect(timelineWithControls).toContain("box-shadow: var(--shadow-bottom)");
+    expect(timelineWithControls).not.toContain("box-sizing: content-box");
+    expect(timelineWithControls).not.toContain(
+      "var(--planner-all-day-shadow-space)",
+    );
     expect(timelineWithControls).not.toContain("ResizeableBox");
     expect(timelineWithControls).not.toContain("createColumnSelectionMenu");
   });

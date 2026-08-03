@@ -401,7 +401,8 @@
   }
 
   .timeline.is-in-sidebar {
-    --timeline-time-block-inline-inset: 2px;
+    --timeline-time-block-inline-start-overlap: -1px;
+    --timeline-time-block-inline-end-inset: 2px;
   }
 
   .tasks {
@@ -412,7 +413,8 @@
     display: flex;
     flex-direction: column;
 
-    margin-inline: var(--timeline-time-block-inline-inset, 0);
+    margin-inline: var(--timeline-time-block-inline-start-overlap, 0)
+      var(--timeline-time-block-inline-end-inset, 0);
   }
 
   .tasks :global(.planner-sticky-block-content) {

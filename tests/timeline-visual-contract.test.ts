@@ -3,6 +3,10 @@ import fs from "node:fs";
 import { describe, expect, test } from "vitest";
 
 const timeline = fs.readFileSync("src/ui/components/timeline.svelte", "utf8");
+const timelineWithControls = fs.readFileSync(
+  "src/ui/components/timeline-with-controls.svelte",
+  "utf8",
+);
 const needle = fs.readFileSync("src/ui/components/needle.svelte", "utf8");
 const floatingControls = fs.readFileSync(
   "src/ui/components/floating-controls.svelte",
@@ -16,6 +20,27 @@ const timeBlockControls = fs.readFileSync(
   "src/ui/components/time-block-controls.svelte",
   "utf8",
 );
+const timeBlockBase = fs.readFileSync(
+  "src/ui/components/time-block-base.svelte",
+  "utf8",
+);
+const unscheduledTimeBlock = fs.readFileSync(
+  "src/ui/components/unscheduled-time-block.svelte",
+  "utf8",
+);
+const multiDayRow = fs.readFileSync(
+  "src/ui/components/multi-day/multi-day-row.svelte",
+  "utf8",
+);
+const multiDayGrid = fs.readFileSync(
+  "src/ui/components/multi-day/multi-day-grid.svelte",
+  "utf8",
+);
+const columnTracksOverlay = fs.readFileSync(
+  "src/ui/components/multi-day/column-tracks-overlay.svelte",
+  "utf8",
+);
+const scroller = fs.readFileSync("src/ui/components/scroller.svelte", "utf8");
 
 describe("timeline visual contract", () => {
   test("renders one current-time needle across all visible columns", () => {
@@ -31,10 +56,16 @@ describe("timeline visual contract", () => {
     expect(needle).toContain("left: 0;");
   });
 
-  test("keeps selected sidebar blocks inside the clipping boundary", () => {
-    expect(timeline).toContain("--timeline-time-block-inline-inset: 2px;");
+  test("overlaps the sidebar border while preserving right clipping space", () => {
     expect(timeline).toContain(
-      "margin-inline: var(--timeline-time-block-inline-inset, 0);",
+      "--timeline-time-block-inline-start-overlap: -1px;",
+    );
+    expect(timeline).toContain("--timeline-time-block-inline-end-inset: 2px;");
+    expect(timeline).toContain(
+      "margin-inline: var(--timeline-time-block-inline-start-overlap, 0)",
+    );
+    expect(timeline).toContain(
+      "var(--timeline-time-block-inline-end-inset, 0);",
     );
   });
 
@@ -57,6 +88,45 @@ describe("timeline visual contract", () => {
     );
     expect(timeBlockControls).not.toContain(
       '--expanding-controls-position="absolute"',
+    );
+  });
+
+  test("renders all-day blocks as compact calendar-colored list rows", () => {
+    expect(unscheduledTimeBlock).toContain(
+      "const isAllDayList = $derived(timeBlock.isAllDayEvent === true)",
+    );
+    expect(unscheduledTimeBlock).toContain("allDayList={isAllDayList}");
+    expect(unscheduledTimeBlock).toContain("{allDayColor}");
+    expect(unscheduledTimeBlock).toContain(
+      '"var(--planner-all-day-color, var(--color-blue))"',
+    );
+    expect(unscheduledTimeBlock).toContain("timeBlock.calendar.color");
+    expect(timeBlockBase).toContain('allDayList && "all-day-list"');
+    expect(timeBlockBase).toContain(".content.all-day-list");
+    expect(timeBlockBase).toContain(
+      "background-color: var(--time-block-bg-color, var(--background-primary));",
+    );
+    expect(timeBlockBase).toContain(
+      "border-width: 0 var(--all-day-list-border-right-width, 0) 1px 0;",
+    );
+    expect(multiDayRow).toContain('--all-day-list-border-right-width="1px"');
+    expect(timelineWithControls).toContain('--block-list-padding="0"');
+  });
+
+  test("aligns multi-day headers and all-day tracks to the real scrollbar gutter", () => {
+    expect(scroller).toContain("el = $bindable()");
+    expect(multiDayGrid).toContain("bind:el={timelineScrollerRef}");
+    expect(multiDayGrid).toContain("el.offsetWidth - el.clientWidth");
+    expect(multiDayGrid).toContain("--multi-day-scrollbar-gutter");
+    expect(columnTracksOverlay).toContain(
+      "var(--multi-day-scrollbar-gutter, 0)",
+    );
+    expect(multiDayRow).not.toContain("var(--scrollbar-width)");
+    expect(multiDayGrid).toContain(
+      "if (!multiDayRowRef || !columnTrackOverlayEl)",
+    );
+    expect(multiDayGrid).toContain(
+      "const containerWidth = columnTrackOverlayEl.scrollWidth;",
     );
   });
 });

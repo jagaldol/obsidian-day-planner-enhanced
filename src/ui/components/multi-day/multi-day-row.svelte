@@ -57,6 +57,7 @@
 <div style:--column-count={dateRange.current.length} class="multi-day-row">
   {#each displayedAllDayTimeBlocks as timeBlock (timeBlock.id)}
     <UnscheduledTimeBlock
+      --all-day-list-border-right-width="1px"
       --time-block-grid-column="{getColumnIndex(timeBlock)} / span {getSpan(
         timeBlock,
       )}"

@@ -8,19 +8,25 @@
   import { useColorOverrides } from "../hooks/use-color.svelte";
 
   interface Props {
+    allDayColor?: string;
+    allDayList?: boolean;
     children: Snippet;
     blockEndDecoration?: Snippet;
     timeBlock: TimeBlock;
     use?: ActionArray;
     onpointerup?: (event: PointerEvent) => void;
+    showAllDayStrip?: boolean;
   }
 
   const {
+    allDayColor,
+    allDayList = false,
     onpointerup,
     children,
     blockEndDecoration,
     timeBlock,
     use = [],
+    showAllDayStrip = true,
   }: Props = $props();
 
   const {
@@ -54,7 +60,11 @@
   });
 </script>
 
-<div class="padding">
+<div
+  style:--all-day-color={allDayColor}
+  style:--all-day-strip-width={showAllDayStrip ? "4px" : "0"}
+  class={["padding", allDayList && "all-day-list"]}
+>
   <div
     style:--text-faint={faint}
     style:--text-muted={muted}
@@ -62,6 +72,7 @@
     style:--time-block-bg-color={backgroundColor}
     class={[
       "content",
+      allDayList && "all-day-list",
       timeBlock.timelineSegment?.startsBeforeSegment &&
         "continues-from-previous-day",
       timeBlock.timelineSegment?.continuesAfterSegment &&
@@ -183,6 +194,32 @@
 
     border: var(--time-block-outline-width, 0) solid
       var(--time-block-outline-color, transparent);
+  }
+
+  .padding.all-day-list {
+    --rendered-markdown-padding: var(--size-4-2) var(--size-4-3);
+
+    padding: 0;
+  }
+
+  .content.all-day-list {
+    background-color: var(--time-block-bg-color, var(--background-primary));
+    border-color: color-mix(
+      in srgb,
+      var(--all-day-color, var(--color-blue)) 18%,
+      var(--background-modifier-border)
+    );
+    border-width: 0 var(--all-day-list-border-right-width, 0) 1px 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .content.all-day-list::before {
+    width: var(--time-block-strip-width, var(--all-day-strip-width, 4px));
+    background-color: var(
+      --time-block-strip-color,
+      var(--all-day-color, var(--color-blue))
+    );
   }
 
   .continuation-cap {

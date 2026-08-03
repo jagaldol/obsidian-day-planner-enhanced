@@ -63,6 +63,28 @@
   let multiDayRowRef: HTMLDivElement | undefined = $state();
   let columnTrackOverlayEl: HTMLDivElement | undefined = $state();
   let rulerRef: HTMLDivElement | undefined = $state();
+  let timelineScrollerRef: HTMLElement | undefined = $state();
+  let timelineScrollbarGutter = $state(0);
+
+  $effect(() => {
+    const el = timelineScrollerRef;
+
+    if (!el) {
+      return;
+    }
+
+    const updateScrollbarGutter = () => {
+      timelineScrollbarGutter = Math.max(0, el.offsetWidth - el.clientWidth);
+    };
+    const resizeObserver = new ResizeObserver(updateScrollbarGutter);
+
+    resizeObserver.observe(el);
+    updateScrollbarGutter();
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  });
 
   function handleScroll(event: Event) {
     if (!(event.target instanceof Element)) {
@@ -87,14 +109,14 @@
   }
 
   function handlePointerMove(event: PointerEvent) {
-    if (!multiDayRowRef) {
+    if (!multiDayRowRef || !columnTrackOverlayEl) {
       return;
     }
 
     const currentDateRange = dateRange.current;
 
     const viewportToElOffsetX = multiDayRowRef.getBoundingClientRect().left;
-    const containerWidth = multiDayRowRef.scrollWidth;
+    const containerWidth = columnTrackOverlayEl.scrollWidth;
     const totalDays = currentDateRange.length;
     const pixelsPerDay = containerWidth / totalDays;
 
@@ -138,6 +160,7 @@
 
 <div
   bind:this={daysRef}
+  style:--multi-day-scrollbar-gutter={`${timelineScrollbarGutter}px`}
   style:--timeline-internal-column-count={timelineInternalColumnCount}
   class={["planner-header-row", "day-buttons"]}
 >
@@ -162,6 +185,7 @@
 
 {#if $settingsStore.showUncheduledTasks}
   <div
+    style:--multi-day-scrollbar-gutter={`${timelineScrollbarGutter}px`}
     style:--timeline-internal-column-count={timelineInternalColumnCount}
     class={["planner-header-row", "horizontal-resize-box-wrapper"]}
     use:resizeAction
@@ -184,7 +208,11 @@
 
 <ErrorBoundary>
   <div class="multi-day-main-content">
-    <Scroller class="planner-multi-day-scroller" onscroll={handleScroll}>
+    <Scroller
+      class="planner-multi-day-scroller"
+      onscroll={handleScroll}
+      bind:el={timelineScrollerRef}
+    >
       {#each dateRange.current as day}
         <Timeline
           --column-background-color={getColumnBackgroundColor(day)}
@@ -374,7 +402,8 @@
   }
 
   .header-cell:last-of-type {
-    flex: 1 0 calc(var(--cell-flex-basis) + var(--scrollbar-width));
+    flex: 1 0
+      calc(var(--cell-flex-basis) + var(--multi-day-scrollbar-gutter, 0));
     border-right: none;
   }
 </style>

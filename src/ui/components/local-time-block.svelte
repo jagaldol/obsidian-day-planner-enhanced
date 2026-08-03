@@ -12,12 +12,16 @@
 
   const {
     timeBlock,
+    allDayColor,
+    allDayList = false,
     bottomDecoration,
     blockEndDecoration,
     isActive = false,
     use = [],
     onpointerup,
   }: {
+    allDayColor?: string;
+    allDayList?: boolean;
     isActive?: boolean;
     timeBlock: LocalTimeBlock;
     bottomDecoration?: Snippet;
@@ -36,6 +40,8 @@
   --time-block-outline-width={isActive ? "2px" : ""}
   --time-block-strip-color={isActive ? "var(--color-accent)" : ""}
   --time-block-z-index={isActive ? "2" : ""}
+  {allDayColor}
+  {allDayList}
   {blockEndDecoration}
   {onpointerup}
   {timeBlock}
