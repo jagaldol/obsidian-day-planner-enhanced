@@ -42,7 +42,11 @@ export class ObsidianTasksExtensionService
       const dateMatch = line.match(regexp)?.groups?.["date"];
 
       if (dateMatch) {
-        return strictParse(dateMatch);
+        const scheduledDate = strictParse(dateMatch);
+
+        if (scheduledDate.isValid()) {
+          return scheduledDate;
+        }
       }
     }
   }

@@ -90,4 +90,8 @@ describe("Obsidian Tasks scheduled timestamps", () => {
       }),
     ]);
   });
+
+  test("ignores invalid scheduled dates", () => {
+    expect(indexScheduledTask({ text: "Task ⏳ 2026-99-99" })).toEqual([]);
+  });
 });

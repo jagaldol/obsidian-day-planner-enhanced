@@ -72,12 +72,19 @@ export class ListItemIndexService implements IndexService {
         const extensionResults = indexers.map((indexer) =>
           indexer(rawListItemEntryWithContext),
         );
+        const planEntries = extensionResults.flatMap(
+          (result) => result.planEntries ?? [],
+        );
+        // An explicit Tasks date overrides the date of the containing daily note.
+        const hasExplicitScheduledDate = planEntries.some(
+          (entry) => entry.source === "tasksPluginProp",
+        );
 
         return {
           ...rawListItemEntryWithContext.rawListItemEntry,
-          planEntries: extensionResults.flatMap(
-            (result) => result.planEntries ?? [],
-          ),
+          planEntries: hasExplicitScheduledDate
+            ? planEntries.filter((entry) => entry.source !== "dailyNoteDate")
+            : planEntries,
           logEntries: extensionResults.flatMap(
             (result) => result.logEntries ?? [],
           ),
