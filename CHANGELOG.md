@@ -4,20 +4,29 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.35.1**, and follows its own versioning.
 
-## Unreleased
+## 0.6.0
+
+### ✨ New features
+
+- Updated the fork baseline to upstream 0.35.1, including the week-strip header, compact All Day row, Timeline settings modal, timeline clock-in actions, and current-time/status-bar fixes.
+- Added first-day-of-week selection and resizable All Day rows across single-day, sidebar, and multi-day timelines.
+- Grouped Enhanced-only settings in a dedicated section and exposed display shortcuts in the Timeline settings modal.
 
 ### 🐞 Fixed issues
 
+- Made explicit Tasks scheduled dates take precedence over the containing daily note date, while retaining the daily note as a fallback for missing or invalid scheduled metadata.
+- Kept long task titles, time ranges, and nested content readable across compact and single-line timeline blocks.
+- Restored a continuous current-time marker from the time ruler, rendered behind schedule blocks and only across today's column in multi-day views.
+- Aligned All Day rows, date headers, timeline columns, borders, and separators across single-day, sidebar, and multi-day layouts.
+- Kept resize and move controls visible and distinct at timeline boundaries, and made active task menus show **Clock out** instead of **Clock in**.
 - Anchored timeline resize gestures to the selected block edge, preventing the floating top and bottom controls from adding their visual offset to the first movement.
+- Preserved wikilinks when planner Markdown is rewritten or sorted.
 
 ### ✨ Other improvements
 
-- Merged upstream 0.34.0–0.35.1 timeline improvements, including the week-strip header, compact All Day row, Timeline settings modal, timeline clock-in actions, and current-time/status-bar fixes.
-- Kept Enhanced's separate identity, nested-schedule rendering, and independent release history while making the All Day row and sidebar timeline consistently available. The retired `showUncheduledTasks`, `showUnscheduledNestedTasks`, and `showTimelineInSidebar` stored keys are now discarded when settings load.
+- Kept the All Day row and sidebar timeline consistently available. Retired visibility settings are removed from stored settings when they load.
 - Unified the Timeline zoom range to `1–5` in both the Obsidian plugin settings and the in-view Timeline settings modal.
-- Grouped settings exclusive to Day Planner Enhanced under a dedicated **Enhanced features** section in the Obsidian plugin settings, with display-focused shortcuts also available from the in-view Timeline settings modal.
 - Restored the original `16vh` initial cap for All Day rows while keeping manual resizing available from smaller heights up to the rendered content height.
-- Kept full time ranges and task titles aligned at the top of timeline blocks, switching from an inline to a stacked header only when its rendered height—including nested items—has enough room, while preventing long titles from squeezing or pushing the time range out of view.
 - Closed the right edge of single-day and sidebar All Day rows with the same subtle calendar-colored border used by multi-day columns.
 
 ## 0.5.0

@@ -8,7 +8,7 @@ Day Planner Enhanced is a community plugin for [Obsidian](https://obsidian.md/).
 
 This plugin is an independent MIT-licensed fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), currently aligned with upstream 0.35.1.
 
-The upstream 0.34.0–0.35.1 improvements include a week-strip timeline header, a compact All Day row, a shared **Timeline settings** modal, timeline clock-in actions, and current-time/status-bar fixes. Enhanced retains its readable nested schedules and independent identity.
+The upstream 0.35.1 baseline includes a week-strip timeline header, a compact All Day row, a shared **Timeline settings** modal, timeline clock-in actions, and current-time/status-bar fixes. Enhanced retains its readable nested schedules and independent identity.
 
 ## What Enhanced adds
 
@@ -49,6 +49,8 @@ Plans that cross midnight stay anchored to the day where they start while still 
 - **Undo-friendly removal**: timeline block removal is immediate from the context menu and still uses the undoable edit path.
 - **Theme-aware UI polish**: nested dividers, dots, time ranges, mobile controls, and checkbox colors are tuned for scanning and Obsidian themes.
 - **Flexible time-range display**: optionally hide the time range whenever a block uses a single-line header, including compact blocks.
+- **Configurable timeline layout**: choose the first day of the week, use the same `1–5` zoom range in either settings surface, and resize the All Day row in single-day, sidebar, and multi-day views.
+- **Stable block layout**: current-time markers, timeline controls, long titles, nested content, and All Day boundaries stay aligned across timeline layouts.
 - **Separate plugin identity**: installs as `day-planner-enhanced`, so it can live separately from the original Day Planner plugin.
 
 - 🪲 [Report bugs and suggest features](https://github.com/jagaldol/obsidian-day-planner-enhanced/issues)
@@ -197,6 +199,8 @@ For example, these tasks will show up in the timeline:
 - [ ] #task 08:00 - 10:00 This task uses the shorthand format ⏳ 2021-08-29
 - [ ] #task 11:00 - 13:00 This task uses the Dataview property format [scheduled:: 2021-08-29]
 ```
+
+An explicit Tasks scheduled date takes precedence over the date of a containing daily note. If the scheduled date is missing or invalid, the daily note date is used as the fallback.
 
 One or more leading Obsidian tags may appear immediately before either a single start time or a complete time range. A single start time uses the configured default task duration. When the timestamp format is `HHmm`, a compact single time such as `#task 1000 Focus` is accepted only in this leading-tag form; untagged compact numbers and time expressions elsewhere in the task description remain ordinary text.
 
