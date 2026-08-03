@@ -21,6 +21,7 @@ This plugin is an independent fork of [Obsidian Day Planner](https://github.com/
 - Kept resize and move controls visible and distinct at timeline boundaries, and made active task menus show **Clock out** instead of **Clock in**.
 - Anchored timeline resize gestures to the selected block edge, preventing the floating top and bottom controls from adding their visual offset to the first movement.
 - Preserved wikilinks when planner Markdown is rewritten or sorted.
+- Cleared Community plugin source diagnostics while preserving type-safe builds and mobile context-menu behavior.
 
 ### ✨ Other improvements
 

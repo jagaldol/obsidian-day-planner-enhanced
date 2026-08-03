@@ -143,6 +143,9 @@ describe("timeline visual contract", () => {
     expect(timelineWithControls).toContain("use:resizeAction");
     expect(timelineWithControls).toContain("max-height: 16vh;");
     expect(timelineWithControls).toContain(
+      ":global(.all-day-row.is-manually-resized)",
+    );
+    expect(timelineWithControls).toContain(
       "getMaxHeight: () => allDayRowRef?.scrollHeight",
     );
     expect(timelineWithControls).toContain("bind:this={allDayRowRef}");
@@ -154,6 +157,9 @@ describe("timeline visual contract", () => {
       "<MultiDayRow bind:el={multiDayContentRef} />",
     );
     expect(multiDayGrid).toContain("max-height: 16vh;");
+    expect(multiDayGrid).toContain(
+      ":global(.horizontal-resize-box-wrapper.is-manually-resized)",
+    );
   });
 
   test("exposes the first day of week in timeline settings", () => {

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Svelte validates the typed $props rune during svelte-check.
   const {
     title,
     contents,

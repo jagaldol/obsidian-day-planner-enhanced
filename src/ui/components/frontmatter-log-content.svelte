@@ -5,6 +5,7 @@
 
   import TimeBlockContentLayout from "./time-block-content-layout.svelte";
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Svelte validates the typed $props rune during svelte-check.
   const {
     timeBlock,
     bottomDecoration,

@@ -730,7 +730,7 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
                 timelineZoomLevelMax,
                 timelineZoomLevelStep,
               )
-              .setValue(Number(this.plugin.getSettings().zoomLevel) ?? 4)
+              .setValue(this.plugin.getSettings().zoomLevel)
               .setDynamicTooltip()
               .onChange((value: number) => {
                 this.updateSettings({ zoomLevel: value });

@@ -177,6 +177,10 @@
     box-shadow: var(--shadow-bottom);
   }
 
+  :global(.all-day-row.is-manually-resized) {
+    max-height: none;
+  }
+
   .all-day-row.is-in-sidebar {
     margin-inline-start: -1px;
   }

@@ -345,6 +345,10 @@
     border-bottom: var(--border-base);
   }
 
+  :global(.horizontal-resize-box-wrapper.is-manually-resized) {
+    max-height: none;
+  }
+
   .controls-sidebar {
     position: absolute;
     z-index: 10;

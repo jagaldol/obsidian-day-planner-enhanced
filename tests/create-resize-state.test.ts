@@ -24,9 +24,11 @@ describe("createResizeState", () => {
 
     resizeState.startResizing();
     expect(container.style.maxHeight).toBe("16vh");
+    expect(container.classList.contains("is-manually-resized")).toBe(false);
 
     document.dispatchEvent(new MouseEvent("mousemove", { clientY: 90 }));
-    expect(container.style.maxHeight).toBe("none");
+    expect(container.style.maxHeight).toBe("16vh");
+    expect(container.classList.contains("is-manually-resized")).toBe(true);
     expect(container.style.height).toBe("80px");
 
     document.dispatchEvent(new MouseEvent("mousemove", { clientY: 210 }));

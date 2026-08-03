@@ -40,5 +40,26 @@ module.exports = {
           "Use activeDocument instead of document for Obsidian popout window compatibility.",
       },
     ],
+    "no-restricted-syntax": [
+      "warn",
+      {
+        selector:
+          "AssignmentExpression[left.type='MemberExpression'][left.object.type='MemberExpression'][left.object.property.name='style'][right.type='Literal']",
+        message:
+          "Use a CSS class instead of assigning a static inline style. This mirrors obsidianmd/no-static-styles-assignment.",
+      },
+      {
+        selector:
+          "CallExpression[callee.type='MemberExpression'][callee.object.type='MemberExpression'][callee.object.property.name='style'][callee.property.name='setProperty'][arguments.1.type='Literal']",
+        message:
+          "Use a CSS class instead of assigning a static inline style. This mirrors obsidianmd/no-static-styles-assignment.",
+      },
+      {
+        selector:
+          "CallExpression[callee.type='MemberExpression'][callee.property.name='setAttribute'][arguments.0.value='style'][arguments.1.type='Literal']",
+        message:
+          "Use a CSS class instead of assigning a static inline style. This mirrors obsidianmd/no-static-styles-assignment.",
+      },
+    ],
   },
 };

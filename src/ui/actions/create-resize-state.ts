@@ -51,7 +51,7 @@ export function createResizeState({
 
     // A stylesheet can provide a compact initial cap (for example, 16vh).
     // Once the user drags, the explicit height and getMaxHeight own the limit.
-    resizeContainerEl.style.maxHeight = "none";
+    resizeContainerEl.classList.add("is-manually-resized");
     resizeContainerEl.style.height = `${newHeight}px`;
   }
 
