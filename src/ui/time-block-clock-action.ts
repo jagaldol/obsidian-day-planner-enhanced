@@ -18,7 +18,11 @@ export type TimeBlockClockAction =
 export function getTimeBlockClockAction(
   timeBlock: PlanTimeBlock,
   activeLogTimeBlocks: readonly LogTimeBlock[],
-): TimeBlockClockAction {
+): TimeBlockClockAction | undefined {
+  if (timeBlock.task === undefined) {
+    return;
+  }
+
   const activeClock = activeLogTimeBlocks.find(
     (clock) =>
       clock.source === "listItemLog" &&

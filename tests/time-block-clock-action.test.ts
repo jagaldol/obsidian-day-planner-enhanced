@@ -85,6 +85,16 @@ describe("timeline task clock action", () => {
       isRunning: true,
     };
 
-    expect(getTimeBlockClockAction(timeBlock, [clock]).type).toBe("in");
+    expect(getTimeBlockClockAction(timeBlock, [clock])?.type).toBe("in");
+  });
+
+  test("does not offer a clock action for a non-task list item", () => {
+    const nonTaskTimeBlock: PlanTimeBlock = {
+      ...timeBlock,
+      task: undefined,
+      status: undefined,
+    };
+
+    expect(getTimeBlockClockAction(nonTaskTimeBlock, [])).toBeUndefined();
   });
 });

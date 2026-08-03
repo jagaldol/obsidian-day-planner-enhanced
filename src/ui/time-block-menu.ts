@@ -39,19 +39,21 @@ export function createTimeBlockMenu(props: {
   if (isTimeTrackerEnabled) {
     const clockAction = getTimeBlockClockAction(timeBlock, activeLogTimeBlocks);
 
-    menu.addItem((item) => {
-      item
-        .setTitle(clockAction.title)
-        .setIcon(clockAction.icon)
-        .onClick(async () => {
-          const effect =
-            clockAction.type === "out"
-              ? logEntryEditor.clockOut(clockAction.location)
-              : logEntryEditor.clockIn(clockAction.location);
+    if (clockAction) {
+      menu.addItem((item) => {
+        item
+          .setTitle(clockAction.title)
+          .setIcon(clockAction.icon)
+          .onClick(async () => {
+            const effect =
+              clockAction.type === "out"
+                ? logEntryEditor.clockOut(clockAction.location)
+                : logEntryEditor.clockIn(clockAction.location);
 
-          await runWithNoticeOnError(effect);
-        });
-    });
+            await runWithNoticeOnError(effect);
+          });
+      });
+    }
   }
 
   menu.addItem((item) =>

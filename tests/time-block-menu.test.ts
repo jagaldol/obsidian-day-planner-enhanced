@@ -62,10 +62,13 @@ const timeBlock: PlanTimeBlock = {
   status: " ",
 };
 
-function showMenu(isTimeTrackerEnabled: boolean) {
+function showMenu(
+  isTimeTrackerEnabled: boolean,
+  menuTimeBlock: PlanTimeBlock = timeBlock,
+) {
   createTimeBlockMenu({
     event: new MouseEvent("contextmenu"),
-    timeBlock,
+    timeBlock: menuTimeBlock,
     activeLogTimeBlocks: [],
     isTimeTrackerEnabled,
     logEntryEditor: {} as LogEntryEditor,
@@ -98,5 +101,17 @@ describe("timeline task menu", () => {
       "Edit nested items...",
       "Delete",
     ]);
+  });
+
+  test("hides clock actions for a non-task planner block", () => {
+    showMenu(true, {
+      ...timeBlock,
+      task: undefined,
+      status: undefined,
+    });
+
+    expect(menuTitles).not.toContain("Clock in");
+    expect(menuTitles).not.toContain("Clock out");
+    expect(menuTitles).toContain("Edit");
   });
 });
