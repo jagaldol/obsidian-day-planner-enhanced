@@ -4,6 +4,13 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.35.1**, and follows its own versioning.
 
+## 0.6.2
+
+### 🐞 Fixed issues
+
+- Limited timeline **Clock in** and **Clock out** actions to actual checkbox tasks, preventing property-write errors on ordinary list items.
+- Kept the weekday selector in the same configured week when its first day is selected, including Sunday-first weeks.
+
 ## 0.6.1
 
 ### 🐞 Fixed issues
