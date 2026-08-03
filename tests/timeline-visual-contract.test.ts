@@ -7,6 +7,7 @@ const timelineWithControls = fs.readFileSync(
   "src/ui/components/timeline-with-controls.svelte",
   "utf8",
 );
+const ruler = fs.readFileSync("src/ui/components/ruler.svelte", "utf8");
 const needle = fs.readFileSync("src/ui/components/needle.svelte", "utf8");
 const floatingControls = fs.readFileSync(
   "src/ui/components/floating-controls.svelte",
@@ -50,10 +51,30 @@ describe("timeline visual contract", () => {
     expect(timeline).toContain("isolation: isolate;");
   });
 
-  test("keeps the current-time marker at the visible timeline edge", () => {
-    expect(needle).not.toContain("--planner-ruler-width");
-    expect(needle).toContain("z-index: 7;");
-    expect(needle).toContain("left: 0;");
+  test("renders the current-time line behind timeline blocks", () => {
+    expect(needle).toContain("z-index: 1;");
+    expect(timeline).toContain(".tasks {");
+    expect(timeline).toContain("z-index: 2;");
+    expect(timeline).not.toContain("--timeline-column-z-index=");
+  });
+
+  test("starts the single-day current-time marker at the ruler edge", () => {
+    expect(timelineWithControls).toContain(
+      "showCurrentTimeMarker={$isToday(firstDayInRange)}",
+    );
+    expect(timelineWithControls).toContain("showNeedleMarker={false}");
+    expect(ruler).toContain('class="ruler-needle-line"');
+    expect(ruler).toContain("left: 0;");
+    expect(ruler).toContain("right: -1px;");
+    expect(needle).toContain('showMarker && "show-marker"');
+  });
+
+  test("keeps the multi-day marker in the ruler and the line on today only", () => {
+    expect(multiDayGrid).toContain(
+      "showCurrentTimeMarker={dateRange.current.some($isToday)}",
+    );
+    expect(multiDayGrid).toContain("showNeedleMarker={false}");
+    expect(timeline).toContain("{#if $isToday(day)}");
   });
 
   test("overlaps the sidebar border while preserving right clipping space", () => {

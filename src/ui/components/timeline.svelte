@@ -58,10 +58,12 @@
     day,
     autoScrollBlocked = false,
     isInSidebar = false,
+    showNeedleMarker = true,
   }: {
     autoScrollBlocked?: boolean;
     day: Moment;
     isInSidebar?: boolean;
+    showNeedleMarker?: boolean;
   } = $props();
 
   const {
@@ -304,14 +306,11 @@
 
 <div class={["timeline", isInSidebar && "is-in-sidebar"]}>
   {#if $isToday(day)}
-    <Needle {autoScrollBlocked} />
+    <Needle {autoScrollBlocked} showMarker={showNeedleMarker} />
   {/if}
 
   {#if timelineColumns.planner}
-    <Column
-      --timeline-column-z-index={$isToday(day) ? "6" : "auto"}
-      visibleHours={getVisibleHours($settingsStore)}
-    >
+    <Column visibleHours={getVisibleHours($settingsStore)}>
       <div
         bind:this={el}
         class="tasks absolute-stretch-x"
@@ -348,10 +347,7 @@
   {/if}
 
   {#if timelineColumns.timeTracker}
-    <Column
-      --timeline-column-z-index={$isToday(day) ? "6" : "auto"}
-      visibleHours={getVisibleHours($settingsStore)}
-    >
+    <Column visibleHours={getVisibleHours($settingsStore)}>
       <div class="tasks absolute-stretch-x">
         {#each logEntriesForDay.current as timeBlock (timeBlock.id)}
           {@const separatorVisibility = logEntrySeparatorVisibility.get(

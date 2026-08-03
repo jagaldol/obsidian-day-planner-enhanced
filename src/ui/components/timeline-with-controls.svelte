@@ -5,6 +5,7 @@
   import { getDateRangeContext } from "../../context/date-range-context";
   import { getIsInSidebarContext } from "../../context/is-in-sidebar-context";
   import { getObsidianContext } from "../../context/obsidian-context";
+  import { isToday } from "../../global-store/current-time";
   import { getVisibleHours } from "../../global-store/derived-settings";
   import type { TimelineTimeBlock } from "../../time-block-types";
 
@@ -89,7 +90,10 @@
 
   {#if showTimeline}
     <div bind:this={rulerRef} class="ruler">
-      <Ruler visibleHours={getVisibleHours($settingsStore)} />
+      <Ruler
+        showCurrentTimeMarker={$isToday(firstDayInRange)}
+        visibleHours={getVisibleHours($settingsStore)}
+      />
       <div class="scrollbar-filler"></div>
     </div>
 
@@ -102,6 +106,7 @@
           {autoScrollBlocked}
           day={firstDayInRange}
           isInSidebar={$isInSidebar}
+          showNeedleMarker={false}
         />
       {/snippet}
     </Scroller>

@@ -10,9 +10,10 @@
 
   interface Props {
     autoScrollBlocked?: boolean;
+    showMarker?: boolean;
   }
 
-  const { autoScrollBlocked = false }: Props = $props();
+  const { autoScrollBlocked = false, showMarker = true }: Props = $props();
 
   let el: HTMLDivElement;
   const coords = $derived(
@@ -41,7 +42,7 @@
 <div
   bind:this={el}
   style:top="{coords}px"
-  class="needle-line absolute-stretch-x"
+  class={["needle-line", "absolute-stretch-x", showMarker && "show-marker"]}
 ></div>
 
 <!-- eslint-enable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Re-enable scorecard compatibility suppressions after this file. -->
@@ -49,12 +50,12 @@
 <style>
   .needle-line {
     pointer-events: none;
-    z-index: 7;
+    z-index: 1;
     height: 2px;
     background-color: var(--planner-current-time-color, #10b981);
   }
 
-  .needle-line::before {
+  .needle-line.show-marker::before {
     content: "";
 
     position: absolute;

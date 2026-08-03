@@ -153,6 +153,7 @@
 <div bind:this={rulerRef} class="ruler">
   <Ruler
     --ruler-box-shadow="var(--shadow-right)"
+    showCurrentTimeMarker={dateRange.current.some($isToday)}
     visibleHours={getVisibleHours($settingsStore)}
   />
   <div class="scrollbar-filler"></div>
@@ -218,6 +219,7 @@
           --column-background-color={getColumnBackgroundColor(day)}
           autoScrollBlocked={true}
           {day}
+          showNeedleMarker={false}
         />
       {/each}
     </Scroller>
