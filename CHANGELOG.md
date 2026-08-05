@@ -4,6 +4,13 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.35.1**, and follows its own versioning.
 
+## 0.6.3
+
+### 🐞 Fixed issues
+
+- Kept date labels stable and continuously visible while opening daily notes from single-day and multi-day planners.
+- Made rendered task checkbox taps persist reliably on mobile, including tasks on the first file line, while preventing checkbox gestures from triggering block long-press actions.
+
 ## 0.6.2
 
 ### 🐞 Fixed issues
