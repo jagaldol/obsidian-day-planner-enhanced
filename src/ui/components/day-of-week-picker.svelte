@@ -28,6 +28,7 @@
         isActive={isSelected}
         label={day.format("dddd, MMMM D")}
         onclick={() => onDayClick(day)}
+        showPendingIndicator={false}
       >
         <span
           class={[

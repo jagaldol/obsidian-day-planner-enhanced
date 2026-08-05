@@ -280,7 +280,7 @@ export function addLineDataToCheckboxes(
     (checkbox, i) => {
       const taskLine = taskLines[i];
 
-      if (!isHTMLElement(checkbox) || !taskLine) {
+      if (!isHTMLElement(checkbox) || taskLine === undefined) {
         return;
       }
 
@@ -290,7 +290,7 @@ export function addLineDataToCheckboxes(
 }
 
 export async function readCheckboxLineData(
-  event: PointerEvent,
+  event: Event,
   checkFn: (line: number) => Promise<void>,
 ) {
   if (!isHTMLElement(event.target)) {
@@ -335,19 +335,34 @@ export function createRenderMarkdownAttachment({
 
     addLineDataToCheckboxes(el, taskLines);
 
-    const offPointerUp = on(el, "pointerup", (event: PointerEvent) => {
+    const offClick = on(el, "click", (event: MouseEvent) => {
       if (onCheckboxLineClick) {
         readCheckboxLineData(event, onCheckboxLineClick);
       }
     });
+    const offPointerDown = on(
+      el,
+      "pointerdown",
+      stopPropagationForElWithLineData,
+    );
+    const offPointerUp = on(el, "pointerup", stopPropagationForElWithLineData);
+    const offMouseDown = on(el, "mousedown", stopPropagationForElWithLineData);
     const offMouseUp = on(el, "mouseup", stopPropagationForElWithLineData);
-    // todo: fix checkboxes
+    const offTouchStart = on(
+      el,
+      "touchstart",
+      stopPropagationForElWithLineData,
+    );
     const offTouchEnd = on(el, "touchend", stopPropagationForElWithLineData);
 
     return () => {
       destroyMarkdown();
+      offClick();
+      offPointerDown();
       offPointerUp();
+      offMouseDown();
       offMouseUp();
+      offTouchStart();
       offTouchEnd();
     };
   };

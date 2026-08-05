@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import {
+  createRenderMarkdownAttachment,
   createAutoScroll,
   dispatchAutoScrollPointerMove,
   getIsomorphicClientY,
@@ -45,6 +46,58 @@ describe("interactive event targets", () => {
     expect(isInteractiveEventTarget(link)).toBe(true);
     expect(isInteractiveEventTarget(child)).toBe(true);
     expect(isInteractiveEventTarget(document.createElement("div"))).toBe(false);
+  });
+});
+
+describe("rendered markdown checkboxes", () => {
+  test("persists a checkbox on the first file line from one semantic click", async () => {
+    const outer = document.createElement("div");
+    const markdownContainer = document.createElement("div");
+    const onOuterPointerDown = vi.fn();
+    const onOuterTouchStart = vi.fn();
+    const toggleCheckbox = vi.fn(async () => {});
+    const destroyMarkdown = vi.fn();
+    const renderMarkdown = vi.fn((el: HTMLElement) => {
+      el.innerHTML =
+        '<ul><li data-task=""><input type="checkbox"> First task</li></ul>';
+
+      return destroyMarkdown;
+    });
+    const attach = createRenderMarkdownAttachment({
+      renderMarkdown,
+      markdown: "- [ ] First task",
+      sourcePath: "daily-note.md",
+      taskLines: [0],
+      onCheckboxLineClick: toggleCheckbox,
+    });
+
+    outer.addEventListener("pointerdown", onOuterPointerDown);
+    outer.addEventListener("touchstart", onOuterTouchStart);
+    outer.append(markdownContainer);
+    const detach = attach(markdownContainer);
+    const checkbox = markdownContainer.querySelector<HTMLInputElement>(
+      'input[type="checkbox"]',
+    );
+
+    expect(checkbox?.dataset.line).toBe("0");
+
+    await Promise.resolve();
+    checkbox?.dispatchEvent(new Event("pointerdown", { bubbles: true }));
+    checkbox?.dispatchEvent(new Event("touchstart", { bubbles: true }));
+    checkbox?.dispatchEvent(new Event("pointerup", { bubbles: true }));
+    checkbox?.click();
+    await Promise.resolve();
+
+    expect(onOuterPointerDown).not.toHaveBeenCalled();
+    expect(onOuterTouchStart).not.toHaveBeenCalled();
+    expect(toggleCheckbox).toHaveBeenCalledOnce();
+    expect(toggleCheckbox).toHaveBeenCalledWith(0);
+
+    detach();
+    checkbox?.click();
+
+    expect(toggleCheckbox).toHaveBeenCalledOnce();
+    expect(destroyMarkdown).toHaveBeenCalledOnce();
   });
 });
 

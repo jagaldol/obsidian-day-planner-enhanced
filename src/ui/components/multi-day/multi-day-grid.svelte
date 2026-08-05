@@ -174,6 +174,7 @@
         onclick={async () => {
           await workspaceFacade.openFileForDay(day);
         }}
+        showPendingIndicator={false}
       >
         {#if $isToday(day)}
           🔵

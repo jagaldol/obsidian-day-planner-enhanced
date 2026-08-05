@@ -107,4 +107,74 @@ describe("TimelineControls navigation", () => {
     unmount(component);
     flushSync();
   });
+
+  test("keeps the selected date visible while its note is opening", async () => {
+    const target = document.createElement("div");
+    const selectedDay = window.moment("2026-07-18");
+    let finishCreatingNote: ((note: unknown) => void) | undefined;
+    const createDailyNoteIfNeeded = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          finishCreatingNote = resolve;
+        }),
+    );
+    const openFileInEditor = vi.fn(async () => {});
+    const dateRange: DateRange = {
+      current: [selectedDay],
+      first: selectedDay,
+      last: selectedDay,
+      set: vi.fn(),
+      update: vi.fn(),
+      untrack: vi.fn(),
+    };
+    const context = new Map<string, unknown>([
+      [dateRangeContextKey, dateRange],
+      [isInSidebarContextKey, writable(false)],
+      [
+        obsidianContextKey,
+        {
+          workspaceFacade: {
+            openFileForDay: vi.fn(),
+            openFileInEditor,
+          },
+          periodicNotes: { createDailyNoteIfNeeded },
+          initWeeklyView: vi.fn(),
+          openTimelineSettingsModal: vi.fn(),
+          reSync: vi.fn(),
+          settingsStore,
+        } as unknown as ObsidianContext,
+      ],
+    ]);
+
+    document.body.appendChild(target);
+
+    const component = mount(TimelineControls, { context, target });
+
+    flushSync();
+
+    const selectedDayButton = target.querySelector<HTMLElement>(
+      '[aria-label="Saturday, July 18"]',
+    );
+
+    selectedDayButton?.click();
+    await Promise.resolve();
+    flushSync();
+
+    expect(selectedDayButton?.getAttribute("aria-busy")).toBe("true");
+    expect(selectedDayButton?.textContent?.trim()).toBe("18");
+    expect(selectedDayButton?.querySelector(".is-pending")).toBeNull();
+    expect(selectedDayButton?.querySelector(".pending-indicator")).toBeNull();
+
+    finishCreatingNote?.({ path: "2026-07-18.md" });
+    await Promise.resolve();
+    await Promise.resolve();
+    flushSync();
+
+    expect(openFileInEditor).toHaveBeenCalledOnce();
+    expect(selectedDayButton?.querySelector(".pending-indicator")).toBeNull();
+    expect(selectedDayButton?.textContent?.trim()).toBe("18");
+
+    unmount(component);
+    flushSync();
+  });
 });
