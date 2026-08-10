@@ -4,6 +4,12 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.35.1**, and follows its own versioning.
 
+## 0.6.4
+
+### 🐞 Fixed issues
+
+- Changed the single-day timeline navigation arrows to move one day at a time instead of one week, while keeping the seven-day date strip available for direct selection.
+
 ## 0.6.3
 
 ### 🐞 Fixed issues
