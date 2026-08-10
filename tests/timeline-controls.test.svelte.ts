@@ -20,6 +20,60 @@ afterEach(() => {
 });
 
 describe("TimelineControls navigation", () => {
+  test("moves the selected date one day with the navigation buttons", () => {
+    const target = document.createElement("div");
+    const selectedDay = window.moment("2026-07-18");
+    const set = vi.fn();
+    const dateRange: DateRange = {
+      current: [selectedDay],
+      first: selectedDay,
+      last: selectedDay,
+      set,
+      update: vi.fn(),
+      untrack: vi.fn(),
+    };
+    const context = new Map<string, unknown>([
+      [dateRangeContextKey, dateRange],
+      [isInSidebarContextKey, writable(false)],
+      [
+        obsidianContextKey,
+        {
+          workspaceFacade: {
+            openFileForDay: vi.fn(),
+            openFileInEditor: vi.fn(),
+          },
+          periodicNotes: {
+            createDailyNoteIfNeeded: vi.fn(),
+          },
+          initWeeklyView: vi.fn(),
+          openTimelineSettingsModal: vi.fn(),
+          reSync: vi.fn(),
+          settingsStore,
+        } as unknown as ObsidianContext,
+      ],
+    ]);
+
+    document.body.appendChild(target);
+
+    const component = mount(TimelineControls, { context, target });
+
+    flushSync();
+
+    target
+      .querySelector<HTMLElement>('[aria-label="Go to previous day"]')
+      ?.click();
+    target
+      .querySelector<HTMLElement>('[aria-label="Go to next day"]')
+      ?.click();
+
+    expect(
+      set.mock.calls.map(([days]) => days[0].format("YYYY-MM-DD")),
+    ).toEqual(["2026-07-17", "2026-07-19"]);
+
+    unmount(component);
+    flushSync();
+  });
+
   test("shows the week strip but leaves regular-tab actions to the pane menu", () => {
     const target = document.createElement("div");
     const selectedDay = window.moment("2026-07-18");

@@ -33,11 +33,11 @@
   }
 
   function goBack() {
-    dateRange.set([selectedDay.clone().subtract(1, "week")]);
+    dateRange.set([selectedDay.clone().subtract(1, "day")]);
   }
 
   function goForward() {
-    dateRange.set([selectedDay.clone().add(1, "week")]);
+    dateRange.set([selectedDay.clone().add(1, "day")]);
   }
 
   async function goToNoteForDay(day: typeof selectedDay) {
@@ -75,7 +75,7 @@
 <div class="controls planner-timeline-controls">
   <div class="header">
     <div class="buttons-left">
-      <ControlButton label="Go to previous week" onclick={goBack}>
+      <ControlButton label="Go to previous day" onclick={goBack}>
         <ChevronLeft />
       </ControlButton>
       <ControlButton
@@ -83,7 +83,7 @@
         label="Go to today"
         onclick={goToToday}>Today</ControlButton
       >
-      <ControlButton label="Go to next week" onclick={goForward}>
+      <ControlButton label="Go to next day" onclick={goForward}>
         <ChevronRight />
       </ControlButton>
     </div>
