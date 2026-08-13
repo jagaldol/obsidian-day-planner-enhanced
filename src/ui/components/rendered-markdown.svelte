@@ -35,6 +35,7 @@
   const { listItem, nestedListItems } = $derived(
     toRenderableMarkdown(timeBlock, {
       hideTasksMetadata: $settingsStore.hideTasksMetadata,
+      showEmbedsInTaskBlocks: $settingsStore.showEmbedsInTaskBlocks,
     }),
   );
   const sourcePath = $derived(
@@ -248,6 +249,14 @@
 
   .markdown-wrapper :global(li) {
     color: var(--text-muted);
+  }
+
+  /* Only reachable with "Show embeds in timeline blocks" on. The block still
+     bounds the height, so this just keeps embeds from overflowing sideways. */
+  .markdown-wrapper :global(img),
+  .markdown-wrapper :global(.internal-embed) {
+    max-width: 100%;
+    height: auto;
   }
 
   .markdown-wrapper :global(li.task-list-item[data-task="x"]),

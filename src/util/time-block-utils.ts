@@ -582,8 +582,18 @@ export function removeTasksMetadata(text: string) {
     .replace(/[ \t]+$/gm, "");
 }
 
+// A timeline block is only as tall as its time range, so an embed rendered at
+// its natural size pushes the task text out of the clipped block. Downgrading
+// the embed to a link keeps the attachment reachable without the overflow.
+const embedMarkerRegExp = /(?<!\\)!(?=\[\[|\[[^\]]*\]\()/g;
+
+export function unembedAttachments(text: string) {
+  return text.replace(embedMarkerRegExp, "");
+}
+
 interface RenderableMarkdownOptions {
   hideTasksMetadata?: boolean;
+  showEmbedsInTaskBlocks?: boolean;
 }
 
 function optionallyRemoveTasksMetadata(
@@ -591,6 +601,13 @@ function optionallyRemoveTasksMetadata(
   options: RenderableMarkdownOptions,
 ) {
   return options.hideTasksMetadata ? removeTasksMetadata(text) : text;
+}
+
+function optionallyUnembedAttachments(
+  text: string,
+  options: RenderableMarkdownOptions,
+) {
+  return options.showEmbedsInTaskBlocks ? text : unembedAttachments(text);
 }
 
 export function toRenderableMarkdown(
@@ -604,6 +621,7 @@ export function toRenderableMarkdown(
     deleteProps,
     removeTimeRange,
     (text) => optionallyRemoveTasksMetadata(text, options),
+    (text) => optionallyUnembedAttachments(text, options),
   );
 
   const [, ...linesAfterFirst] = timeBlock.text.split("\n");
@@ -640,6 +658,7 @@ function getNestedListItems(
         getIndentedText(child, "", {
           formatTimeRanges: true,
           hideTasksMetadata: options.hideTasksMetadata,
+          showEmbedsInTaskBlocks: options.showEmbedsInTaskBlocks,
         }),
       );
 
@@ -670,10 +689,11 @@ function getIndentedText(
   options: {
     formatTimeRanges?: boolean;
     hideTasksMetadata?: boolean;
+    showEmbedsInTaskBlocks?: boolean;
   } = {},
 ): string {
-  const firstLineAsMarkdown = optionallyRemoveTasksMetadata(
-    getFirstLineAsMarkdown(root),
+  const firstLineAsMarkdown = optionallyUnembedAttachments(
+    optionallyRemoveTasksMetadata(getFirstLineAsMarkdown(root), options),
     options,
   );
   const firstLine = options.formatTimeRanges

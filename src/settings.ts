@@ -20,6 +20,8 @@ export const hideTasksMetadataDescription =
   "Hide Tasks dates/completion (⏳ 📅 ➕ 🛫 ✅), recurrence (🔁), priority, IDs/dependencies, on-completion, and inline fields like (scheduled:: …). Descriptions and tags stay visible; source notes are unchanged.";
 export const hideTimeRangeInSingleLineDescription =
   "Give task text more room by hiding the time range whenever a block uses a single-line header, including compact blocks.";
+export const showEmbedsInTaskBlocksDescription =
+  "Render pasted images, PDFs, and other embeds inside timeline blocks. A block is only as tall as its time range, so an embed can push the task text and time range out of view. When off, embeds show as plain links.";
 export const showActiveClockInStatusBarDescription =
   "Requires Enable time tracker. Show clock controls in the status bar.";
 export const firstDaysOfWeek = [
@@ -78,6 +80,7 @@ export interface DayPlannerSettings {
   showSubtasksInTaskBlocks: boolean;
   hideTasksMetadata: boolean;
   hideTimeRangeInSingleLine: boolean;
+  showEmbedsInTaskBlocks: boolean;
   icals: Array<IcalConfig>;
   colorOverrides: Array<ColorOverride>;
   releaseNotes: boolean;
@@ -117,6 +120,7 @@ export const defaultSettings: DayPlannerSettings = {
   showSubtasksInTaskBlocks: true,
   hideTasksMetadata: false,
   hideTimeRangeInSingleLine: false,
+  showEmbedsInTaskBlocks: false,
   icals: [],
   colorOverrides: [],
   releaseNotes: true,

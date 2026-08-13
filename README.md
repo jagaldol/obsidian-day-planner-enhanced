@@ -186,6 +186,8 @@ Right-click a timeline block and choose **Edit nested items...** to manage the c
 
 Pasting a file or an image into an item (or into the parent title) saves it to your configured attachment folder and inserts a link to it, the same way pasting into the Obsidian editor does. Images, audio, video, and PDFs are inserted as embeds; other file types are inserted as plain links.
 
+Timeline blocks are only as tall as their time range, so by default an embed is shown as a plain link there to keep the task text and time range visible. Turn on **Show embeds in timeline blocks** to render images and PDFs in the block itself. The nested items editor always renders embeds.
+
 ### 2. [tasks community plugin](obsidian://show-plugin?id=obsidian-tasks-plugin) integration, showing events from other files in your vault
 
 You can see tasks anywhere in the vault with dates added by the [tasks community plugin](obsidian://show-plugin?id=obsidian-tasks-plugin). This also works out of the box for all the files in the vault. You only need to add the `scheduled` property to a task in one of the formats:

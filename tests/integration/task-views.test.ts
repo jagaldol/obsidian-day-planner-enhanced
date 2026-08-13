@@ -175,6 +175,49 @@ describe("Task views", () => {
     expect(task.text).toBe(text);
   });
 
+  test("Downgrades embeds to links so they cannot push block text out of view", () => {
+    const { listItem, nestedListItems } = toRenderableMarkdown({
+      text: "09:00 - 10:00 Review ![[diagram.png]]",
+      symbol: "-",
+      status: " ",
+      children: [
+        { text: "Spec ![[brief.pdf]]", symbol: "-" },
+        { text: "Bundle [[assets.zip]]", symbol: "-" },
+        { text: "Shot ![alt](Attachments/shot.png)", symbol: "-" },
+      ],
+    });
+
+    expect(listItem).toBe("- [ ] Review [[diagram.png]]");
+    expect(nestedListItems).toBe(`- Spec [[brief.pdf]]
+- Bundle [[assets.zip]]
+- Shot [alt](Attachments/shot.png)`);
+  });
+
+  test("Keeps embeds when showEmbedsInTaskBlocks is on", () => {
+    const { listItem, nestedListItems } = toRenderableMarkdown(
+      {
+        text: "09:00 - 10:00 Review ![[diagram.png]]",
+        symbol: "-",
+        status: " ",
+        children: [{ text: "Spec ![[brief.pdf]]", symbol: "-" }],
+      },
+      { showEmbedsInTaskBlocks: true },
+    );
+
+    expect(listItem).toBe("- [ ] Review ![[diagram.png]]");
+    expect(nestedListItems).toBe("- Spec ![[brief.pdf]]");
+  });
+
+  test("Leaves an escaped exclamation mark alone", () => {
+    const { listItem } = toRenderableMarkdown({
+      text: String.raw`09:00 - 10:00 Wow\![[note]]`,
+      symbol: "-",
+      status: " ",
+    });
+
+    expect(listItem).toBe(String.raw`- [ ] Wow\![[note]]`);
+  });
+
   test("Preserves numeric-leading text when rendering with HH:mm", () => {
     const { listItem, nestedListItems } = toRenderableMarkdown({
       text: "2026 goals",

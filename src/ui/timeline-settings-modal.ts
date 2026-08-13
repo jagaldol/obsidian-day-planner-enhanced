@@ -10,6 +10,7 @@ import {
   firstDaysOfWeek,
   hideTasksMetadataDescription,
   hideTimeRangeInSingleLineDescription,
+  showEmbedsInTaskBlocksDescription,
   timelineZoomLevelOptions,
 } from "../settings";
 
@@ -129,6 +130,21 @@ export function createTimelineSettingsModalOpener(
                 settingsStore.update((previous) => ({
                   ...previous,
                   hideTimeRangeInSingleLine: value,
+                }));
+              }),
+          );
+      })
+      .addSetting((setting) => {
+        setting
+          .setName("Show embeds in timeline blocks")
+          .setDesc(showEmbedsInTaskBlocksDescription)
+          .addToggle((toggle) =>
+            toggle
+              .setValue(current().showEmbedsInTaskBlocks)
+              .onChange((value) => {
+                settingsStore.update((previous) => ({
+                  ...previous,
+                  showEmbedsInTaskBlocks: value,
                 }));
               }),
           );

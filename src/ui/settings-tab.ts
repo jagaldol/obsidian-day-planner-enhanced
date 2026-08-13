@@ -18,6 +18,7 @@ import {
   firstDaysOfWeek,
   hideTasksMetadataDescription,
   hideTimeRangeInSingleLineDescription,
+  showEmbedsInTaskBlocksDescription,
   showActiveClockInStatusBarDescription,
   timelineZoomLevelMax,
   timelineZoomLevelMin,
@@ -190,6 +191,11 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
               type: "toggle",
               key: "hideTimeRangeInSingleLine",
             },
+          },
+          {
+            name: "Show embeds in timeline blocks",
+            desc: showEmbedsInTaskBlocksDescription,
+            control: { type: "toggle", key: "showEmbedsInTaskBlocks" },
           },
         ],
       },
@@ -897,6 +903,18 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
                 this.updateSettings({ hideTimeRangeInSingleLine: value });
               });
           }),
+      )
+      .addSetting((setting) =>
+        setting
+          .setName("Show embeds in timeline blocks")
+          .setDesc(showEmbedsInTaskBlocksDescription)
+          .addToggle((toggle) =>
+            toggle
+              .setValue(this.plugin.getSettings().showEmbedsInTaskBlocks)
+              .onChange((value: boolean) => {
+                this.updateSettings({ showEmbedsInTaskBlocks: value });
+              }),
+          ),
       );
 
     new SettingGroup(containerEl)
