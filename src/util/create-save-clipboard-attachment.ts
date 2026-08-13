@@ -9,19 +9,20 @@ import {
   toAttachmentMarkdown,
 } from "./clipboard-attachment";
 
-type AppWithAttachmentSaver = App & {
-  saveAttachment: (
-    baseName: string,
-    extension: string,
-    data: ArrayBuffer,
-  ) => Promise<TFile>;
-};
+function getAttachmentSaver(app: App): unknown {
+  return "saveAttachment" in app ? app.saveAttachment : undefined;
+}
 
-function hasAttachmentSaver(app: App): app is AppWithAttachmentSaver {
+function isAttachmentFile(value: unknown): value is TFile {
   return (
-    "saveAttachment" in app &&
-    typeof (app as Partial<AppWithAttachmentSaver>).saveAttachment ===
-      "function"
+    typeof value === "object" &&
+    value !== null &&
+    "path" in value &&
+    typeof value.path === "string" &&
+    "name" in value &&
+    typeof value.name === "string" &&
+    "extension" in value &&
+    typeof value.extension === "string"
   );
 }
 
@@ -59,6 +60,7 @@ async function saveThroughObsidian(
   data: ArrayBuffer,
 ) {
   const activeFile = app.workspace.getActiveFile();
+  const attachmentSaver = getAttachmentSaver(app);
 
   // Obsidian's editor paste path is app.saveAttachment. Using that native
   // pipeline preserves Obsidian's attachment behavior without depending on a
@@ -66,10 +68,23 @@ async function saveThroughObsidian(
   // note context, so only use it when that context is the note being edited.
   // Otherwise retain the explicit source path so a timeline task from another
   // note cannot save into the wrong relative folder.
-  if (activeFile?.path === sourcePath && hasAttachmentSaver(app)) {
+  if (
+    activeFile?.path === sourcePath &&
+    typeof attachmentSaver === "function"
+  ) {
     const { baseName, extension } = splitAttachmentFileName(fileName);
+    const attachment: unknown = await attachmentSaver.call(
+      app,
+      baseName,
+      extension,
+      data,
+    );
 
-    return app.saveAttachment(baseName, extension, data);
+    if (!isAttachmentFile(attachment)) {
+      throw new TypeError("Obsidian did not return a saved attachment file");
+    }
+
+    return attachment;
   }
 
   return saveForSourcePath(app, fileName, sourcePath, data);
