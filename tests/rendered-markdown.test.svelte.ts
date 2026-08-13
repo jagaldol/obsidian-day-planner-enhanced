@@ -7,7 +7,29 @@ import { defaultSettingsForTests } from "../src/settings";
 import type { ObsidianContext } from "../src/types";
 import RenderedMarkdown from "../src/ui/components/rendered-markdown.svelte";
 
+import type { ListItemEntryWithChildren } from "../src/redux/index/index-slice";
+
 import { baseTimeBlock } from "./edit/util/fixtures";
+
+function createNestedListItem(
+  id: string,
+  text: string,
+  line: number,
+): ListItemEntryWithChildren {
+  return {
+    id,
+    text,
+    task: " ",
+    symbol: "-",
+    path: "path",
+    position: {
+      start: { line, col: 0, offset: 0 },
+      end: { line, col: 0, offset: 0 },
+    },
+    logEntries: [],
+    planEntries: [],
+  };
+}
 
 afterEach(() => {
   document.body.innerHTML = "";
@@ -334,6 +356,97 @@ describe("RenderedMarkdown", () => {
       expect.any(HTMLElement),
       "- [ ] Review proposal",
       sourcePath,
+    );
+
+    unmount(component);
+  });
+
+  test("does not re-render markdown when an edit hands it an equal time block", () => {
+    const target = document.createElement("div");
+    const renderMarkdown = vi.fn(() => vi.fn());
+    const context = new Map<string, unknown>([
+      [
+        obsidianContextKey,
+        {
+          renderMarkdown,
+          settingsStore: writable(defaultSettingsForTests),
+          toggleCheckboxInFile: vi.fn(),
+        } as unknown as ObsidianContext,
+      ],
+    ]);
+
+    document.body.appendChild(target);
+
+    const props = $state({
+      timeBlock: {
+        ...baseTimeBlock,
+        text: "10:00 - 11:00 Review proposal",
+        children: [
+          createNestedListItem("child-1", "Read the brief", 1),
+          createNestedListItem("child-2", "Leave a comment", 2),
+        ],
+      },
+    });
+
+    const component = mount(RenderedMarkdown, { context, props, target });
+
+    flushSync();
+
+    const callsAfterMount = renderMarkdown.mock.calls.length;
+
+    expect(callsAfterMount).toBeGreaterThan(0);
+
+    // An active edit operation rebuilds every block object on each pointer
+    // move, so an unchanged block still arrives as a new reference.
+    props.timeBlock = {
+      ...baseTimeBlock,
+      text: "10:00 - 11:00 Review proposal",
+      children: [
+        createNestedListItem("child-1", "Read the brief", 1),
+        createNestedListItem("child-2", "Leave a comment", 2),
+      ],
+    };
+    flushSync();
+
+    expect(renderMarkdown).toHaveBeenCalledTimes(callsAfterMount);
+
+    unmount(component);
+  });
+
+  test("re-renders markdown once the block text actually changes", () => {
+    const target = document.createElement("div");
+    const renderMarkdown = vi.fn(() => vi.fn());
+    const context = new Map<string, unknown>([
+      [
+        obsidianContextKey,
+        {
+          renderMarkdown,
+          settingsStore: writable(defaultSettingsForTests),
+          toggleCheckboxInFile: vi.fn(),
+        } as unknown as ObsidianContext,
+      ],
+    ]);
+
+    document.body.appendChild(target);
+
+    const props = $state({
+      timeBlock: { ...baseTimeBlock, text: "10:00 - 11:00 Review proposal" },
+    });
+
+    const component = mount(RenderedMarkdown, { context, props, target });
+
+    flushSync();
+
+    const callsAfterMount = renderMarkdown.mock.calls.length;
+
+    props.timeBlock = { ...baseTimeBlock, text: "10:00 - 11:00 Ship release" };
+    flushSync();
+
+    expect(renderMarkdown.mock.calls.length).toBeGreaterThan(callsAfterMount);
+    expect(renderMarkdown).toHaveBeenLastCalledWith(
+      expect.any(HTMLElement),
+      "- [ ] Ship release",
+      "path",
     );
 
     unmount(component);

@@ -26,10 +26,21 @@
 
   type NestedListItem = NonNullable<LocalTimeBlock["children"]>[number];
 
+  // The markdown attachment has no update hook: any input that changes identity
+  // tears the rendered subtree down and builds it again. An edit operation hands
+  // this component a fresh timeBlock object on every pointer move, so the values
+  // it feeds the attachment have to stay referentially stable while the rendered
+  // markdown is unchanged. Otherwise heavy embeds remount on every tick.
+  function handleCheckboxLineClick(line: number) {
+    if (!isListItemSourced(timeBlock)) {
+      return Promise.resolve();
+    }
+
+    return toggleCheckboxInFile(timeBlock.path, line);
+  }
+
   const onCheckboxLineClick = $derived(
-    isListItemSourced(timeBlock)
-      ? (line: number) => toggleCheckboxInFile(timeBlock.path, line)
-      : undefined,
+    isListItemSourced(timeBlock) ? handleCheckboxLineClick : undefined,
   );
 
   const { listItem, nestedListItems } = $derived(
@@ -117,10 +128,18 @@
   const listItemLine = $derived(
     isListItemSourced(timeBlock) ? timeBlock.position.start.line : undefined,
   );
-  const nestedListItemLines = $derived(
+  // Derived through a string key so the array is only rebuilt when the lines
+  // themselves change; an equal key leaves the previous array in place.
+  const nestedListItemLinesKey = $derived(
     nestedItems
       .filter((nestedItem) => nestedItem.task !== undefined)
-      .map((nestedItem) => nestedItem.position.start.line),
+      .map((nestedItem) => nestedItem.position.start.line)
+      .join(","),
+  );
+  const nestedListItemLines = $derived(
+    nestedListItemLinesKey.length === 0
+      ? []
+      : nestedListItemLinesKey.split(",").map(Number),
   );
 </script>
 
