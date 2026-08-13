@@ -8,6 +8,7 @@
     firstDaysOfWeek,
     hideTasksMetadataDescription,
     hideTimeRangeInSingleLineDescription,
+    showEmbedsInTaskBlocksDescription,
     showActiveClockInStatusBarDescription,
     timelineZoomLevelOptions,
   } from "../../settings";
@@ -112,6 +113,21 @@
                 $settings = {
                   ...$settings,
                   hideTimeRangeInSingleLine: value,
+                };
+              }),
+          ),
+      )
+      .addSetting((setting) =>
+        setting
+          .setName("Show embeds in timeline blocks")
+          .setDesc(showEmbedsInTaskBlocksDescription)
+          .addToggle((toggle) =>
+            toggle
+              .setValue($settings.showEmbedsInTaskBlocks)
+              .onChange((value) => {
+                $settings = {
+                  ...$settings,
+                  showEmbedsInTaskBlocks: value,
                 };
               }),
           ),

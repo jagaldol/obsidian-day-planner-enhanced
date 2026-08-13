@@ -182,7 +182,18 @@ describe("timeline visual contract", () => {
     expect(timelineSettingsModal).toContain('.setHeading("Enhanced features")');
     expect(timelineSettingsModal).toContain("hideTasksMetadata");
     expect(timelineSettingsModal).toContain("hideTimeRangeInSingleLine");
+    expect(timelineSettingsModal).toContain("showEmbedsInTaskBlocks");
     expect(timelineSettingsModal).not.toContain("enableTimeTracker");
+  });
+
+  test("exposes the embed visibility setting on every timeline settings surface", () => {
+    for (const settingsSurface of [timelineSettingsModal, settingsControls]) {
+      expect(settingsSurface).toContain(
+        '.setName("Show embeds in timeline blocks")',
+      );
+      expect(settingsSurface).toContain("showEmbedsInTaskBlocksDescription");
+      expect(settingsSurface).toContain("showEmbedsInTaskBlocks: value");
+    }
   });
 
   test("always renders all-day rows and the sidebar timeline", () => {

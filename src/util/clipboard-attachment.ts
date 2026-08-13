@@ -13,9 +13,7 @@ const embeddableExtensions = new Set([
   "flac",
   "m4a",
   "mp3",
-  "oga",
   "ogg",
-  "opus",
   "wav",
   // Video
   "mkv",
@@ -30,8 +28,8 @@ const embeddableExtensions = new Set([
 // Clipboard images arrive without a real file name; browsers fall back to
 // these placeholders, and Obsidian renames them to "Pasted image <stamp>".
 const placeholderImageNamePattern = /^image(\.[a-z0-9]+)?$/i;
-
 const illegalFileNameCharacters = /[\\/:*?"<>|#^[\]]+/g;
+const fileSystemClipboardFiles = new WeakSet<File>();
 
 export interface InputSelection {
   end: number;
@@ -44,6 +42,27 @@ export function getClipboardFiles(dataTransfer: DataTransfer | null): File[] {
   }
 
   const files = Array.from<File>(dataTransfer.files);
+  const fileItems = Array.from<DataTransferItem>(dataTransfer.items)
+    .filter((item) => item.kind === "file")
+    .map((item) => ({ file: item.getAsFile(), item }))
+    .filter(
+      (entry): entry is { file: File; item: DataTransferItem } =>
+        entry.file !== null,
+    );
+
+  for (const { file, item } of fileItems) {
+    if (!isFileSystemClipboardItem(item)) {
+      continue;
+    }
+
+    fileSystemClipboardFiles.add(file);
+
+    for (const clipboardFile of files) {
+      if (isSameFile(clipboardFile, file)) {
+        fileSystemClipboardFiles.add(clipboardFile);
+      }
+    }
+  }
 
   if (files.length > 0) {
     return files;
@@ -51,10 +70,41 @@ export function getClipboardFiles(dataTransfer: DataTransfer | null): File[] {
 
   // Some platforms (notably mobile WebViews) only expose the payload through
   // `items`, so fall back to it before giving up on the paste.
-  return Array.from<DataTransferItem>(dataTransfer.items)
-    .filter((item) => item.kind === "file")
-    .map((item) => item.getAsFile())
-    .filter((file): file is File => file !== null);
+  return fileItems.map(({ file }) => file);
+}
+
+function isFileSystemClipboardItem(item: DataTransferItem) {
+  try {
+    const { webkitGetAsEntry } = item as unknown as {
+      webkitGetAsEntry?: () => FileSystemEntry | null;
+    };
+
+    if (typeof webkitGetAsEntry !== "function") {
+      return false;
+    }
+
+    const entry = webkitGetAsEntry.call(item);
+
+    return entry !== null && entry.isFile;
+  } catch {
+    return false;
+  }
+}
+
+function isSameFile(left: File, right: File) {
+  return (
+    left === right ||
+    (left.name === right.name &&
+      left.type === right.type &&
+      left.size === right.size &&
+      left.lastModified === right.lastModified)
+  );
+}
+
+function hasNativeFilePath(file: File) {
+  const path = (file as File & { path?: unknown }).path;
+
+  return typeof path === "string" && path.length > 0;
 }
 
 export function getFileExtension(fileName: string) {
@@ -78,13 +128,6 @@ function getExtensionFromMimeType(mimeType: string) {
   return subtype.split("+")[0]?.toLowerCase() ?? "";
 }
 
-function sanitizeFileName(fileName: string) {
-  return fileName
-    .replace(illegalFileNameCharacters, "-")
-    .replace(/^[\s.]+|[\s.]+$/g, "")
-    .trim();
-}
-
 function pad(value: number, length = 2) {
   return String(value).padStart(length, "0");
 }
@@ -103,12 +146,14 @@ function formatTimestamp(now: Date) {
 function isPlaceholderImageName(file: File) {
   return (
     file.type.startsWith("image/") &&
-    placeholderImageNamePattern.test(file.name)
+    placeholderImageNamePattern.test(file.name) &&
+    !fileSystemClipboardFiles.has(file) &&
+    !hasNativeFilePath(file)
   );
 }
 
 export function createAttachmentFileName(file: File, now: Date) {
-  const originalName = sanitizeFileName(file.name);
+  const originalName = file.name.trim();
 
   if (originalName.length > 0 && !isPlaceholderImageName(file)) {
     return originalName;
@@ -120,6 +165,13 @@ export function createAttachmentFileName(file: File, now: Date) {
   return `Pasted image ${formatTimestamp(now)}${
     extension.length > 0 ? `.${extension}` : ""
   }`;
+}
+
+export function sanitizeAttachmentFileName(fileName: string) {
+  return fileName
+    .replace(illegalFileNameCharacters, "-")
+    .replace(/^[\s.]+|[\s.]+$/g, "")
+    .trim();
 }
 
 export function toAttachmentMarkdown(link: string, extension: string) {

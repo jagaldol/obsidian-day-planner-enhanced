@@ -6,6 +6,7 @@ import type { EditableNestedListItem } from "../src/service/list-item-entry-edit
 import type { RenderMarkdown, SaveClipboardAttachment } from "../src/types";
 import NestedItemsEditModal from "../src/ui/components/nested-items-edit-modal.svelte";
 import type { AttachMarkdownInputSuggest } from "../src/ui/markdown-input-suggest";
+import type { NestedItemsEditController } from "../src/ui/nested-items-edit-controller";
 
 function click(element: Element | null) {
   expect(element).not.toBeNull();
@@ -45,6 +46,11 @@ function paste(element: Element | null, files: File[]) {
 
 async function settlePaste() {
   await new Promise((resolve) => setTimeout(resolve, 0));
+  flushSync();
+}
+
+async function saveBeforeClose(editController: NestedItemsEditController) {
+  await editController.saveBeforeClose?.();
   flushSync();
 }
 
@@ -97,6 +103,10 @@ function renderModal(
     attachMarkdownInputSuggest?: AttachMarkdownInputSuggest;
     onEditEscape?: () => void;
     onEditStateChange?: (isEditing: boolean) => void;
+    onSave?: (
+      parentText: string,
+      items: EditableNestedListItem[],
+    ) => Promise<void> | void;
     parentText?: string;
     renderMarkdown?: RenderMarkdown;
     saveClipboardAttachment?: SaveClipboardAttachment;
@@ -104,8 +114,8 @@ function renderModal(
   } = {},
 ) {
   const target = document.createElement("div");
-  const onSave = vi.fn();
-  const onCancel = vi.fn();
+  const onSave = vi.fn(props.onSave ?? (() => {}));
+  const editController: NestedItemsEditController = {};
   const renderMarkdown: RenderMarkdown =
     props.renderMarkdown ??
     ((element, markdown) => {
@@ -125,6 +135,7 @@ function renderModal(
           destroy() {},
         })),
       attachMarkdownInputSuggest: props.attachMarkdownInputSuggest,
+      editController,
       initialItems,
       onEditEscape: props.onEditEscape,
       onEditStateChange: props.onEditStateChange,
@@ -133,13 +144,12 @@ function renderModal(
       saveClipboardAttachment: props.saveClipboardAttachment,
       sourcePath: props.sourcePath ?? "fixtures/daily/2023-01-01.md",
       onSave,
-      onCancel,
     },
   });
 
   flushSync();
 
-  return { component, target, onSave, onCancel };
+  return { component, editController, target, onSave };
 }
 
 afterEach(() => {
@@ -147,9 +157,21 @@ afterEach(() => {
 });
 
 describe("NestedItemsEditModal", () => {
-  test("edits the parent title inline without exposing a separate edit UI", () => {
+  test("relies on close-to-save instead of Save and Cancel footer buttons", () => {
+    const { component, target } = renderModal([]);
+
+    try {
+      expect(target.querySelector(".footer-buttons")).toBeNull();
+      expect(target.textContent).not.toContain("SaveCancel");
+    } finally {
+      unmount(component);
+      target.remove();
+    }
+  });
+
+  test("edits the parent title inline without exposing a separate edit UI", async () => {
     const attachMarkdownInputSuggest = vi.fn(() => () => {});
-    const { component, target, onSave } = renderModal([], {
+    const { component, editController, target, onSave } = renderModal([], {
       attachMarkdownInputSuggest,
       parentText: "#focus 11:30 - 13:40 Example schedule",
     });
@@ -187,7 +209,7 @@ describe("NestedItemsEditModal", () => {
         "#deep Updated schedule",
       );
 
-      click(target.querySelector("button.mod-cta"));
+      await saveBeforeClose(editController);
 
       expect(onSave).toHaveBeenCalledWith(
         "#deep 11:30 - 13:40 Updated schedule",
@@ -199,8 +221,8 @@ describe("NestedItemsEditModal", () => {
     }
   });
 
-  test("uses New item as a placeholder instead of a prefilled value", () => {
-    const { component, target, onSave } = renderModal([]);
+  test("uses New item as a placeholder instead of a prefilled value", async () => {
+    const { component, editController, target, onSave } = renderModal([]);
 
     try {
       click(target.querySelector("button.add-root-row"));
@@ -215,7 +237,7 @@ describe("NestedItemsEditModal", () => {
       flushSync();
 
       keydown(input, "Enter");
-      click(target.querySelector("button.mod-cta"));
+      await saveBeforeClose(editController);
 
       expect(onSave).toHaveBeenCalledWith(defaultParentText, [
         {
@@ -232,14 +254,14 @@ describe("NestedItemsEditModal", () => {
     }
   });
 
-  test("does not save an untouched new item", () => {
-    const { component, target, onSave } = renderModal([]);
+  test("does not persist an untouched new item on close", async () => {
+    const { component, editController, target, onSave } = renderModal([]);
 
     try {
       click(target.querySelector("button.add-root-row"));
-      click(target.querySelector("button.mod-cta"));
+      await saveBeforeClose(editController);
 
-      expect(onSave).toHaveBeenCalledWith(defaultParentText, []);
+      expect(onSave).not.toHaveBeenCalled();
     } finally {
       unmount(component);
       target.remove();
@@ -371,8 +393,8 @@ describe("NestedItemsEditModal", () => {
     }
   });
 
-  test("keeps checkbox marker clicks out of edit mode", () => {
-    const { component, target, onSave } = renderModal([
+  test("keeps checkbox marker clicks out of edit mode", async () => {
+    const { component, editController, target, onSave } = renderModal([
       { text: "New item", symbol: "-", task: " " },
     ]);
 
@@ -381,7 +403,7 @@ describe("NestedItemsEditModal", () => {
 
       expect(getInput()).toBeNull();
 
-      click(target.querySelector("button.mod-cta"));
+      await saveBeforeClose(editController);
 
       expect(onSave).toHaveBeenCalledWith(defaultParentText, [
         {
@@ -417,8 +439,8 @@ describe("NestedItemsEditModal", () => {
     }
   });
 
-  test("applies the open edit before switching rows from a text click", () => {
-    const { component, target, onSave } = renderModal([
+  test("applies the open edit before switching rows from a text click", async () => {
+    const { component, editController, target, onSave } = renderModal([
       { text: "First item", symbol: "-" },
       { text: "Second item", symbol: "-" },
     ]);
@@ -435,7 +457,7 @@ describe("NestedItemsEditModal", () => {
       flushSync();
 
       click(target.querySelector('button[aria-label="Edit Second item"]'));
-      click(target.querySelector("button.mod-cta"));
+      await saveBeforeClose(editController);
 
       expect(onSave).toHaveBeenCalledWith(defaultParentText, [
         {
@@ -459,8 +481,8 @@ describe("NestedItemsEditModal", () => {
     }
   });
 
-  test("Escape cancels the active row edit without closing the modal", () => {
-    const { component, target, onSave, onCancel } = renderModal([
+  test("Escape cancels the active row edit without closing the modal", async () => {
+    const { component, editController, target, onSave } = renderModal([
       { text: "Verify markdown output", symbol: "-" },
     ]);
 
@@ -483,19 +505,10 @@ describe("NestedItemsEditModal", () => {
 
       expect(event.defaultPrevented).toBe(true);
       expect(getInput()).toBeNull();
-      expect(onCancel).not.toHaveBeenCalled();
 
-      click(target.querySelector("button.mod-cta"));
+      await saveBeforeClose(editController);
 
-      expect(onSave).toHaveBeenCalledWith(defaultParentText, [
-        {
-          text: "Verify markdown output",
-          symbol: "-",
-          status: undefined,
-          task: undefined,
-          children: [],
-        },
-      ]);
+      expect(onSave).not.toHaveBeenCalled();
     } finally {
       unmount(component);
       target.remove();
@@ -564,7 +577,7 @@ describe("NestedItemsEditModal", () => {
   test("turns a pasted attachment into a link inside the edited item", async () => {
     const file = new File(["png"], "image.png", { type: "image/png" });
     const saveClipboardAttachment = vi.fn(async () => "![[Files/pasted.png]]");
-    const { component, target, onSave } = renderModal(
+    const { component, editController, target, onSave } = renderModal(
       [{ text: "Prepare the deck", symbol: "-" }],
       { saveClipboardAttachment },
     );
@@ -587,7 +600,7 @@ describe("NestedItemsEditModal", () => {
       expect(input.value).toBe("Prepare the deck![[Files/pasted.png]]");
 
       keydown(input, "Enter");
-      click(target.querySelector("button.mod-cta"));
+      await saveBeforeClose(editController);
 
       expect(onSave).toHaveBeenCalledWith(defaultParentText, [
         {
@@ -598,6 +611,132 @@ describe("NestedItemsEditModal", () => {
           children: [],
         },
       ]);
+    } finally {
+      unmount(component);
+      target.remove();
+    }
+  });
+
+  test("waits for a pasted attachment before saving on close", async () => {
+    const file = new File(["png"], "image.png", { type: "image/png" });
+    let resolveAttachment!: (link: string) => void;
+    const attachment = new Promise<string>((resolve) => {
+      resolveAttachment = resolve;
+    });
+    const saveClipboardAttachment = vi.fn(() => attachment);
+    const { component, editController, target, onSave } = renderModal(
+      [
+        { text: "Prepare the deck", symbol: "-" },
+        { text: "Send the deck", symbol: "-" },
+      ],
+      { saveClipboardAttachment },
+    );
+
+    try {
+      click(target.querySelector('button[aria-label="Edit Prepare the deck"]'));
+
+      const input = getInput();
+
+      isNotVoid(input);
+      input.setSelectionRange(input.value.length, input.value.length);
+      paste(input, [file]);
+      flushSync();
+
+      expect(input.readOnly).toBe(true);
+      expect(target.querySelector('[role="status"]')?.textContent).toContain(
+        "Saving attachment",
+      );
+
+      click(target.querySelector('button[aria-label="Edit Send the deck"]'));
+      expect(getInput()).toBe(input);
+
+      const closeSave = editController.saveBeforeClose?.();
+
+      expect(onSave).not.toHaveBeenCalled();
+
+      resolveAttachment("![[Files/pasted.png]]");
+      await closeSave;
+      flushSync();
+
+      expect(onSave).toHaveBeenCalledWith(defaultParentText, [
+        {
+          text: "Prepare the deck![[Files/pasted.png]]",
+          symbol: "-",
+          status: undefined,
+          task: undefined,
+          children: [],
+        },
+        {
+          text: "Send the deck",
+          symbol: "-",
+          status: undefined,
+          task: undefined,
+          children: [],
+        },
+      ]);
+    } finally {
+      unmount(component);
+      target.remove();
+    }
+  });
+
+  test("keeps a pasted link when the row edit is canceled afterward", async () => {
+    const saveClipboardAttachment = vi.fn(async () => "![[Files/pasted.png]]");
+    const { component, editController, target, onSave } = renderModal(
+      [{ text: "Prepare the deck", symbol: "-" }],
+      { saveClipboardAttachment },
+    );
+
+    try {
+      click(target.querySelector('button[aria-label="Edit Prepare the deck"]'));
+
+      const input = getInput();
+
+      isNotVoid(input);
+      input.setSelectionRange(input.value.length, input.value.length);
+      paste(input, [new File(["png"], "image.png", { type: "image/png" })]);
+      await settlePaste();
+
+      keydown(input, "Escape");
+      await saveBeforeClose(editController);
+
+      expect(onSave).toHaveBeenCalledWith(defaultParentText, [
+        {
+          text: "Prepare the deck![[Files/pasted.png]]",
+          symbol: "-",
+          status: undefined,
+          task: undefined,
+          children: [],
+        },
+      ]);
+    } finally {
+      unmount(component);
+      target.remove();
+    }
+  });
+
+  test("propagates a close-save failure instead of discarding the draft", async () => {
+    const saveError = new Error("write failed");
+    const { component, editController, target } = renderModal(
+      [{ text: "Original", symbol: "-" }],
+      { onSave: async () => Promise.reject(saveError) },
+    );
+
+    try {
+      click(target.querySelector('button[aria-label="Edit Original"]'));
+
+      const input = getInput();
+
+      isNotVoid(input);
+      input.value = "Changed draft";
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      flushSync();
+
+      await expect(editController.saveBeforeClose?.()).rejects.toBe(saveError);
+      expect(getInput()).toBeNull();
+      expect(target.querySelector(".item-text")?.textContent).toBe(
+        "Changed draft",
+      );
     } finally {
       unmount(component);
       target.remove();

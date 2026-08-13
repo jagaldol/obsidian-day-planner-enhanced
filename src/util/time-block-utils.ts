@@ -585,10 +585,93 @@ export function removeTasksMetadata(text: string) {
 // A timeline block is only as tall as its time range, so an embed rendered at
 // its natural size pushes the task text out of the clipped block. Downgrading
 // the embed to a link keeps the attachment reachable without the overflow.
-const embedMarkerRegExp = /(?<!\\)!(?=\[\[|\[[^\]]*\]\()/g;
-
 export function unembedAttachments(text: string) {
-  return text.replace(embedMarkerRegExp, "");
+  let codeDelimiterLength: number | undefined;
+  let result = "";
+
+  for (let index = 0; index < text.length; ) {
+    if (text[index] === "`" && !isEscaped(text, index)) {
+      const delimiterStart = index;
+
+      while (text[index] === "`") {
+        index += 1;
+      }
+
+      const delimiterLength = index - delimiterStart;
+
+      if (
+        codeDelimiterLength === undefined &&
+        hasClosingCodeDelimiter(text, index, delimiterLength)
+      ) {
+        codeDelimiterLength = delimiterLength;
+      } else if (codeDelimiterLength === delimiterLength) {
+        codeDelimiterLength = undefined;
+      }
+
+      result += text.slice(delimiterStart, index);
+      continue;
+    }
+
+    if (
+      codeDelimiterLength === undefined &&
+      text[index] === "!" &&
+      !isEscaped(text, index) &&
+      isAttachmentEmbedMarker(text, index)
+    ) {
+      index += 1;
+      continue;
+    }
+
+    result += text[index];
+    index += 1;
+  }
+
+  return result;
+}
+
+function hasClosingCodeDelimiter(
+  text: string,
+  startIndex: number,
+  delimiterLength: number,
+) {
+  for (let index = startIndex; index < text.length; ) {
+    const delimiterStart = text.indexOf("`", index);
+
+    if (delimiterStart === -1) {
+      return false;
+    }
+
+    index = delimiterStart;
+
+    while (text[index] === "`") {
+      index += 1;
+    }
+
+    if (
+      index - delimiterStart === delimiterLength &&
+      !isEscaped(text, delimiterStart)
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function isEscaped(text: string, index: number) {
+  let backslashCount = 0;
+
+  for (let cursor = index - 1; cursor >= 0 && text[cursor] === "\\"; cursor--) {
+    backslashCount += 1;
+  }
+
+  return backslashCount % 2 === 1;
+}
+
+function isAttachmentEmbedMarker(text: string, index: number) {
+  const afterMarker = text.slice(index + 1);
+
+  return /^\[\[|^\[[^\]\n]*\]\(/u.test(afterMarker);
 }
 
 interface RenderableMarkdownOptions {
@@ -630,7 +713,10 @@ export function toRenderableMarkdown(
 
   return {
     listItem: formattedFirstLine,
-    paragraphs: linesAfterFirst.join("\n"),
+    paragraphs: optionallyUnembedAttachments(
+      linesAfterFirst.join("\n"),
+      options,
+    ),
     nestedListItems,
   };
 }
@@ -704,8 +790,12 @@ function getIndentedText(
   let listItemLineWithParagraphs = parentIndentation + firstLine;
 
   if (linesAfterFirst.length > 0) {
+    const renderableParagraphs = optionallyUnembedAttachments(
+      linesAfterFirst.join("\n"),
+      options,
+    ).split("\n");
     const indentedParagraphs = indentLines(
-      linesAfterFirst,
+      renderableParagraphs,
       parentIndentation + getIndentationForListParagraph(),
     ).join("\n");
 

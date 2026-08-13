@@ -40,6 +40,15 @@ describe("settings migration", () => {
         .hideTimeRangeInSingleLine,
     ).toBe(true);
   });
+
+  test("keeps timeline embeds hidden by default", () => {
+    expect(defaultSettings.showEmbedsInTaskBlocks).toBe(false);
+    expect(mergeStoredSettings(null).showEmbedsInTaskBlocks).toBe(false);
+    expect(
+      mergeStoredSettings({ showEmbedsInTaskBlocks: true })
+        .showEmbedsInTaskBlocks,
+    ).toBe(true);
+  });
 });
 
 describe("timeline zoom settings", () => {

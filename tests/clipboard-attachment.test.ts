@@ -6,6 +6,7 @@ import {
   getFileExtension,
   insertTextIntoInput,
   isEmbeddableExtension,
+  sanitizeAttachmentFileName,
   toAttachmentMarkdown,
 } from "../src/util/clipboard-attachment";
 
@@ -15,13 +16,19 @@ function createFile(name: string, type: string) {
 
 function createDataTransfer(
   files: File[],
-  items: { file: File | null; kind: string }[] = [],
+  items: {
+    file: File | null;
+    isFileSystemEntry?: boolean;
+    kind: string;
+  }[] = [],
 ): DataTransfer {
   return {
     files,
     items: items.map((item) => ({
       kind: item.kind,
       getAsFile: () => item.file,
+      webkitGetAsEntry: () =>
+        item.isFileSystemEntry ? { isFile: true } : null,
     })),
   } as unknown as DataTransfer;
 }
@@ -73,6 +80,36 @@ describe("createAttachmentFileName", () => {
     ).toBe("Pasted image 20230102030405.png");
   });
 
+  test("keeps an image name supplied by the clipboard", () => {
+    expect(
+      createAttachmentFileName(
+        createFile("shot-msr5wtsd.png", "image/png"),
+        pasteMoment,
+      ),
+    ).toBe("shot-msr5wtsd.png");
+  });
+
+  test("keeps a real copied file literally named image.png", () => {
+    const file = createFile("image.png", "image/png");
+
+    getClipboardFiles(
+      createDataTransfer(
+        [file],
+        [{ file, isFileSystemEntry: true, kind: "file" }],
+      ),
+    );
+
+    expect(createAttachmentFileName(file, pasteMoment)).toBe("image.png");
+  });
+
+  test("keeps a native clipboard file path when entry metadata is unavailable", () => {
+    const file = createFile("image.png", "image/png");
+
+    Object.defineProperty(file, "path", { value: "/tmp/image.png" });
+
+    expect(createAttachmentFileName(file, pasteMoment)).toBe("image.png");
+  });
+
   test("derives the extension from the mime type when the name has none", () => {
     expect(
       createAttachmentFileName(createFile("", "image/svg+xml"), pasteMoment),
@@ -88,13 +125,19 @@ describe("createAttachmentFileName", () => {
     ).toBe("image.png.zip");
   });
 
-  test("strips characters Obsidian cannot put in a file name", () => {
+  test("leaves copied file names for Obsidian and attachment plugins to process", () => {
     expect(
       createAttachmentFileName(
         createFile("re:port [draft]#1.pdf", "application/pdf"),
         pasteMoment,
       ),
-    ).toBe("re-port -draft-1.pdf");
+    ).toBe("re:port [draft]#1.pdf");
+  });
+
+  test("sanitizes names for the public source-aware vault fallback", () => {
+    expect(sanitizeAttachmentFileName("re:port [draft]#1.pdf")).toBe(
+      "re-port -draft-1.pdf",
+    );
   });
 });
 

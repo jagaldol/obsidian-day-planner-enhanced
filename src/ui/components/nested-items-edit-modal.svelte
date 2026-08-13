@@ -29,6 +29,7 @@
     type AttachMarkdownInputSuggest,
     hasActiveMarkdownInputSuggest,
   } from "../markdown-input-suggest";
+  import type { NestedItemsEditController } from "../nested-items-edit-controller";
 
   let {
     attachInternalLinkHoverPreview,
@@ -42,7 +43,6 @@
     onEditEscape,
     onEditStateChange,
     onSave,
-    onCancel,
   }: {
     attachInternalLinkHoverPreview: (element: HTMLElement) => {
       destroy: () => void;
@@ -53,16 +53,13 @@
     renderMarkdown: RenderMarkdown;
     saveClipboardAttachment?: SaveClipboardAttachment;
     sourcePath: string;
-    editController?: {
-      cancelActiveEdit?: () => void;
-    };
+    editController?: NestedItemsEditController;
     onEditEscape?: () => void;
     onEditStateChange?: (isEditing: boolean) => void;
     onSave: (
       parentText: string,
       items: EditableNestedListItem[],
     ) => Promise<void> | void;
-    onCancel: () => void;
   } = $props();
 
   function cloneItems(
@@ -169,6 +166,10 @@
   }
 
   function addRootItem() {
+    if (isSavingAttachment) {
+      return;
+    }
+
     applyOpenEdit();
     clearMoveFeedback();
 
@@ -180,6 +181,10 @@
   }
 
   function addChild(path: number[]) {
+    if (isSavingAttachment) {
+      return;
+    }
+
     applyOpenEdit();
     clearMoveFeedback();
 
@@ -192,6 +197,10 @@
   }
 
   function deleteItem(path: number[]) {
+    if (isSavingAttachment) {
+      return;
+    }
+
     applyOpenEdit();
     clearMoveFeedback();
 
@@ -204,6 +213,10 @@
   }
 
   function moveItem(path: number[], direction: -1 | 1) {
+    if (isSavingAttachment) {
+      return;
+    }
+
     applyOpenEdit();
 
     const siblings = getSiblings(path);
@@ -250,6 +263,10 @@
   }
 
   function toggleTask(path: number[]) {
+    if (isSavingAttachment) {
+      return;
+    }
+
     applyOpenEdit();
     clearMoveFeedback();
 
@@ -265,6 +282,10 @@
   }
 
   function toggleTaskCompletion(path: number[]) {
+    if (isSavingAttachment) {
+      return;
+    }
+
     clearMoveFeedback();
 
     const item = getItem(path);
@@ -294,12 +315,20 @@
   }
 
   function beginItemEdit(pathKey: string, item: EditableNestedListItem) {
+    if (isSavingAttachment) {
+      return;
+    }
+
     applyOpenEdit();
     clearMoveFeedback();
     beginEdit(pathKey, item);
   }
 
   function beginParentEdit() {
+    if (isSavingAttachment) {
+      return;
+    }
+
     applyOpenEdit();
     clearMoveFeedback();
     editingPathKey = parentEditPathKey;
@@ -341,6 +370,11 @@
   }
 
   function handleEditKeydown(event: KeyboardEvent, pathKey: string) {
+    if (isSavingAttachment) {
+      consumeEditShortcut(event);
+      return;
+    }
+
     if (
       event.currentTarget instanceof HTMLInputElement &&
       hasActiveMarkdownInputSuggest(event.currentTarget)
@@ -360,7 +394,64 @@
     }
   }
 
-  async function handleEditPaste(event: ClipboardEvent) {
+  async function savePastedFiles(
+    input: HTMLInputElement,
+    files: File[],
+    pathKey: string,
+    selection: { end: number; start: number },
+    valueAtPaste: string,
+  ) {
+    const links: string[] = [];
+
+    // Saved one at a time so each attachment resolves a free vault path
+    // against the files written before it.
+    for (const file of files) {
+      const link = await saveClipboardAttachment?.(file);
+
+      if (link) {
+        links.push(link);
+      }
+    }
+
+    if (links.length === 0 || !input.isConnected) {
+      return;
+    }
+
+    const insertionSelection =
+      input.value === valueAtPaste
+        ? selection
+        : {
+            start: input.selectionStart ?? input.value.length,
+            end: input.selectionEnd ?? input.value.length,
+          };
+
+    insertTextIntoInput(input, links.join(" "), insertionSelection);
+    commitPastedEdit(pathKey, input.value);
+  }
+
+  function commitPastedEdit(pathKey: string, text: string) {
+    editingText = text;
+
+    if (pathKey === parentEditPathKey) {
+      const nextTitle = text.trim();
+      const { timeRange } = getDisplayParts(parentFirstLine);
+
+      if (nextTitle.length > 0) {
+        parentFirstLine = timeRange
+          ? replaceOrPrependTimeRange(nextTitle, timeRange)
+          : nextTitle;
+      }
+
+      return;
+    }
+
+    const item = getItem(pathKey.split(".").map(Number));
+
+    item.text = replaceFirstLine(item.text, text.trim());
+    editingIsNewItem = false;
+  }
+
+  function handleEditPaste(event: ClipboardEvent) {
     const input = event.currentTarget;
 
     if (!(input instanceof HTMLInputElement) || !saveClipboardAttachment) {
@@ -379,23 +470,24 @@
       start: input.selectionStart ?? input.value.length,
       end: input.selectionEnd ?? input.value.length,
     };
-    const links: string[] = [];
+    const valueAtPaste = input.value;
+    const pathKey = editingPathKey;
 
-    // Saved one at a time so each attachment resolves a free vault path
-    // against the files written before it.
-    for (const file of files) {
-      const link = await saveClipboardAttachment(file);
-
-      if (link) {
-        links.push(link);
-      }
-    }
-
-    if (links.length === 0 || !input.isConnected) {
+    if (pathKey === undefined) {
       return;
     }
 
-    insertTextIntoInput(input, links.join(" "), selection);
+    pendingPasteCount += 1;
+    pendingPasteQueue = pendingPasteQueue
+      .then(() =>
+        savePastedFiles(input, files, pathKey, selection, valueAtPaste),
+      )
+      .catch((error: unknown) => {
+        console.error(error);
+      })
+      .finally(() => {
+        pendingPasteCount -= 1;
+      });
   }
 
   function handleWindowKeydown(event: KeyboardEvent) {
@@ -407,6 +499,11 @@
     }
 
     if (event.key !== "Escape") {
+      return;
+    }
+
+    if (isSavingAttachment) {
+      consumeEditShortcut(event);
       return;
     }
 
@@ -431,6 +528,10 @@
   }
 
   function applyEdit(pathKey: string) {
+    if (isSavingAttachment) {
+      return;
+    }
+
     if (editingPathKey !== pathKey) {
       return;
     }
@@ -471,6 +572,10 @@
   }
 
   function cancelEdit() {
+    if (isSavingAttachment) {
+      return;
+    }
+
     if (editingIsNewItem && editingPathKey !== undefined) {
       const path = editingPathKey.split(".").map(Number);
       const siblings = getSiblings(path);
@@ -516,16 +621,27 @@
     applyEdit(editingPathKey);
   }
 
-  function save() {
+  async function saveBeforeClose() {
+    await pendingPasteQueue;
     applyOpenEdit();
-    onSave(parentFirstLine, cloneItems(items));
+
+    if (
+      parentFirstLine === initialParentFirstLine &&
+      JSON.stringify(items) === JSON.stringify(initialItemsSnapshot)
+    ) {
+      return;
+    }
+
+    await onSave(parentFirstLine, cloneItems(items));
   }
 
   const parentEditPathKey = "$parent";
+  const initialItemsSnapshot = cloneItems(untrack(() => initialItems));
+  const initialParentFirstLine = untrack(() => parentText);
   let items = $state<EditableNestedListItem[]>(
-    cloneItems(untrack(() => initialItems)),
+    cloneItems(initialItemsSnapshot),
   );
-  let parentFirstLine = $state(untrack(() => parentText));
+  let parentFirstLine = $state(initialParentFirstLine);
   let editingPathKey = $state<string | undefined>();
   let editingText = $state("");
   let editingIsNewItem = $state(false);
@@ -534,6 +650,9 @@
   let moveFeedbackTimeout: number | undefined;
   let escapeCloseSuppressionTimeout: number | undefined;
   let isSuppressingEscapeClose = false;
+  let pendingPasteQueue: Promise<void> = Promise.resolve();
+  let pendingPasteCount = $state(0);
+  const isSavingAttachment = $derived(pendingPasteCount > 0);
   const parentDisplay = $derived(getDisplayParts(parentFirstLine));
 
   $effect(() => {
@@ -543,6 +662,7 @@
   onMount(() => {
     if (editController) {
       editController.cancelActiveEdit = cancelEdit;
+      editController.saveBeforeClose = saveBeforeClose;
     }
 
     window.addEventListener("keydown", handleWindowKeydown, true);
@@ -560,11 +680,16 @@
 
     if (editController) {
       editController.cancelActiveEdit = undefined;
+      editController.saveBeforeClose = undefined;
     }
   });
 </script>
 
-<div class="nested-items-wrapper">
+<div
+  class="nested-items-wrapper"
+  class:is-saving-attachment={isSavingAttachment}
+  aria-busy={isSavingAttachment}
+>
   <div class="modal-heading">
     {#if parentDisplay.timeRange}
       <div class="parent-time-range">{parentDisplay.timeRange}</div>
@@ -575,6 +700,7 @@
         aria-label="Parent item title"
         onkeydown={(event) => handleEditKeydown(event, parentEditPathKey)}
         onpaste={handleEditPaste}
+        readonly={isSavingAttachment}
         bind:value={editingText}
         use:focusOnMount
         use:markdownInputSuggest
@@ -615,10 +741,9 @@
     </button>
   </div>
 
-  <div class="footer-buttons">
-    <button class="mod-cta" onclick={save} type="button">Save</button>
-    <button onclick={onCancel} type="button">Cancel</button>
-  </div>
+  {#if isSavingAttachment}
+    <div class="attachment-save-status" role="status">Saving attachment…</div>
+  {/if}
 </div>
 
 {#snippet itemCard(
@@ -667,6 +792,7 @@
               onkeydown={(event) => handleEditKeydown(event, pathKey)}
               onpaste={handleEditPaste}
               placeholder="New item"
+              readonly={isSavingAttachment}
               bind:value={editingText}
               use:focusOnMount
               use:markdownInputSuggest
@@ -824,6 +950,10 @@
     min-width: 0;
   }
 
+  .nested-items-wrapper.is-saving-attachment {
+    cursor: progress;
+  }
+
   .modal-heading {
     min-width: 0;
     padding-inline-end: var(--size-4-8);
@@ -933,6 +1063,11 @@
     display: flex;
     flex-direction: column;
     border-top: 1px solid var(--nested-items-separator-color);
+  }
+
+  .nested-items-wrapper.is-saving-attachment .modal-heading,
+  .nested-items-wrapper.is-saving-attachment .nested-items-list {
+    pointer-events: none;
   }
 
   .add-root-row {
@@ -1269,10 +1404,10 @@
     stroke-width: 2.2;
   }
 
-  .footer-buttons {
-    display: flex;
-    flex-direction: row-reverse;
-    gap: var(--size-4-2);
+  .attachment-save-status {
+    font-size: var(--font-ui-smaller);
+    color: var(--text-muted);
+    text-align: end;
   }
 
   @keyframes nested-item-move-feedback {

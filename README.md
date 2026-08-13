@@ -182,9 +182,9 @@ Plans that cross midnight can stay written in the start day's daily note. Day Pl
 
 #### Editing nested items
 
-Right-click a timeline block and choose **Edit nested items...** to manage the child list under that planner item. The editor can add items, add child items, update text by clicking an item body, move siblings up or down, delete nested subtrees, and switch bullets into checkbox tasks without changing the parent planner line.
+Right-click a timeline block and choose **Edit nested items...** to manage the child list under that planner item. The editor can add items, add child items, update text by clicking an item body, move siblings up or down, delete nested subtrees, and switch bullets into checkbox tasks without changing the parent planner line. Changes are saved automatically when the editor closes.
 
-Pasting a file or an image into an item (or into the parent title) saves it to your configured attachment folder and inserts a link to it, the same way pasting into the Obsidian editor does. Images, audio, video, and PDFs are inserted as embeds; other file types are inserted as plain links.
+Pasting a file or an image into an item (or into the parent title) saves it to your configured attachment folder and inserts a link to it. Images, audio, video, and PDFs are inserted as embeds; other file types are inserted as plain links. Obsidian's attachment-folder and link-format settings are respected. When the source note is not the active note, third-party attachment transformations that depend on the active editor (such as custom renaming or format conversion) may not run; the explicit source-note location is kept instead so the file cannot be saved relative to the wrong note.
 
 Timeline blocks are only as tall as their time range, so by default an embed is shown as a plain link there to keep the task text and time range visible. Turn on **Show embeds in timeline blocks** to render images and PDFs in the block itself. The nested items editor always renders embeds.
 

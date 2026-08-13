@@ -193,6 +193,39 @@ describe("Task views", () => {
 - Shot [alt](Attachments/shot.png)`);
   });
 
+  test("downgrades embeds in multiline parent and child content", () => {
+    const { nestedListItems, paragraphs } = toRenderableMarkdown({
+      text: "09:00 - 10:00 Review\n![[parent.png]]",
+      symbol: "-",
+      status: " ",
+      children: [{ text: "Spec\n![[child.pdf]]", symbol: "-" }],
+    });
+
+    expect(paragraphs).toBe("[[parent.png]]");
+    expect(nestedListItems).toBe(`- Spec
+  [[child.pdf]]`);
+  });
+
+  test("does not rewrite embed-shaped text inside code spans", () => {
+    const { listItem } = toRenderableMarkdown({
+      text: "09:00 - 10:00 Keep `![[literal.png]]`, link ![[real.png]]",
+      symbol: "-",
+      status: " ",
+    });
+
+    expect(listItem).toBe("- [ ] Keep `![[literal.png]]`, link [[real.png]]");
+  });
+
+  test("does not treat an unmatched backtick as a code span", () => {
+    const { listItem } = toRenderableMarkdown({
+      text: "09:00 - 10:00 Typo ` then ![[real.png]]",
+      symbol: "-",
+      status: " ",
+    });
+
+    expect(listItem).toBe("- [ ] Typo ` then [[real.png]]");
+  });
+
   test("Keeps embeds when showEmbedsInTaskBlocks is on", () => {
     const { listItem, nestedListItems } = toRenderableMarkdown(
       {
@@ -216,6 +249,16 @@ describe("Task views", () => {
     });
 
     expect(listItem).toBe(String.raw`- [ ] Wow\![[note]]`);
+  });
+
+  test("treats an exclamation mark after two backslashes as unescaped", () => {
+    const { listItem } = toRenderableMarkdown({
+      text: String.raw`09:00 - 10:00 Wow\\![[note]]`,
+      symbol: "-",
+      status: " ",
+    });
+
+    expect(listItem).toBe(String.raw`- [ ] Wow\\[[note]]`);
   });
 
   test("Preserves numeric-leading text when rendering with HH:mm", () => {

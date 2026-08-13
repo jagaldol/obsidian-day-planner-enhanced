@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-floating-promises, @typescript-eslint/no-misused-promises, @typescript-eslint/no-redundant-type-constituents, @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-enum-comparison, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
-import { App, Modal, type KeymapEventHandler } from "obsidian";
+import { Effect } from "effect";
+import { App, Modal, Notice, type KeymapEventHandler } from "obsidian";
 import { mount, unmount } from "svelte";
 
 import {
   type EditableNestedListItem,
   ListItemEntryEditor,
-  runWithNoticeOnError,
 } from "../service/list-item-entry-editor";
 import type { EditableTimeBlock } from "../time-block-types";
 import { createRenderMarkdown } from "../util/create-render-markdown";
@@ -19,16 +19,15 @@ import { getFirstLine } from "../util/markdown";
 import { createInternalLinkHoverPreview } from "./actions/hover-preview";
 import NestedItemsEditModal from "./components/nested-items-edit-modal.svelte";
 import { createMarkdownInputSuggest } from "./markdown-input-suggest";
-
-interface NestedItemEditController {
-  cancelActiveEdit?: () => void;
-}
+import type { NestedItemsEditController } from "./nested-items-edit-controller";
 
 class NestedItemsHostModal extends Modal {
   private cancelActiveNestedEdit: (() => void) | undefined;
   private escapeCloseSuppressionTimeout: number | undefined;
   private isSuppressingEscapeClose = false;
+  private isClosing = false;
   private lastPointerActionAt = 0;
+  private saveBeforeClose: (() => Promise<void>) | undefined;
 
   constructor(app: App) {
     super(app);
@@ -44,6 +43,10 @@ class NestedItemsHostModal extends Modal {
 
   setCancelActiveNestedEdit(cancelActiveNestedEdit: () => void) {
     this.cancelActiveNestedEdit = cancelActiveNestedEdit;
+  }
+
+  setSaveBeforeClose(saveBeforeClose: () => Promise<void>) {
+    this.saveBeforeClose = saveBeforeClose;
   }
 
   suppressEscapeCloseForCurrentKey() {
@@ -74,7 +77,18 @@ class NestedItemsHostModal extends Modal {
       return;
     }
 
-    super.close();
+    if (this.isClosing) {
+      return;
+    }
+
+    this.isClosing = true;
+    void Promise.resolve(this.saveBeforeClose?.())
+      .then(() => super.close())
+      .catch((error: unknown) => {
+        this.isClosing = false;
+        new Notice(`Failed to save nested items: ${String(error)}`);
+        console.error(error);
+      });
   }
 
   private shouldCancelNestedEditInsteadOfClosing() {
@@ -133,11 +147,14 @@ export function createNestedItemsEditModalCreator(
     const modal = new NestedItemsHostModal(app).setTitle("");
     modal.modalEl.addClass("day-planner-nested-items-modal");
     modal.contentEl.addClass("day-planner-nested-items-modal");
-    const editController: NestedItemEditController = {};
+    const editController: NestedItemsEditController = {};
     let isNestedItemEditing = false;
 
     modal.setCancelActiveNestedEdit(() => {
       editController.cancelActiveEdit?.();
+    });
+    modal.setSaveBeforeClose(async () => {
+      await editController.saveBeforeClose?.();
     });
 
     const escapeEditHandler: KeymapEventHandler = modal.scope.register(
@@ -179,7 +196,7 @@ export function createNestedItemsEditModalCreator(
           parentText: string,
           children: EditableNestedListItem[],
         ) => {
-          await runWithNoticeOnError(
+          await Effect.runPromise(
             taskEntryEditor.replaceNestedItemsAtLocation(
               {
                 path,
@@ -189,10 +206,7 @@ export function createNestedItemsEditModalCreator(
               parentText,
             ),
           );
-
-          modal.close();
         },
-        onCancel: () => modal.close(),
       },
     });
 

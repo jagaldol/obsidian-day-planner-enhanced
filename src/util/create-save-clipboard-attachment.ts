@@ -1,10 +1,102 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return -- Obsidian community scorecard can run type-aware rules without resolving plugin source dependencies; tsc and svelte-check cover this source. */
-import { App, Notice } from "obsidian";
+import { type App, Notice, type TFile } from "obsidian";
 
 import {
   createAttachmentFileName,
+  getFileExtension,
+  isEmbeddableExtension,
+  sanitizeAttachmentFileName,
   toAttachmentMarkdown,
 } from "./clipboard-attachment";
+
+type AppWithAttachmentSaver = App & {
+  saveAttachment: (
+    baseName: string,
+    extension: string,
+    data: ArrayBuffer,
+  ) => Promise<TFile>;
+};
+
+function hasAttachmentSaver(app: App): app is AppWithAttachmentSaver {
+  return (
+    "saveAttachment" in app &&
+    typeof (app as Partial<AppWithAttachmentSaver>).saveAttachment ===
+      "function"
+  );
+}
+
+function splitAttachmentFileName(fileName: string) {
+  const extension = getFileExtension(fileName);
+
+  return {
+    baseName:
+      extension.length > 0
+        ? fileName.slice(0, -(extension.length + 1))
+        : fileName,
+    extension,
+  };
+}
+
+async function saveForSourcePath(
+  app: App,
+  fileName: string,
+  sourcePath: string,
+  data: ArrayBuffer,
+) {
+  const safeFileName = sanitizeAttachmentFileName(fileName);
+  const attachmentPath = await app.fileManager.getAvailablePathForAttachment(
+    safeFileName,
+    sourcePath,
+  );
+
+  return app.vault.createBinary(attachmentPath, data);
+}
+
+async function saveThroughObsidian(
+  app: App,
+  fileName: string,
+  sourcePath: string,
+  data: ArrayBuffer,
+) {
+  const activeFile = app.workspace.getActiveFile();
+
+  // Obsidian's editor paste path is app.saveAttachment. Using that native
+  // pipeline preserves Obsidian's attachment behavior without depending on a
+  // particular extension or its settings. The API uses the active file as its
+  // note context, so only use it when that context is the note being edited.
+  // Otherwise retain the explicit source path so a timeline task from another
+  // note cannot save into the wrong relative folder.
+  if (activeFile?.path === sourcePath && hasAttachmentSaver(app)) {
+    const { baseName, extension } = splitAttachmentFileName(fileName);
+
+    return app.saveAttachment(baseName, extension, data);
+  }
+
+  return saveForSourcePath(app, fileName, sourcePath, data);
+}
+
+function generateAttachmentLink(
+  app: App,
+  attachment: TFile,
+  sourcePath: string,
+) {
+  const link = app.fileManager.generateMarkdownLink(attachment, sourcePath);
+
+  // In Markdown-link mode Obsidian can return an empty label (`[](path)`).
+  // That is invisible when the attachment is intentionally a plain link, so
+  // fill only the empty label while preserving the exact target Obsidian
+  // generated. Regenerating with an alias can change relative-path handling.
+  // Wikilinks and embeds retain the exact native result.
+  if (!isEmbeddableExtension(attachment.extension) && link.startsWith("[](")) {
+    const label = attachment.name
+      .replaceAll("\\", "\\\\")
+      .replaceAll("]", "\\]");
+
+    return `[${label}]${link.slice(2)}`;
+  }
+
+  return link;
+}
 
 /**
  * Saves a clipboard file into the vault's attachment folder and returns the
@@ -15,17 +107,15 @@ export const createSaveClipboardAttachment =
   (app: App, sourcePath: string) =>
   async (file: File): Promise<string | undefined> => {
     try {
+      const data = await file.arrayBuffer();
       const fileName = createAttachmentFileName(file, new Date());
-      const attachmentPath =
-        await app.fileManager.getAvailablePathForAttachment(
-          fileName,
-          sourcePath,
-        );
-      const attachment = await app.vault.createBinary(
-        attachmentPath,
-        await file.arrayBuffer(),
+      const attachment = await saveThroughObsidian(
+        app,
+        fileName,
+        sourcePath,
+        data,
       );
-      const link = app.fileManager.generateMarkdownLink(attachment, sourcePath);
+      const link = generateAttachmentLink(app, attachment, sourcePath);
 
       return toAttachmentMarkdown(link, attachment.extension);
     } catch (error) {
