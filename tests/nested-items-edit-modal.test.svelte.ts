@@ -1,8 +1,9 @@
 import { flushSync, mount, unmount } from "svelte";
+import { isNotVoid } from "typed-assert";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import type { EditableNestedListItem } from "../src/service/list-item-entry-editor";
-import type { RenderMarkdown } from "../src/types";
+import type { RenderMarkdown, SaveClipboardAttachment } from "../src/types";
 import NestedItemsEditModal from "../src/ui/components/nested-items-edit-modal.svelte";
 import type { AttachMarkdownInputSuggest } from "../src/ui/markdown-input-suggest";
 
@@ -26,6 +27,25 @@ function keydown(element: Element | null, key: string) {
   flushSync();
 
   return event;
+}
+
+function paste(element: Element | null, files: File[]) {
+  expect(element).not.toBeNull();
+
+  const event = new Event("paste", { bubbles: true, cancelable: true });
+
+  Object.defineProperty(event, "clipboardData", {
+    value: { files, items: [] },
+  });
+
+  element?.dispatchEvent(event);
+
+  return event;
+}
+
+async function settlePaste() {
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  flushSync();
 }
 
 function windowKeydown(key: string) {
@@ -79,6 +99,7 @@ function renderModal(
     onEditStateChange?: (isEditing: boolean) => void;
     parentText?: string;
     renderMarkdown?: RenderMarkdown;
+    saveClipboardAttachment?: SaveClipboardAttachment;
     sourcePath?: string;
   } = {},
 ) {
@@ -109,6 +130,7 @@ function renderModal(
       onEditStateChange: props.onEditStateChange,
       parentText: props.parentText ?? defaultParentText,
       renderMarkdown,
+      saveClipboardAttachment: props.saveClipboardAttachment,
       sourcePath: props.sourcePath ?? "fixtures/daily/2023-01-01.md",
       onSave,
       onCancel,
@@ -533,6 +555,166 @@ describe("NestedItemsEditModal", () => {
       windowKeydown("Escape");
 
       expect(onEditStateChange).toHaveBeenLastCalledWith(false);
+    } finally {
+      unmount(component);
+      target.remove();
+    }
+  });
+
+  test("turns a pasted attachment into a link inside the edited item", async () => {
+    const file = new File(["png"], "image.png", { type: "image/png" });
+    const saveClipboardAttachment = vi.fn(async () => "![[Files/pasted.png]]");
+    const { component, target, onSave } = renderModal(
+      [{ text: "Prepare the deck", symbol: "-" }],
+      { saveClipboardAttachment },
+    );
+
+    try {
+      click(target.querySelector('button[aria-label="Edit Prepare the deck"]'));
+
+      const input = getInput();
+
+      isNotVoid(input);
+      input.setSelectionRange(input.value.length, input.value.length);
+
+      const event = paste(input, [file]);
+
+      expect(event.defaultPrevented).toBe(true);
+
+      await settlePaste();
+
+      expect(saveClipboardAttachment).toHaveBeenCalledWith(file);
+      expect(input.value).toBe("Prepare the deck![[Files/pasted.png]]");
+
+      keydown(input, "Enter");
+      click(target.querySelector("button.mod-cta"));
+
+      expect(onSave).toHaveBeenCalledWith(defaultParentText, [
+        {
+          text: "Prepare the deck![[Files/pasted.png]]",
+          symbol: "-",
+          status: undefined,
+          task: undefined,
+          children: [],
+        },
+      ]);
+    } finally {
+      unmount(component);
+      target.remove();
+    }
+  });
+
+  test("inserts several pasted attachments at the cursor", async () => {
+    const files = [
+      new File(["png"], "image.png", { type: "image/png" }),
+      new File(["zip"], "bundle.zip", { type: "application/zip" }),
+    ];
+    const saveClipboardAttachment = vi.fn(
+      async (file: File) =>
+        `${file.type.startsWith("image/") ? "!" : ""}[[Files/${file.name}]]`,
+    );
+    const { component, target } = renderModal(
+      [{ text: "before after", symbol: "-" }],
+      { saveClipboardAttachment },
+    );
+
+    try {
+      click(target.querySelector('button[aria-label="Edit before after"]'));
+
+      const input = getInput();
+
+      isNotVoid(input);
+      input.setSelectionRange(7, 7);
+      paste(input, files);
+
+      await settlePaste();
+
+      expect(saveClipboardAttachment).toHaveBeenCalledTimes(2);
+      expect(input.value).toBe(
+        "before ![[Files/image.png]] [[Files/bundle.zip]]after",
+      );
+    } finally {
+      unmount(component);
+      target.remove();
+    }
+  });
+
+  test("attaches to the parent title input as well", async () => {
+    const file = new File(["pdf"], "brief.pdf", { type: "application/pdf" });
+    const saveClipboardAttachment = vi.fn(async () => "![[Files/brief.pdf]]");
+    const { component, target } = renderModal([], {
+      saveClipboardAttachment,
+    });
+
+    try {
+      click(
+        target.querySelector(
+          'button[aria-label="Edit schedule title Example schedule"]',
+        ),
+      );
+
+      const input = getParentTitleInput();
+
+      isNotVoid(input);
+      input.setSelectionRange(input.value.length, input.value.length);
+      paste(input, [file]);
+
+      await settlePaste();
+
+      expect(saveClipboardAttachment).toHaveBeenCalledWith(file);
+      expect(input.value).toBe("Example schedule![[Files/brief.pdf]]");
+    } finally {
+      unmount(component);
+      target.remove();
+    }
+  });
+
+  test("leaves a text-only paste to the browser", async () => {
+    const saveClipboardAttachment = vi.fn(async () => "![[Files/pasted.png]]");
+    const { component, target } = renderModal(
+      [{ text: "Prepare the deck", symbol: "-" }],
+      { saveClipboardAttachment },
+    );
+
+    try {
+      click(target.querySelector('button[aria-label="Edit Prepare the deck"]'));
+
+      const input = getInput();
+
+      isNotVoid(input);
+
+      const event = paste(input, []);
+
+      await settlePaste();
+
+      expect(event.defaultPrevented).toBe(false);
+      expect(saveClipboardAttachment).not.toHaveBeenCalled();
+      expect(input.value).toBe("Prepare the deck");
+    } finally {
+      unmount(component);
+      target.remove();
+    }
+  });
+
+  test("keeps the edit untouched when the attachment cannot be saved", async () => {
+    const saveClipboardAttachment = vi.fn(async () => undefined);
+    const { component, target } = renderModal(
+      [{ text: "Prepare the deck", symbol: "-" }],
+      { saveClipboardAttachment },
+    );
+
+    try {
+      click(target.querySelector('button[aria-label="Edit Prepare the deck"]'));
+
+      const input = getInput();
+
+      isNotVoid(input);
+      paste(input, [new File(["png"], "image.png", { type: "image/png" })]);
+
+      await settlePaste();
+
+      expect(saveClipboardAttachment).toHaveBeenCalled();
+      expect(input.value).toBe("Prepare the deck");
     } finally {
       unmount(component);
       target.remove();

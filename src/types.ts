@@ -22,6 +22,7 @@ import { useEditContext } from "./ui/hooks/use-edit/use-edit-context";
 import type { OpenLogEntryEditModal } from "./ui/log-entry-edit-modal";
 import type { OpenTimelineSettingsModal } from "./ui/timeline-settings-modal";
 import type { createRenderMarkdown } from "./util/create-render-markdown";
+import type { createSaveClipboardAttachment } from "./util/create-save-clipboard-attachment";
 import { type ShowPreview } from "./util/create-show-preview";
 import type { Moment } from "./util/obsidian-moment";
 import type { Scheduler } from "./util/scheduler";
@@ -44,6 +45,10 @@ export interface Overlap {
 }
 
 export type RenderMarkdown = ReturnType<typeof createRenderMarkdown>;
+
+export type SaveClipboardAttachment = ReturnType<
+  typeof createSaveClipboardAttachment
+>;
 
 export type PointerDateTime = {
   dateTime: Moment;

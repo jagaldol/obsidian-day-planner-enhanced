@@ -184,6 +184,8 @@ Plans that cross midnight can stay written in the start day's daily note. Day Pl
 
 Right-click a timeline block and choose **Edit nested items...** to manage the child list under that planner item. The editor can add items, add child items, update text by clicking an item body, move siblings up or down, delete nested subtrees, and switch bullets into checkbox tasks without changing the parent planner line.
 
+Pasting a file or an image into an item (or into the parent title) saves it to your configured attachment folder and inserts a link to it, the same way pasting into the Obsidian editor does. Images, audio, video, and PDFs are inserted as embeds; other file types are inserted as plain links.
+
 ### 2. [tasks community plugin](obsidian://show-plugin?id=obsidian-tasks-plugin) integration, showing events from other files in your vault
 
 You can see tasks anywhere in the vault with dates added by the [tasks community plugin](obsidian://show-plugin?id=obsidian-tasks-plugin). This also works out of the box for all the files in the vault. You only need to add the `scheduled` property to a task in one of the formats:

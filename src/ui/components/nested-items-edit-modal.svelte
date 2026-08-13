@@ -20,7 +20,11 @@
     replaceOrPrependTimeRange,
   } from "../../parser/parser";
   import type { EditableNestedListItem } from "../../service/list-item-entry-editor";
-  import type { RenderMarkdown } from "../../types";
+  import type { RenderMarkdown, SaveClipboardAttachment } from "../../types";
+  import {
+    getClipboardFiles,
+    insertTextIntoInput,
+  } from "../../util/clipboard-attachment";
   import {
     type AttachMarkdownInputSuggest,
     hasActiveMarkdownInputSuggest,
@@ -32,6 +36,7 @@
     initialItems,
     parentText,
     renderMarkdown,
+    saveClipboardAttachment,
     sourcePath,
     editController,
     onEditEscape,
@@ -46,6 +51,7 @@
     initialItems: EditableNestedListItem[];
     parentText: string;
     renderMarkdown: RenderMarkdown;
+    saveClipboardAttachment?: SaveClipboardAttachment;
     sourcePath: string;
     editController?: {
       cancelActiveEdit?: () => void;
@@ -354,6 +360,44 @@
     }
   }
 
+  async function handleEditPaste(event: ClipboardEvent) {
+    const input = event.currentTarget;
+
+    if (!(input instanceof HTMLInputElement) || !saveClipboardAttachment) {
+      return;
+    }
+
+    const files = getClipboardFiles(event.clipboardData);
+
+    if (files.length === 0) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const selection = {
+      start: input.selectionStart ?? input.value.length,
+      end: input.selectionEnd ?? input.value.length,
+    };
+    const links: string[] = [];
+
+    // Saved one at a time so each attachment resolves a free vault path
+    // against the files written before it.
+    for (const file of files) {
+      const link = await saveClipboardAttachment(file);
+
+      if (link) {
+        links.push(link);
+      }
+    }
+
+    if (links.length === 0 || !input.isConnected) {
+      return;
+    }
+
+    insertTextIntoInput(input, links.join(" "), selection);
+  }
+
   function handleWindowKeydown(event: KeyboardEvent) {
     if (
       event.target instanceof HTMLInputElement &&
@@ -530,6 +574,7 @@
         class="parent-title-input"
         aria-label="Parent item title"
         onkeydown={(event) => handleEditKeydown(event, parentEditPathKey)}
+        onpaste={handleEditPaste}
         bind:value={editingText}
         use:focusOnMount
         use:markdownInputSuggest
@@ -620,6 +665,7 @@
             <input
               aria-label="Nested item text"
               onkeydown={(event) => handleEditKeydown(event, pathKey)}
+              onpaste={handleEditPaste}
               placeholder="New item"
               bind:value={editingText}
               use:focusOnMount

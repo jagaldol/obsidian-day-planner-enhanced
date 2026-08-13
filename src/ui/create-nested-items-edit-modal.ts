@@ -9,6 +9,7 @@ import {
 } from "../service/list-item-entry-editor";
 import type { EditableTimeBlock } from "../time-block-types";
 import { createRenderMarkdown } from "../util/create-render-markdown";
+import { createSaveClipboardAttachment } from "../util/create-save-clipboard-attachment";
 import {
   createShowPreview,
   dayPlannerHoverLinkSource,
@@ -168,6 +169,7 @@ export function createNestedItemsEditModalCreator(
         initialItems: toEditableNestedListItems(task.children),
         parentText: getFirstLine(task.text),
         renderMarkdown,
+        saveClipboardAttachment: createSaveClipboardAttachment(app, path),
         sourcePath: path,
         onEditEscape: () => modal.suppressEscapeCloseForCurrentKey(),
         onEditStateChange: (isEditing: boolean) => {
