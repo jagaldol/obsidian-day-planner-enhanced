@@ -4,6 +4,18 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.35.1**, and follows its own versioning.
 
+## 0.7.0
+
+### ✨ New features
+
+- Added Obsidian-style image and file pasting to **Edit nested items...**, including nested items and the parent title. Attachments respect the configured attachment folder and link format; images, audio, video, and PDFs are embedded while other files remain plain links ([#15](https://github.com/jagaldol/obsidian-day-planner-enhanced/issues/15), [#16](https://github.com/jagaldol/obsidian-day-planner-enhanced/issues/16)).
+- Added **Show embeds in timeline blocks**, off by default, so attachments remain readable as plain links in height-constrained blocks while previews stay available in the nested-items editor and source note.
+
+### ✨ Other improvements
+
+- Made nested-item and parent-title edits save automatically when the editor closes, including waiting for in-progress attachment saves, and removed the extra Save and Cancel buttons.
+- Stopped timeline-block Markdown from re-rendering on every pointer movement while editing, moving, or resizing blocks.
+
 ## 0.6.4
 
 ### 🐞 Fixed issues
