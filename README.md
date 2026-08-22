@@ -1,14 +1,27 @@
 # Day Planner Enhanced
 
-Day Planner Enhanced is a community plugin for [Obsidian](https://obsidian.md/). It adds editable calendar views, basic time-tracking, and an enhanced timeline UI for readable nested schedules.
+**Readable nested schedules for Obsidian.**
 
-<img src="./assets/day-planner-enhanced-ui-changes.png" alt="Day Planner Enhanced UI changes showing nested schedule timeline improvements" width="100%">
+Day Planner Enhanced is an [Obsidian](https://obsidian.md/) community plugin for people who plan in nested Markdown lists. Child items stay readable inside their parent block instead of appearing again as separate Timeline or All Day entries.
 
-<p align="center"><em>Nested timed and untimed child items stay readable inside the parent timeline block.</em></p>
+[![Obsidian community plugin](https://img.shields.io/badge/Obsidian-Community%20plugin-7c3aed?logo=obsidian&logoColor=white)](https://obsidian.md/plugins?id=day-planner-enhanced)
+[![Latest release](https://img.shields.io/github/v/release/jagaldol/obsidian-day-planner-enhanced)](https://github.com/jagaldol/obsidian-day-planner-enhanced/releases/latest)
+[![GitHub stars](https://img.shields.io/github/stars/jagaldol/obsidian-day-planner-enhanced?style=flat)](https://github.com/jagaldol/obsidian-day-planner-enhanced)
+[![License: MIT](https://img.shields.io/github/license/jagaldol/obsidian-day-planner-enhanced)](./LICENSE)
 
-This plugin is an independent MIT-licensed fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), currently aligned with upstream 0.35.1.
+[Install from Obsidian](https://obsidian.md/plugins?id=day-planner-enhanced) · [Latest release](https://github.com/jagaldol/obsidian-day-planner-enhanced/releases/latest) · [Changelog](./CHANGELOG.md) · [Report an issue](https://github.com/jagaldol/obsidian-day-planner-enhanced/issues)
 
-The upstream 0.35.1 baseline includes a week-strip timeline header, a compact All Day row, a shared **Timeline settings** modal, timeline clock-in actions, and current-time/status-bar fixes. Enhanced retains its readable nested schedules and independent identity.
+<img src="./assets/timeline-nested-schedule-demo.png" alt="Day Planner Enhanced timeline with a weekday strip, muted past blocks, a green current-time line, and nested child items grouped inside their parent schedules" width="100%">
+
+<p align="center"><em>Past plans stay muted, the current block stays in focus, and nested schedules keep their structure.</em></p>
+
+## Highlights
+
+- **Keep nested plans together**: timed children keep their time ranges, while untimed notes stay attached to the same parent block.
+- **Edit where you plan**: manage a nested tree from the timeline, including child items, task state, ordering, removal, and attachments.
+- **Continue past midnight**: an overnight plan remains in the daily note where it starts and continues naturally into the next day's timeline.
+- **Use the wider Day Planner workflow**: daily notes, Tasks integration, online calendars, editable calendar views, and time tracking remain available.
+- **Keep an independent plugin identity**: the separate `day-planner-enhanced` ID keeps releases, settings, and issue tracking distinct. Disable the original Day Planner plugin before enabling this fork in the same vault.
 
 ## What Enhanced adds
 
@@ -16,7 +29,11 @@ Day Planner Enhanced keeps the original Day Planner workflow, then adds tools fo
 
 ### 1. Nested schedules stay grouped in the timeline
 
-Timed and untimed child items render inside the parent timeline block instead of becoming separate overlapping blocks. A work block can keep its meetings, breaks, and context notes together.
+Timed and untimed child items render inside the parent timeline block instead of appearing again as separate Timeline or All Day entries. A work block can keep its meetings, breaks, and context notes together.
+
+<img src="./assets/day-planner-enhanced-ui-changes.png" alt="Day Planner Enhanced UI comparison showing nested schedule timeline improvements" width="100%">
+
+<p align="center"><em>Timed children keep their ranges, untimed notes stay attached, and duplicate overlapping blocks disappear.</em></p>
 
 ### 2. Timeline actions include nested editing and removal
 
@@ -28,11 +45,13 @@ Right-click a timeline block to edit the parent item, reveal it in the source fi
 
 ### 3. Nested items can be managed without leaving the planner
 
-The nested item manager can add root items, add child items, edit text by clicking the item body, move siblings, delete subtrees, convert bullets into checkbox tasks, and toggle completion. Saving replaces only the child subtree and keeps the parent planner line intact.
+The nested item manager can add root items, add child items, edit text by clicking the item body, move siblings, delete subtrees, convert bullets into checkbox tasks, and toggle completion. Changes save automatically when the editor closes, while the parent planner line stays intact.
+
+Files and images can be pasted into nested items or the parent title. The editor follows Obsidian's attachment-folder and link-format settings, previews supported embeds, and waits for in-progress attachment saves before closing.
 
 <img src="./assets/nested-items-editor-demo.png" alt="Day Planner Enhanced nested items editor" width="100%">
 
-<p align="center"><em>Edit nested schedules as a small tree, then save the result back to the source markdown.</em></p>
+<p align="center"><em>Edit nested schedules as a small tree. Changes save automatically when the editor closes.</em></p>
 
 ### 4. Overnight plans continue across days
 
@@ -53,49 +72,16 @@ Plans that cross midnight stay anchored to the day where they start while still 
 - **Stable block layout**: current-time markers, timeline controls, long titles, nested content, and All Day boundaries stay aligned across timeline layouts.
 - **Separate plugin identity**: installs as `day-planner-enhanced`, so it can live separately from the original Day Planner plugin.
 
-- 🪲 [Report bugs and suggest features](https://github.com/jagaldol/obsidian-day-planner-enhanced/issues)
-- 🛠️ [Submit pull requests](./CONTRIBUTING.md)
+## Works with
 
-Day Planner Enhanced is integrated with
-
-- The core Daily Notes plugin.
-- [the Tasks plugin](https://obsidian.md/plugins?id=obsidian-tasks-plugin)
-- Online calendars
-
-## Table of contents
-
-- [Table of contents](#table-of-contents)
-- [What Enhanced adds](#what-enhanced-adds)
-  - [1. Nested schedules stay grouped in the timeline](#1-nested-schedules-stay-grouped-in-the-timeline)
-  - [2. Timeline actions include nested editing and removal](#2-timeline-actions-include-nested-editing-and-removal)
-  - [3. Nested items can be managed without leaving the planner](#3-nested-items-can-be-managed-without-leaving-the-planner)
-  - [4. Overnight plans continue across days](#4-overnight-plans-continue-across-days)
-  - [5. Smaller planning improvements](#5-smaller-planning-improvements)
-- [Installation](#installation)
-  - [Install from Obsidian](#install-from-obsidian)
-  - [Manual installation fallback](#manual-installation-fallback)
-  - [Updating](#updating)
-- [How to use it](#how-to-use-it)
-  - [1. Showing events from your daily notes](#1-showing-events-from-your-daily-notes)
-    - [Overnight plans](#overnight-plans)
-    - [Editing nested items](#editing-nested-items)
-  - [2. tasks community plugin integration, showing events from other files in your vault](#2-tasks-community-plugin-integration-showing-events-from-other-files-in-your-vault)
-  - [3. Showing internet calendars](#3-showing-internet-calendars)
-    - [Where to get a Google Calendar link](#where-to-get-a-google-calendar-link)
-    - [Where to get an iCloud link](#where-to-get-an-icloud-link)
-    - [Where to get an Outlook link](#where-to-get-an-outlook-link)
-      - [Alternative](#alternative)
-  - [4. Time tracking](#4-time-tracking)
-    - [Recording clocks](#recording-clocks)
-    - [Clocks in timelines](#clocks-in-timelines)
-    - [Active clocks](#active-clocks)
-    - [Limitations](#limitations)
-- [Upstream](#upstream)
-- [Acknowledgements](#acknowledgements)
+- The core Daily Notes plugin or the Periodic Notes community plugin
+- [Tasks](https://obsidian.md/plugins?id=obsidian-tasks-plugin)
+- Google Calendar, iCloud Calendar, Outlook, and other ICS calendars
+- Desktop and mobile Obsidian 1.11.0 or newer
 
 ## Installation
 
-Day Planner Enhanced is listed in Obsidian's community plugin directory and can be installed from Obsidian's built-in community plugin browser.
+Day Planner Enhanced is listed in Obsidian's community plugin directory. [Open its official plugin page](https://obsidian.md/plugins?id=day-planner-enhanced), or install it from Obsidian's built-in community plugin browser.
 
 Day Planner Enhanced requires Obsidian 1.11.0 or newer.
 
@@ -133,47 +119,43 @@ This is the recommended way to install and update the plugin.
 - If you installed manually, download the latest release assets and replace the existing files in the plugin folder.
 - Restart or reload Obsidian after replacing plugin files.
 
-## How to use it
+## How to use
 
 To open the timeline in the sidebar:
 
-- Either run the command: `Show Timeline`
-- Or click the timeline icon in the left ribbon
+- Run the `Show Timeline` command, or select the timeline icon in the left ribbon:
   - ![](./assets/open-timeline-ribbon-icon.png)
 
-To open multi-day planner:
+To open the multi-day planner:
 
-- Either run the command: `Show multi-day planner`
-- Or click on the icon in the left ribbon:
+- Run the `Show multi-day planner` command, or select its icon in the left ribbon:
   - ![](./assets/open-multi-day-view-ribbon-icon.png)
 
-You can overview the upcoming 3 hours in the mini-timeline in the status bar:
+The mini-timeline in the status bar shows the next three hours:
 
 <img src="./assets/mini-timeline-demo.png" width="100%">
 
-If there are remote tasks, the blocks will be colored accordingly.
+Blocks from remote sources use their configured source colors.
 
-The plugin can display records from different sources:
+The plugin can display items from several sources:
 
 1. Daily notes
-2. Obsidian-tasks
+2. Tasks
 3. Online calendars
 4. Dataview clock properties
 
-Let's go over each one of them.
-
 ### 1. Showing events from your daily notes
 
-> [!Warning]
-> Either the core 'Daily Notes' (core plugin) or the 'Periodic Notes' (community plugin, [see in Obsidian](obsidian://show-plugin?id=periodic-notes)) should be enabled. This is what allows day-planner to 'see' and interact with your daily notes.
+> [!WARNING]
+> Enable either the core Daily Notes plugin or the [Periodic Notes community plugin](https://obsidian.md/plugins?id=periodic-notes). Day Planner Enhanced uses one of these plugins to find and update your daily notes.
 
 Write your tasks in a daily note, and they show up on the timeline:
 
 ```md
 # Day planner
 
-- [ ] 10:00 - 10:30 Wake up
-- [ ] 11:00 - 12:30 Grab a brush and put a little make-up
+- [ ] 10:00 - 10:30 Plan the day
+- [ ] 11:00 - 12:30 Deep work session
 ```
 
 #### Overnight plans
@@ -188,14 +170,14 @@ Pasting a file or an image into an item (or into the parent title) saves it to y
 
 Timeline blocks are only as tall as their time range, so by default an embed is shown as a plain link there to keep the task text and time range visible. Turn on **Show embeds in timeline blocks** to render images and PDFs in the block itself. The nested items editor always renders embeds.
 
-### 2. [tasks community plugin](obsidian://show-plugin?id=obsidian-tasks-plugin) integration, showing events from other files in your vault
+### 2. Showing scheduled Tasks from other files
 
-You can see tasks anywhere in the vault with dates added by the [tasks community plugin](obsidian://show-plugin?id=obsidian-tasks-plugin). This also works out of the box for all the files in the vault. You only need to add the `scheduled` property to a task in one of the formats:
+Tasks anywhere in your vault can appear on the timeline when they have a scheduled date from the [Tasks community plugin](https://obsidian.md/plugins?id=obsidian-tasks-plugin). Add a `scheduled` property in one of these formats:
 
-- Shorthand, added by [tasks community plugin](obsidian://show-plugin?id=obsidian-tasks-plugin): `⏳ 2021-08-29`
-  - Note that this plugin has a handy modal for adding these properties
+- Tasks shorthand: `⏳ 2021-08-29`
+  - The Tasks plugin includes a modal for adding these properties.
 - Full Dataview-like property: `[scheduled:: 2021-08-29]`
-- Another Dataview format: `(scheduled:: 2021-08-29)`.
+- Parenthesized Dataview format: `(scheduled:: 2021-08-29)`
 
 For example, these tasks will show up in the timeline:
 
@@ -212,13 +194,13 @@ Enable **Tasks integration → Hide Tasks metadata in planner** to keep task des
 
 ### 3. Showing internet calendars
 
-To show events from internet calendars like **Google Calendar, iCloud Calendar and Outlook** you only need to add an ICS link in the plugin settings.
+To show events from internet calendars such as **Google Calendar, iCloud Calendar, and Outlook**, add an ICS link in the plugin settings.
 
 ![](./assets/ical-settings-demo.png)
 
 #### Where to get a Google Calendar link
 
-> [!Warning]
+> [!WARNING]
 > Make sure you copy the right link! It should end with `.ics`, otherwise, you won't see your events!
 
 [Google Calendar instructions](https://support.google.com/calendar/answer/37648?hl=en#zippy=%2Csync-your-google-calendar-view-edit%2Cget-your-calendar-view-only)
@@ -244,7 +226,7 @@ If your organization doesn't let you share your calendar this way, you might try
 
 ### 4. Time tracking
 
-> [!Warning]
+> [!WARNING]
 > This feature is experimental and can break or change at any time in the near future. You can help to shape this feature by providing your feedback.
 
 You can record time spent on tasks in the form of Dataview properties and then view the records as time blocks, much like planner entries.
@@ -286,7 +268,7 @@ You can see the currently active clocks in the timeline sidebar:
 
 <img src="./assets/active-clocks-demo.png" width="75%">
 
-A right click on an active clock will bring the control menu:
+Right-click an active clock to open its control menu:
 
 <img src="./assets/active-clocks-menu.png" width="75%">
 
@@ -296,16 +278,25 @@ The optional status bar widget shows the active clock and provides a shortcut to
 
 - Clock time blocks cannot be edited by dragging yet. Use the context menu to edit clock times.
 
+## Support and contribute
+
+If Day Planner Enhanced makes your daily planning easier, [star the repository](https://github.com/jagaldol/obsidian-day-planner-enhanced). It helps other Obsidian users find the project and follow its development.
+
+- 🪲 [Report bugs or suggest features](https://github.com/jagaldol/obsidian-day-planner-enhanced/issues)
+- 🛠️ [Read the contribution guide](./CONTRIBUTING.md)
+
 ## Upstream
 
-Day Planner Enhanced is maintained as an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner). Upstream changes can still be merged from the original project when useful, but this plugin has its own package identity, release versioning, and issue tracker.
+Day Planner Enhanced is an independent MIT-licensed fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner). The current codebase is aligned with the upstream 0.35.1 baseline, including its week-strip timeline header, compact All Day row, shared **Timeline settings** modal, timeline clock-in actions, and current-time/status-bar fixes.
+
+Useful upstream changes can continue to be merged, while this plugin keeps its own package identity, release versioning, enhancements, and issue tracker.
 
 ## Acknowledgements
 
 - Day Planner Enhanced is based on [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner).
-- Thanks to [Michael Brenan](https://github.com/blacksmithgu) for Dataview
-- Thanks to [James Lynch](https://github.com/lynchjames) for the original plugin
-- Thanks to [Joshua Tazman Reinier](https://github.com/joshuatazrein) for his plugin that served as an inspiration
-- Thanks to @liamcain for creating daily note utilities and a helpful calendar plugin
-- Thanks to [Emacs Org Mode](https://orgmode.org/) for an idea of text-based time-tracking
-- Thanks to [Toggl Track](https://track.toggl.com/timer) for an idea of a great time-tracking UI
+- Thanks to [Michael Brenan](https://github.com/blacksmithgu) for Dataview.
+- Thanks to [James Lynch](https://github.com/lynchjames) for the original plugin.
+- Thanks to Joshua Tazman Reinier for his plugin that served as an inspiration.
+- Thanks to [Liam Cain](https://github.com/liamcain) for creating daily note utilities and a helpful calendar plugin.
+- Thanks to [Emacs Org Mode](https://orgmode.org/) for the idea of text-based time tracking.
+- Thanks to [Toggl Track](https://track.toggl.com/timer) for inspiring the time-tracking UI.
