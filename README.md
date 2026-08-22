@@ -11,9 +11,9 @@ Day Planner Enhanced is an [Obsidian](https://obsidian.md/) community plugin for
 
 [Install from Obsidian](https://obsidian.md/plugins?id=day-planner-enhanced) · [Latest release](https://github.com/jagaldol/obsidian-day-planner-enhanced/releases/latest) · [Changelog](./CHANGELOG.md) · [Report an issue](https://github.com/jagaldol/obsidian-day-planner-enhanced/issues)
 
-<img src="./assets/timeline-nested-schedule-demo.png" alt="Day Planner Enhanced timeline with a weekday strip, muted past blocks, a green current-time line, and nested child items grouped inside their parent schedules" width="100%">
+<img src="./assets/social-preview.png" alt="Day Planner Enhanced with readable nested schedules in a narrow Obsidian timeline sidebar" width="100%">
 
-<p align="center"><em>Past plans stay muted, the current block stays in focus, and nested schedules keep their structure.</em></p>
+<p align="center"><em>Nested schedules stay readable in the narrow sidebar where the timeline usually lives.</em></p>
 
 ## Highlights
 
@@ -30,6 +30,10 @@ Day Planner Enhanced keeps the original Day Planner workflow, then adds tools fo
 ### 1. Nested schedules stay grouped in the timeline
 
 Timed and untimed child items render inside the parent timeline block instead of appearing again as separate Timeline or All Day entries. A work block can keep its meetings, breaks, and context notes together.
+
+<img src="./assets/timeline-nested-schedule-demo.png" alt="Day Planner Enhanced narrow timeline sidebar beside a daily note, with muted past blocks, a green current-time line, and nested child items grouped inside their parent schedules" width="100%">
+
+<p align="center"><em>Plan in Markdown on the left; keep the day, current-time focus, and nested structure visible in the sidebar.</em></p>
 
 <img src="./assets/day-planner-enhanced-ui-changes.png" alt="Day Planner Enhanced UI comparison showing nested schedule timeline improvements" width="100%">
 
