@@ -4,6 +4,16 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.35.1**, and follows its own versioning.
 
+## 0.7.1
+
+### 🐞 Fixed issues
+
+- Reset the manually resized All Day row height when switching the selected day, so a larger height from the previous day no longer carries over to different content.
+
+### ✨ Other improvements
+
+- Reduced the initial single-day and sidebar All Day height to show four complete compact rows before scrolling, while keeping manual resizing available.
+
 ## 0.7.0
 
 ### ✨ New features
