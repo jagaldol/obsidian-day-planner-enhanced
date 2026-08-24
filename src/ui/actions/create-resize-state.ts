@@ -32,6 +32,12 @@ export function createResizeState({
     editingHeight = false;
   }
 
+  function resetHeight() {
+    editingHeight = false;
+    resizeContainerEl?.classList.remove("is-manually-resized");
+    resizeContainerEl?.style.removeProperty("height");
+  }
+
   function handleMove(event: MouseEvent | TouchEvent) {
     if (!editingHeight) {
       return;
@@ -77,6 +83,7 @@ export function createResizeState({
   }
 
   return {
+    resetHeight,
     startResizing,
     resizeAction,
   };

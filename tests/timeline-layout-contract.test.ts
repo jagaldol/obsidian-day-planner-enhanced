@@ -84,7 +84,7 @@ describe("single-day timeline layout contract", () => {
     );
     expect(timelineWithControls).toContain('class="ruler"');
     expect(timelineWithControls).toContain('"timeline-row"');
-    expect(timelineWithControls).toContain("max-height: 16vh");
+    expect(timelineWithControls).toContain("max-height: 14.5vh");
     expect(timelineWithControls).not.toContain("max-height: max-content");
     expect(timelineWithControls).toContain("createResizeState({");
     expect(timelineWithControls).toContain(

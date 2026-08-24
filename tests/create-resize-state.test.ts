@@ -34,6 +34,13 @@ describe("createResizeState", () => {
     document.dispatchEvent(new MouseEvent("mousemove", { clientY: 210 }));
     expect(container.style.height).toBe("120px");
 
+    resizeState.resetHeight();
+    expect(container.classList.contains("is-manually-resized")).toBe(false);
+    expect(container.style.height).toBe("");
+
+    document.dispatchEvent(new MouseEvent("mousemove", { clientY: 100 }));
+    expect(container.style.height).toBe("");
+
     action.destroy();
   });
 });

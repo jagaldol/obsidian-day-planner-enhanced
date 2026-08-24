@@ -8,6 +8,7 @@
   import { isToday } from "../../global-store/current-time";
   import { getVisibleHours } from "../../global-store/derived-settings";
   import type { TimelineTimeBlock } from "../../time-block-types";
+  import { getDayKey } from "../../util/time-block-utils";
   import { createResizeState } from "../actions/create-resize-state";
 
   import BlockList from "./block-list.svelte";
@@ -38,10 +39,15 @@
   );
 
   let allDayRowRef: HTMLDivElement | undefined = $state();
-  const { startResizing, resizeAction } = createResizeState({
+  const { resetHeight, startResizing, resizeAction } = createResizeState({
     getMaxHeight: () => allDayRowRef?.scrollHeight,
   });
   let rulerRef: HTMLDivElement | undefined = $state();
+
+  $effect(() => {
+    getDayKey(firstDayInRange);
+    resetHeight();
+  });
 
   function handleAllDayEventsPointerMove() {
     pointerDateTime.set({
@@ -170,7 +176,7 @@
     overflow: auto;
     grid-area: all-day;
 
-    max-height: 16vh;
+    max-height: 14.5vh;
 
     background-color: var(--background-primary);
     border-block-end: var(--border-base);

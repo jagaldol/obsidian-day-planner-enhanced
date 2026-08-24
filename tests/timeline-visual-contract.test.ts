@@ -137,17 +137,19 @@ describe("timeline visual contract", () => {
     expect(timeline).toContain("{#if $isToday(day)}");
   });
 
-  test("starts all-day rows at 16vh and lets resizing reach content height", () => {
+  test("keeps all-day rows compact and lets resizing reach content height", () => {
     expect(timelineWithControls).toContain("createResizeState({");
     expect(timelineWithControls).toContain("<GripHorizontal");
     expect(timelineWithControls).toContain("use:resizeAction");
-    expect(timelineWithControls).toContain("max-height: 16vh;");
+    expect(timelineWithControls).toContain("max-height: 14.5vh;");
     expect(timelineWithControls).toContain(
       ":global(.all-day-row.is-manually-resized)",
     );
     expect(timelineWithControls).toContain(
       "getMaxHeight: () => allDayRowRef?.scrollHeight",
     );
+    expect(timelineWithControls).toContain("getDayKey(firstDayInRange);");
+    expect(timelineWithControls).toContain("resetHeight();");
     expect(timelineWithControls).toContain("bind:this={allDayRowRef}");
     expect(multiDayGrid).toContain("createResizeState({");
     expect(multiDayGrid).toContain(
