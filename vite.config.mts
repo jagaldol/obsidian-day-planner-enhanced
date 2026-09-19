@@ -73,9 +73,10 @@ export default defineConfig((env) => ({
     // todo: fix
     // sourcemap: "inline",
     lib: {
-      entry: ["src/main.ts", "src/styles.scss"],
+      entry: "src/main.ts",
       name: "main",
       fileName: () => "main.js",
+      cssFileName: "styles",
       formats: ["cjs" as const],
     },
     minify: env.mode === "production",
