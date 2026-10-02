@@ -66,7 +66,7 @@
 
     padding: var(--size-4-2);
 
-    background-color: rgba(var(--callout-color), var(--callout-opacity));
+    background-color: rgb(var(--callout-color), var(--callout-opacity));
     border-radius: var(--radius-s);
   }
 
