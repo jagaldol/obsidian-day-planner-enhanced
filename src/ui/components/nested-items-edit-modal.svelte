@@ -1370,14 +1370,14 @@
     opacity: 0.32;
   }
 
+  .icon-button.task-enabled {
+    color: var(--interactive-accent);
+  }
+
   .icon-button:not(:disabled):hover,
   .icon-button.task-enabled:hover {
     color: var(--interactive-accent);
     background-color: var(--background-modifier-hover);
-  }
-
-  .icon-button.task-enabled {
-    color: var(--interactive-accent);
   }
 
   .icon-button.confirm {
