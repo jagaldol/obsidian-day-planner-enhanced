@@ -3,11 +3,10 @@ import { writable } from "svelte/store";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { obsidianContextKey } from "../src/constants";
+import type { ListItemEntryWithChildren } from "../src/redux/index/index-slice";
 import { defaultSettingsForTests } from "../src/settings";
 import type { ObsidianContext } from "../src/types";
 import RenderedMarkdown from "../src/ui/components/rendered-markdown.svelte";
-
-import type { ListItemEntryWithChildren } from "../src/redux/index/index-slice";
 
 import { baseTimeBlock } from "./edit/util/fixtures";
 
@@ -36,6 +35,78 @@ afterEach(() => {
 });
 
 describe("RenderedMarkdown", () => {
+  test("filters nested statuses without shifting checkbox source lines or mutating children", () => {
+    const target = document.createElement("div");
+    const settings = writable(defaultSettingsForTests);
+    const toggleCheckboxInFile = vi.fn().mockResolvedValue(undefined);
+    const renderMarkdown = vi.fn((element: HTMLElement, markdown: string) => {
+      element.textContent = markdown;
+      for (const match of markdown.matchAll(/\[[^\]]\]/gu)) {
+        const item = document.createElement("li");
+        item.dataset.task = match[0].slice(1, -1);
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.className = "task-list-item-checkbox";
+        item.appendChild(checkbox);
+        element.appendChild(item);
+      }
+      return () => element.replaceChildren();
+    });
+    const context = new Map<string, unknown>([
+      [
+        obsidianContextKey,
+        {
+          renderMarkdown,
+          settingsStore: settings,
+          toggleCheckboxInFile,
+        } as unknown as ObsidianContext,
+      ],
+    ]);
+    const cancelled = {
+      ...createNestedListItem("cancelled", "Cancelled", 1),
+      task: "-",
+    };
+    const nestedCancelled = {
+      ...createNestedListItem("nested-cancelled", "Nested cancelled", 3),
+      task: "-",
+    };
+    const kept = createNestedListItem("kept", "Keep this task", 4);
+    const parent = {
+      ...createNestedListItem("parent", "Active parent", 2),
+      children: [nestedCancelled, kept],
+    };
+    const children = [cancelled, parent];
+    const original = JSON.stringify(children);
+    document.body.appendChild(target);
+    const component = mount(RenderedMarkdown, {
+      target,
+      context,
+      props: { timeBlock: { ...baseTimeBlock, children } },
+    });
+    flushSync();
+    settings.update((current) => ({ ...current, hiddenTaskStatuses: ["-"] }));
+    flushSync();
+
+    expect(target.textContent).not.toContain("Cancelled");
+    expect(target.textContent).not.toContain("Nested cancelled");
+    expect(target.textContent).toContain("Keep this task");
+    expect(
+      Array.from(
+        target.querySelectorAll<HTMLInputElement>("input"),
+        (input) => input.dataset.line,
+      ),
+    ).toEqual(["0", "2", "4"]);
+    target.querySelector<HTMLInputElement>('input[data-line="4"]')!.click();
+    expect(toggleCheckboxInFile).toHaveBeenCalledWith("path", 4);
+    expect(JSON.stringify(children)).toBe(original);
+
+    settings.set(defaultSettingsForTests);
+    flushSync();
+    expect(target.textContent).toContain("Cancelled");
+    expect(target.textContent).toContain("Nested cancelled");
+    unmount(component);
+  });
+
   test.each([
     { durationMinutes: 20, expectedCompact: true, zoomLevel: 1 },
     { durationMinutes: 30, expectedCompact: false, zoomLevel: 1 },

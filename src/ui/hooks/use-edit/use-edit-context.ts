@@ -20,6 +20,7 @@ import type {
 import { uniqBy } from "../../../util/collection";
 import * as m from "../../../util/moment";
 import type { Moment } from "../../../util/obsidian-moment";
+import { hasHiddenTaskStatus } from "../../../util/task-status";
 import * as t from "../../../util/time-block-utils";
 
 import { createEditHandlers } from "./create-edit-handlers";
@@ -170,11 +171,12 @@ export function useEditContext(props: {
   const localFilteredTimeBlocks = derived(
     [localTimeBlocks, settingsStore],
     ([$localTimeBlocks, $settingsStore]) =>
-      $settingsStore.showCompletedTasks
-        ? $localTimeBlocks
-        : $localTimeBlocks.filter(
-            (timeBlock) => !t.isCompleted(timeBlock.task ?? timeBlock.status),
-          ),
+      $localTimeBlocks.filter(
+        (timeBlock) =>
+          !hasHiddenTaskStatus(timeBlock, $settingsStore.hiddenTaskStatuses) &&
+          ($settingsStore.showCompletedTasks ||
+            !t.isCompleted(timeBlock.task ?? timeBlock.status)),
+      ),
   );
 
   const baselineTimeBlocks = writable<EditableTimeBlock[]>([], (set) => {

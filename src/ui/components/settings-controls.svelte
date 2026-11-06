@@ -13,6 +13,7 @@
     timelineZoomLevelOptions,
   } from "../../settings";
   import { range } from "../../util/collection";
+  import { addHiddenTaskStatusesSetting } from "../hidden-task-statuses-setting";
 
   const { settings, setTimeTrackerEnabled } = getObsidianContext();
 
@@ -88,6 +89,15 @@
               showCompletedTasks: value,
             };
           }),
+        ),
+      )
+      .addSetting((setting) =>
+        addHiddenTaskStatusesSetting(
+          setting,
+          $settings.hiddenTaskStatuses,
+          (hiddenTaskStatuses) => {
+            $settings = { ...$settings, hiddenTaskStatuses };
+          },
         ),
       )
       .addSetting((setting) =>

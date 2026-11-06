@@ -8,6 +8,7 @@
   } from "../../time-block-types";
   import { createRenderMarkdownAttachment } from "../../util/dom";
   import { getMinutesSinceMidnight } from "../../util/moment";
+  import { filterVisibleTaskChildren } from "../../util/task-status";
   import {
     createTimestampParts,
     isCompleted,
@@ -43,11 +44,22 @@
     isListItemSourced(timeBlock) ? handleCheckboxLineClick : undefined,
   );
 
+  const visibleChildren = $derived(
+    timeBlock.source === "listItemLog" || timeBlock.source === "frontmatterLog"
+      ? timeBlock.children
+      : filterVisibleTaskChildren(
+          timeBlock.children,
+          $settingsStore.hiddenTaskStatuses,
+        ),
+  );
   const { listItem, nestedListItems } = $derived(
-    toRenderableMarkdown(timeBlock, {
-      hideTasksMetadata: $settingsStore.hideTasksMetadata,
-      showEmbedsInTaskBlocks: $settingsStore.showEmbedsInTaskBlocks,
-    }),
+    toRenderableMarkdown(
+      { ...timeBlock, children: visibleChildren },
+      {
+        hideTasksMetadata: $settingsStore.hideTasksMetadata,
+        showEmbedsInTaskBlocks: $settingsStore.showEmbedsInTaskBlocks,
+      },
+    ),
   );
   const sourcePath = $derived(
     timeBlock.source === "unwritten" ? "/" : timeBlock.path,
@@ -96,7 +108,7 @@
 
   const nestedItems = $derived(
     $settingsStore.showSubtasksInTaskBlocks
-      ? flatten(timeBlock.children ?? [])
+      ? flatten(visibleChildren ?? [])
       : [],
   );
   const nestedItemCount = $derived(nestedItems.length);

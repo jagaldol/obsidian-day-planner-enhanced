@@ -39,6 +39,8 @@ Timed and untimed child items render inside the parent timeline block instead of
 
 <p align="center"><em>Timed children keep their ranges, untimed notes stay attached, and duplicate overlapping blocks disappear.</em></p>
 
+To hide cancelled or custom task statuses, open **Timeline settings** and set **Hidden task statuses** below **Show completed tasks**. Enter checkbox markers such as `[-], [?]` (or `[ ]` for unchecked tasks). An empty value hides no statuses. This vault-wide setting applies immediately to daily-note and Tasks-based planner entries, including All Day and multi-day views and nested task content. Hidden statuses take precedence over **Show completed tasks**. It only changes planner visibility; source notes and time-tracking records are preserved.
+
 ### 2. Timeline actions include nested editing and removal
 
 Right-click a timeline block to edit the parent item, reveal it in the source file, manage nested items, or delete the whole planner item with its nested subtree.

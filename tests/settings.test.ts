@@ -9,6 +9,16 @@ import {
 } from "../src/settings";
 
 describe("settings migration", () => {
+  test("preserves status filters and defaults existing installations to no hidden statuses", () => {
+    expect(mergeStoredSettings(null).hiddenTaskStatuses).toEqual([]);
+    expect(
+      mergeStoredSettings({ showCompletedTasks: false }).hiddenTaskStatuses,
+    ).toEqual([]);
+    expect(
+      mergeStoredSettings({ hiddenTaskStatuses: ["-", "?"] })
+        .hiddenTaskStatuses,
+    ).toEqual(["-", "?"]);
+  });
   test("removes retired all-day and sidebar visibility settings", () => {
     const settings = mergeStoredSettings({
       showUncheduledTasks: false,

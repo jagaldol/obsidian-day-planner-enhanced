@@ -14,6 +14,8 @@ import {
   timelineZoomLevelOptions,
 } from "../settings";
 
+import { addHiddenTaskStatusesSetting } from "./hidden-task-statuses-setting";
+
 const startHourOptions = Object.fromEntries(
   Array.range(0, 12).map((it) => [it, String(it)]),
 );
@@ -89,6 +91,18 @@ export function createTimelineSettingsModalOpener(
               showCompletedTasks: value,
             }));
           }),
+        );
+      })
+      .addSetting((setting) => {
+        addHiddenTaskStatusesSetting(
+          setting,
+          current().hiddenTaskStatuses,
+          (hiddenTaskStatuses) => {
+            settingsStore.update((previous) => ({
+              ...previous,
+              hiddenTaskStatuses,
+            }));
+          },
         );
       })
       .addSetting((setting) => {
