@@ -4,6 +4,23 @@ All notable changes to **Day Planner Enhanced** are documented here.
 
 This plugin is an independent fork of [Obsidian Day Planner](https://github.com/ivan-lednev/obsidian-day-planner), based on upstream **0.35.1**, and follows its own versioning.
 
+## 0.8.0
+
+### ✨ New features
+
+- Added **Preview recurring tasks** in plugin and Timeline settings, off by default. Upcoming repeats appear in gray, including all-day tasks, and sit beside overlapping events ([#17](https://github.com/jagaldol/obsidian-day-planner-enhanced/issues/17)).
+- Right-click a preview to open the original task or create it early. Creating early warns that completing an earlier task in Tasks may create a duplicate.
+- Added **Hidden task statuses** below **Show completed tasks** in Timeline settings. Hide cancelled or custom statuses across planner views, including nested tasks ([#39](https://github.com/jagaldol/obsidian-day-planner-enhanced/issues/39)).
+
+### 🐞 Fixed issues
+
+- Fixed iCal titles with text parameters displaying as `[object Object]` ([#55](https://github.com/jagaldol/obsidian-day-planner-enhanced/issues/55)).
+- Updated dependencies to address security advisories.
+
+### ✨ Other improvements
+
+- Shortened settings descriptions and confirmation messages.
+
 ## 0.7.1
 
 ### 🐞 Fixed issues
