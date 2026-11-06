@@ -3,7 +3,7 @@ import type { Setting } from "obsidian";
 import { parseHiddenTaskStatuses } from "../util/task-status";
 
 const description =
-  "Hide tasks with these checkbox markers in all planner views, including nested content. For example: [-], [?], [ ]. Leave empty to hide none. Source notes and time-tracking records stay unchanged.";
+  "Hide these checkbox statuses from the planner. Example: [-], [?], [ ]. Leave empty to hide none.";
 const invalidInputMessage =
   "Use one character inside each pair of brackets, e.g. [-], [?], [ ]. The last valid setting is still active.";
 

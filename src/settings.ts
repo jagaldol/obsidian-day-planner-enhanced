@@ -15,13 +15,16 @@ export interface ColorOverride {
   darkModeColor: string;
 }
 
+export const recurringTaskPreviewsDescription =
+  "Show upcoming repeats in gray without creating tasks. Right-click to open or create a task.";
+
 export const eventFormats = ["task", "bullet"] as const;
 export const hideTasksMetadataDescription =
-  "Hide Tasks dates/completion (⏳ 📅 ➕ 🛫 ✅), recurrence (🔁), priority, IDs/dependencies, on-completion, and inline fields like (scheduled:: …). Descriptions and tags stay visible; source notes are unchanged.";
+  "Hide task dates, repeat rules, and other Tasks fields. Keep descriptions and tags.";
 export const hideTimeRangeInSingleLineDescription =
-  "Give task text more room by hiding the time range whenever a block uses a single-line header, including compact blocks.";
+  "Hide the time range to leave more room for task text.";
 export const showEmbedsInTaskBlocksDescription =
-  "Render pasted images, PDFs, and other embeds inside timeline blocks. A block is only as tall as its time range, so an embed can push the task text and time range out of view. When off, embeds show as plain links.";
+  "Show embedded images and files instead of links. Large embeds may hide task text.";
 export const showActiveClockInStatusBarDescription =
   "Requires Enable time tracker. Show clock controls in the status bar.";
 export const firstDaysOfWeek = [
@@ -78,6 +81,7 @@ export interface DayPlannerSettings {
   pluginVersion: string;
   showCompletedTasks: boolean;
   hiddenTaskStatuses: string[];
+  showRecurringTaskPreviews: boolean;
   showSubtasksInTaskBlocks: boolean;
   hideTasksMetadata: boolean;
   hideTimeRangeInSingleLine: boolean;
@@ -119,6 +123,7 @@ export const defaultSettings: DayPlannerSettings = {
   pluginVersion: "",
   showCompletedTasks: true,
   hiddenTaskStatuses: [],
+  showRecurringTaskPreviews: false,
   showSubtasksInTaskBlocks: true,
   hideTasksMetadata: false,
   hideTimeRangeInSingleLine: false,

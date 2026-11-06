@@ -4,6 +4,7 @@
 
   import { getObsidianContext } from "../../context/obsidian-context";
   import {
+    recurringTaskPreviewsDescription,
     firstDayOfWeekOptions,
     firstDaysOfWeek,
     hideTasksMetadataDescription,
@@ -142,6 +143,19 @@
               }),
           ),
       );
+
+    new SettingGroup(el).setHeading("Enhanced features").addSetting((setting) =>
+      setting
+        .setName("Preview recurring tasks")
+        .setDesc(recurringTaskPreviewsDescription)
+        .addToggle((toggle) =>
+          toggle
+            .setValue($settings.showRecurringTaskPreviews)
+            .onChange((value) => {
+              $settings = { ...$settings, showRecurringTaskPreviews: value };
+            }),
+        ),
+    );
 
     new SettingGroup(el).setHeading("Tasks integration").addSetting((setting) =>
       setting

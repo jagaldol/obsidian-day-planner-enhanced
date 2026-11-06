@@ -4,6 +4,8 @@ import { isInstanceOf } from "typed-assert";
 
 import type { TasksApiV1 } from "../tasks-plugin";
 import { toggleCheckbox, updateLine } from "../util/markdown";
+import { insertRecurringOccurrence } from "../util/materialize-recurring-preview";
+import type { RecurringPreview } from "../util/recurring-preview";
 
 export class VaultFacade {
   constructor(
@@ -23,6 +25,18 @@ export class VaultFacade {
   async createFile(path: string, contents: string) {
     await this.vault.create(path, contents);
   }
+
+  createRecurringOccurrence = async (preview: RecurringPreview) => {
+    await this.vault.process(
+      this.getFileByPath(preview.source.path),
+      (contents) =>
+        insertRecurringOccurrence(
+          contents,
+          preview,
+          window.moment().format("YYYY-MM-DD"),
+        ),
+    );
+  };
 
   async editLineInFile(
     path: string,

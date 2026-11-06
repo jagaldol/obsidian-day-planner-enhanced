@@ -808,6 +808,7 @@ export default class DayPlanner extends Plugin {
       initWeeklyView: this.initWeeklyLeaf,
       renderMarkdown: createRenderMarkdown(this.app),
       toggleCheckboxInFile: this.vaultFacade.toggleCheckboxInFile,
+      createRecurringOccurrence: this.vaultFacade.createRecurringOccurrence,
       editContext,
       showPreview: createShowPreview(this.app, {
         source: dayPlannerHoverLinkSource,

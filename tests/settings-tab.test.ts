@@ -98,8 +98,6 @@ describe("DayPlannerSettingsTab declarative settings", () => {
     expect(serializedDefinitions).toContain("hideTasksMetadata");
     expect(serializedDefinitions).toContain(hideTasksMetadataDescription);
     expect(serializedDefinitions).toContain("hideTimeRangeInSingleLine");
-    expect(hideTasksMetadataDescription).toContain("⏳ 📅 ➕ 🛫 ✅");
-    expect(hideTasksMetadataDescription).toContain("(scheduled:: …)");
     expect(serializedDefinitions).toContain("Color 1");
     expect(serializedDefinitions).toContain("timelineEndColor");
   });

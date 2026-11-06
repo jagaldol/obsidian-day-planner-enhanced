@@ -6,6 +6,7 @@ import { isOneOf } from "typed-assert";
 
 import {
   type DayPlannerSettings,
+  recurringTaskPreviewsDescription,
   firstDayOfWeekOptions,
   firstDaysOfWeek,
   hideTasksMetadataDescription,
@@ -120,6 +121,21 @@ export function createTimelineSettingsModalOpener(
 
     new SettingGroup(contentEl)
       .setHeading("Enhanced features")
+      .addSetting((setting) =>
+        setting
+          .setName("Preview recurring tasks")
+          .setDesc(recurringTaskPreviewsDescription)
+          .addToggle((toggle) =>
+            toggle
+              .setValue(current().showRecurringTaskPreviews)
+              .onChange((value) => {
+                settingsStore.update((previous) => ({
+                  ...previous,
+                  showRecurringTaskPreviews: value,
+                }));
+              }),
+          ),
+      )
       .addSetting((setting) => {
         setting
           .setName("Hide Tasks metadata in planner")

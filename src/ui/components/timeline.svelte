@@ -10,8 +10,10 @@
     getVisibleHours,
     snap,
   } from "../../global-store/derived-settings";
+  import { layoutRecurringPreviews } from "../../overlap/recurring-preview-layout";
   import { selectLogTimeBlocksForDay } from "../../redux";
   import { selectLogEntriesById } from "../../redux/index/index-slice";
+  import { selectRecurringPreviewsForDay } from "../../redux/index/recurring-preview-selectors";
   import type {
     LogTimeBlock,
     TimeBlock,
@@ -51,6 +53,7 @@
   import LocalTimeBlock from "./local-time-block.svelte";
   import Needle from "./needle.svelte";
   import PositionedTimeBlock from "./positioned-time-block.svelte";
+  import RecurringTaskPreviews from "./recurring-task-previews.svelte";
   import Selectable from "./selectable.svelte";
   import UnscheduledTimeBlock from "./unscheduled-time-block.svelte";
 
@@ -86,6 +89,19 @@
     getDisplayedTimeBlocksForTimeline(day),
   );
   const dayKey = $derived(getDayKey(day));
+  const recurringPreviews = useSelector((state) =>
+    selectRecurringPreviewsForDay(state, dayKey),
+  );
+  const showRecurringPreviews = $derived(
+    settingsSignal.current.showRecurringTaskPreviews &&
+      !day.isBefore(currentTimeSignal.current, "day"),
+  );
+  const plannerLayout = $derived(
+    layoutRecurringPreviews(
+      $displayedTimeBlocksForTimeline.withTime,
+      showRecurringPreviews ? recurringPreviews.current : [],
+    ),
+  );
   const timelineColumns = $derived(getAvailableTimelineColumns($settingsStore));
 
   const logEntriesForDay = useSelector((state) =>
@@ -200,7 +216,7 @@
   }
 
   const plannerSeparatorVisibility = $derived(
-    createSeparatorVisibilityLookup($displayedTimeBlocksForTimeline.withTime),
+    createSeparatorVisibilityLookup(plannerLayout.realBlocks),
   );
   const logEntrySeparatorVisibility = $derived(
     createSeparatorVisibilityLookup(logEntriesForDay.current),
@@ -326,7 +342,13 @@
         use:timelineGestures
         use:updateDragPointerOnAutoScroll
       >
-        {#each $displayedTimeBlocksForTimeline.withTime as timeBlock (getRenderKey(timeBlock))}
+        {#if showRecurringPreviews}
+          <RecurringTaskPreviews
+            {dayKey}
+            placings={plannerLayout.previewPlacings}
+          />
+        {/if}
+        {#each plannerLayout.realBlocks as timeBlock (getRenderKey(timeBlock))}
           {@const separatorVisibility = plannerSeparatorVisibility.get(
             getRenderKey(timeBlock),
           )}

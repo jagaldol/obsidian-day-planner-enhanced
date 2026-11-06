@@ -39,7 +39,13 @@ Timed and untimed child items render inside the parent timeline block instead of
 
 <p align="center"><em>Timed children keep their ranges, untimed notes stay attached, and duplicate overlapping blocks disappear.</em></p>
 
-To hide cancelled or custom task statuses, open **Timeline settings** and set **Hidden task statuses** below **Show completed tasks**. Enter checkbox markers such as `[-], [?]` (or `[ ]` for unchecked tasks). An empty value hides no statuses. This vault-wide setting applies immediately to daily-note and Tasks-based planner entries, including All Day and multi-day views and nested task content. Hidden statuses take precedence over **Show completed tasks**. It only changes planner visibility; source notes and time-tracking records are preserved.
+**Timeline settings → Hidden task statuses** hides checkbox statuses such as `[-]` or `[?]` throughout the planner, including nested tasks. Leave it empty to hide none. This takes priority over **Show completed tasks** and does not change source notes.
+
+**Enhanced features → Preview recurring tasks** shows upcoming repeats as gray blocks, including all-day tasks. Available in plugin and Timeline settings; off by default. Overlapping tasks appear side by side. Previews do not create tasks automatically.
+
+Right-click a preview to **Open original task** or **Create task early…** for that date in the original note. **Completing an earlier task in Tasks may create a duplicate.** An existing task replaces its preview.
+
+Previews cover today onward for date-based repeat rules. Completed, cancelled (`[-]`), and hidden tasks are excluded, as are undated tasks, timed tasks longer than one day, and completion-based (`when done`), count-limited, or invalid rules.
 
 ### 2. Timeline actions include nested editing and removal
 

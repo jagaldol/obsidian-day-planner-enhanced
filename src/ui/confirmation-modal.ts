@@ -10,17 +10,19 @@ export interface ConfirmationModalProps {
 
 class ConfirmationModal extends Modal {
   private acceptButton: HTMLButtonElement | undefined;
+  private readonly onCancel: () => void;
 
   constructor(
     app: App,
     props: ConfirmationModalProps & {
       onAccept: (event: MouseEvent) => Promise<void>;
-      onCancel: (event: MouseEvent) => void;
+      onCancel: () => void;
     },
   ) {
     super(app);
 
     const { cta, onAccept, text, title, onCancel, variant = "cta" } = props;
+    this.onCancel = onCancel;
 
     this.modalEl.addClass("planner-confirmation-modal");
     this.contentEl.addClass("planner-confirmation-modal-content");
@@ -39,8 +41,8 @@ class ConfirmationModal extends Modal {
       (buttonsEl) => {
         const cancelButton = buttonsEl.createEl("button", { text: "Cancel" });
         cancelButton.type = "button";
-        cancelButton.addEventListener("click", (e) => {
-          onCancel(e);
+        cancelButton.addEventListener("click", () => {
+          onCancel();
           this.close();
         });
 
@@ -61,6 +63,10 @@ class ConfirmationModal extends Modal {
 
   onOpen() {
     window.setTimeout(() => this.acceptButton?.focus());
+  }
+
+  onClose() {
+    this.onCancel();
   }
 }
 

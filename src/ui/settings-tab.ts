@@ -14,6 +14,7 @@ import type DayPlanner from "../main";
 import {
   type DayPlannerSettings,
   eventFormats,
+  recurringTaskPreviewsDescription,
   firstDayOfWeekOptions,
   firstDaysOfWeek,
   hideTasksMetadataDescription,
@@ -158,8 +159,13 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
         heading: "Enhanced features",
         items: [
           {
+            name: "Preview recurring tasks",
+            desc: recurringTaskPreviewsDescription,
+            control: { type: "toggle", key: "showRecurringTaskPreviews" },
+          },
+          {
             name: "Enable time tracker",
-            desc: "Show time-tracking views, timeline columns, and clock actions. Existing records remain unchanged.",
+            desc: "Show time-tracking views and controls.",
             render: (setting) => {
               setting.addToggle((toggle) =>
                 toggle
@@ -862,10 +868,20 @@ export class DayPlannerSettingsTab extends PluginSettingTab {
       .setHeading("Enhanced features")
       .addSetting((setting) =>
         setting
+          .setName("Preview recurring tasks")
+          .setDesc(recurringTaskPreviewsDescription)
+          .addToggle((toggle) =>
+            toggle
+              .setValue(this.plugin.getSettings().showRecurringTaskPreviews)
+              .onChange((value) => {
+                this.updateSettings({ showRecurringTaskPreviews: value });
+              }),
+          ),
+      )
+      .addSetting((setting) =>
+        setting
           .setName("Enable time tracker")
-          .setDesc(
-            "Show time-tracking views, timeline columns, and clock actions. Existing time records are kept unchanged.",
-          )
+          .setDesc("Show time-tracking views and controls.")
           .addToggle((toggle) =>
             toggle
               .setValue(this.plugin.getSettings().enableTimeTracker)

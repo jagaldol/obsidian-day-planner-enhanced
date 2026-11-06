@@ -70,6 +70,7 @@ export interface ObsidianContext {
   initWeeklyView: () => Promise<void>;
   renderMarkdown: RenderMarkdown;
   toggleCheckboxInFile: VaultFacade["toggleCheckboxInFile"];
+  createRecurringOccurrence: VaultFacade["createRecurringOccurrence"];
   editContext: ReturnType<typeof useEditContext>;
   showPreview: ShowPreview;
   reSync: () => void;

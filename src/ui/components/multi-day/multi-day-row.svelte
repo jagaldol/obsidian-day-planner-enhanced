@@ -6,6 +6,7 @@
   import type { TimeBlock, WithDuration } from "../../../time-block-types";
   import { isLocal, type RemoteTimeBlock } from "../../../time-block-types";
   import * as t from "../../../util/time-block-utils";
+  import RecurringAllDayPreviews from "../recurring-all-day-previews.svelte";
   import UnscheduledTimeBlock from "../unscheduled-time-block.svelte";
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Svelte validates the typed $props rune during svelte-check.
@@ -70,6 +71,9 @@
       )}"
       {timeBlock}
     />
+  {/each}
+  {#each dateRange.current as day, index (t.getDayKey(day))}
+    <RecurringAllDayPreviews column={index + 1} dayKey={t.getDayKey(day)} />
   {/each}
 </div>
 

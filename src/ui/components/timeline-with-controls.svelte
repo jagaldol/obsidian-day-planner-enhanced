@@ -14,6 +14,7 @@
   import BlockList from "./block-list.svelte";
   import ErrorBoundary from "./error-boundary.svelte";
   import { GripHorizontal } from "./lucide";
+  import RecurringAllDayPreviews from "./recurring-all-day-previews.svelte";
   import Ruler from "./ruler.svelte";
   import Scroller from "./scroller.svelte";
   import TimelineControls from "./timeline-controls.svelte";
@@ -98,10 +99,11 @@
           {timeBlock}
         />
       {/snippet}
-      {#snippet fallback()}
-        <div class="empty-all-day-events">No all day events</div>
-      {/snippet}
     </BlockList>
+    <RecurringAllDayPreviews
+      dayKey={getDayKey(firstDayInRange)}
+      showEmpty={displayedAllDayTimeBlocks.length === 0}
+    />
   </div>
 
   <div bind:this={rulerRef} class="ruler">
@@ -200,19 +202,7 @@
     min-height: 0;
   }
 
-  .empty-all-day-events {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    padding-block: var(--size-4-2);
-
-    font-size: var(--font-ui-small);
-    color: var(--text-faint);
-  }
-
-  :global(.all-day-events),
-  .empty-all-day-events {
+  :global(.all-day-events) {
     background-color: var(--background-primary);
     border-top: 1px solid var(--background-modifier-border);
   }
