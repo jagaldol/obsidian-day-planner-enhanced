@@ -117,6 +117,25 @@ function onceOffIcalEventToTimeBlockForRange(
   }
 }
 
+// node-ical returns parameterized TEXT properties as { params, val },
+// although its VEvent types declare these fields as strings.
+function getIcalText(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (
+    value !== null &&
+    typeof value === "object" &&
+    "val" in value &&
+    typeof value.val === "string"
+  ) {
+    return value.val;
+  }
+
+  return undefined;
+}
+
 export function icalEventToTimeBlock(
   icalEvent: WithIcalConfig<ical.VEvent>,
   date: Date,
@@ -136,9 +155,9 @@ export function icalEventToTimeBlock(
     id: getId(),
     source: "ical",
     calendar: icalEvent.calendar,
-    summary: icalEvent.summary || "(No title)",
-    description: icalEvent.description,
-    location: icalEvent.location,
+    summary: getIcalText(icalEvent.summary) || "(No title)",
+    description: getIcalText(icalEvent.description),
+    location: getIcalText(icalEvent.location),
     startTime: startTimeAdjusted,
     rsvpStatus,
     isAllDayEvent,

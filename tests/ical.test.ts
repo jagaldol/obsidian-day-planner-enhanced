@@ -148,6 +148,35 @@ describe("ical", () => {
     ]);
   });
 
+  test("Extracts parameterized iCal text and preserves plain and missing fields", async () => {
+    const { remoteTimeBlocks } = await setUp({
+      icalFixtureFileName: "parameterized-text",
+    });
+
+    expect(remoteTimeBlocks).toEqual([
+      expect.objectContaining({
+        summary: "Weekly sync",
+        description: "First line\nSecond line, with details",
+        location: "회의실 B",
+      }),
+      expect.objectContaining({
+        summary: "Plain event",
+        description: "Plain description",
+        location: "Room A",
+      }),
+      expect.objectContaining({
+        summary: "(No title)",
+        description: undefined,
+        location: undefined,
+      }),
+      expect.objectContaining({
+        summary: "(No title)",
+        description: "",
+        location: "",
+      }),
+    ]);
+  });
+
   // NOTE: Microsoft doesn't contain Attendee field
   test.todo(
     "RSVP status gets pulled from params if email is not in CN (common name)",
